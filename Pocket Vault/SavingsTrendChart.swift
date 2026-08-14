@@ -114,18 +114,18 @@ struct SavingsTrendChart: View {
                 Text("SAVINGS TREND")
                     .font(theme.font(9, weight: .bold))
                     .tracking(2)
-                    .foregroundStyle(theme.textTertiary)
+                    .foregroundStyle(.tertiary)
 
                 Text("$\(Int(displayPoint?.amount ?? 0))")
                     .font(theme.font(26, weight: .light))
-                    .foregroundStyle(theme.textPrimary)
+                    .foregroundStyle(.primary)
                     .contentTransition(.numericText())
                     .animation(.easeOut(duration: 0.15), value: displayPoint?.amount)
 
                 if let date = displayPoint?.date {
                     Text(scrubbedPoint == nil ? "Today" : formatted(date))
                         .font(theme.font(11, weight: .medium))
-                        .foregroundStyle(theme.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
             }
 
@@ -181,7 +181,7 @@ struct SavingsTrendChart: View {
                     Text("GOAL")
                         .font(theme.font(8, weight: .bold))
                         .tracking(1.5)
-                        .foregroundStyle(theme.textTertiary)
+                        .foregroundStyle(.tertiary)
                 }
 
             if let scrubbed = scrubbedPoint {
@@ -266,10 +266,10 @@ struct SavingsTrendChart: View {
         VStack(spacing: 6) {
             Image(systemName: "chart.line.uptrend.xyaxis")
                 .font(theme.font(20))
-                .foregroundStyle(theme.textTertiary)
+                .foregroundStyle(.tertiary)
             Text("Make a couple deposits to see your trend take shape.")
                 .font(theme.font(11, weight: .medium))
-                .foregroundStyle(theme.textTertiary)
+                .foregroundStyle(.tertiary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)

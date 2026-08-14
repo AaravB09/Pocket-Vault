@@ -45,6 +45,11 @@ struct CustomPaywallView: View {
                 paywallContent
             }
         }
+        // Background here is a custom gradient (not the flat theme.background
+        // surface), so we apply just the foregroundStyle cascade rather than
+        // the full .themedSurface(theme) — that would also inject a redundant
+        // flat background layer underneath the gradient.
+        .foregroundStyle(theme.textPrimary, theme.textSecondary, theme.textTertiary)
         .task { await loadOfferings() }
         .fullScreenCover(isPresented: $showCoach) {
             SavingsCoachView(
@@ -73,7 +78,7 @@ struct CustomPaywallView: View {
                     .foregroundStyle(theme.accent)
                 Text("Unlock Pro")
                     .font(theme.font(26, weight: .light))
-                    .foregroundStyle(theme.textPrimary)
+                    .foregroundStyle(.primary)
             }
             .padding(.top, 28)
 
@@ -115,7 +120,7 @@ struct CustomPaywallView: View {
             if authManager.isGuest {
                 Text("You'll create a free account on the next step")
                     .font(theme.font(10, weight: .light))
-                    .foregroundStyle(theme.textTertiary)
+                    .foregroundStyle(.tertiary)
             }
 
             Button(action: { Task { await restore() } }) {
@@ -125,7 +130,7 @@ struct CustomPaywallView: View {
                 }
                 .font(theme.font(10, weight: .semibold))
                 .tracking(1)
-                .foregroundStyle(theme.textTertiary)
+                .foregroundStyle(.tertiary)
             }
             .disabled(isRestoring)
 
@@ -235,10 +240,10 @@ struct CustomPaywallView: View {
                 .foregroundStyle(theme.accent)
             Text("Pro plans aren't set up yet")
                 .font(theme.font(16, weight: .semibold))
-                .foregroundStyle(theme.textPrimary)
+                .foregroundStyle(.primary)
             Text("This screen renders live from your RevenueCat Offering. Add an Offering with Packages in the RevenueCat dashboard (and matching products in App Store Connect), then this screen will populate automatically.")
                 .font(theme.font(13))
-                .foregroundStyle(theme.textSecondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 30)
             Button("Close") { dismiss() }
@@ -333,11 +338,11 @@ private struct FeatureRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .font(theme.font(12, weight: .bold))
-                    .foregroundStyle(theme.textPrimary)
+                    .foregroundStyle(.primary)
 
                 Text(description)
                     .font(theme.font(10, weight: .regular))
-                    .foregroundStyle(theme.textSecondary)
+                    .foregroundStyle(.secondary)
                     .lineLimit(2)
             }
         }
@@ -377,7 +382,7 @@ private struct PlanCard: View {
                     if let anchorPrice, !revealReal {
                         Text(fmt(anchorPrice))
                             .font(theme.font(34, weight: .black))
-                            .foregroundStyle(theme.textPrimary)
+                            .foregroundStyle(.primary)
                             .transition(.scale.combined(with: .opacity))
                     }
 
@@ -389,7 +394,7 @@ private struct PlanCard: View {
                             if let anchorPrice {
                                 Text(fmt(anchorPrice))
                                     .font(theme.font(12, weight: .light))
-                                    .foregroundStyle(theme.textTertiary)
+                                    .foregroundStyle(.tertiary)
                                     .strikethrough(color: theme.textTertiary)
                             }
                         }
@@ -402,7 +407,7 @@ private struct PlanCard: View {
                 Text(periodLabel)
                     .font(theme.font(9, weight: .semibold))
                     .tracking(1)
-                    .foregroundStyle(theme.textTertiary)
+                    .foregroundStyle(.tertiary)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 22)

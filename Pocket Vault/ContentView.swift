@@ -69,9 +69,6 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            theme.background
-                .ignoresSafeArea()
-
             // Soft Studio Ambient Lighting Accent
             RadialGradient(
                 colors: [theme.textPrimary.opacity(0.1), .clear],
@@ -192,13 +189,13 @@ struct ContentView: View {
                             Text("OF $\(Int(targetGoal))")
                                 .font(theme.font(10, weight: .bold))
                                 .tracking(3)
-                                .foregroundStyle(theme.textTertiary)
+                                .foregroundStyle(.tertiary)
                         }
 
                         if currentSavings == 0 {
                             Text("Head start for creating your goal — deposit to keep it moving")
                                 .font(theme.font(9, weight: .light))
-                                .foregroundStyle(theme.textTertiary)
+                                .foregroundStyle(.tertiary)
                                 .padding(.top, 2)
                         }
 
@@ -269,6 +266,7 @@ struct ContentView: View {
                 targetDate: $targetDate
             )
         }
+        .themedSurface(theme)
         .sheet(isPresented: $showAddGoalSheet) {
             SetupGoalView(
                 goalTitle: $newGoalTitle,
@@ -351,9 +349,6 @@ struct AestheticDepositModalView: View {
 
     var body: some View {
         ZStack {
-            theme.background
-                .ignoresSafeArea()
-
             // 3D Assembly Preview Forge Background
             RealityView { content in
                 let mesh = MeshResource.generateBox(size: [0.4, 0.4, 0.4], cornerRadius: 0.04)
@@ -413,13 +408,13 @@ struct AestheticDepositModalView: View {
                     Text("CONTRIBUTION VALUE ($)")
                         .font(theme.font(9, weight: .bold))
                         .tracking(3)
-                        .foregroundStyle(theme.textTertiary)
+                        .foregroundStyle(.tertiary)
 
                     TextField("Amount", text: $customAmount)
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.center)
                         .font(theme.font(52, weight: .ultraLight))
-                        .foregroundStyle(theme.textPrimary)
+                        .foregroundStyle(.primary)
                 }
 
                 Spacer()
@@ -445,5 +440,6 @@ struct AestheticDepositModalView: View {
                 .padding(.bottom, 44)
             }
         }
+        .themedSurface(theme)
     }
 }

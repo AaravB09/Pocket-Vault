@@ -78,7 +78,7 @@ struct SetupGoalView: View {
 
                         Text("What are you building toward?")
                             .font(theme.font(20, weight: .light))
-                            .foregroundStyle(theme.textPrimary)
+                            .foregroundStyle(.primary)
                     }
                     .padding(.top, 50)
 
@@ -93,7 +93,7 @@ struct SetupGoalView: View {
                         Text("OR PICK A QUICK PRESET")
                             .font(theme.font(9, weight: .bold))
                             .tracking(2)
-                            .foregroundStyle(theme.textTertiary)
+                            .foregroundStyle(.tertiary)
                             .fixedSize()
                         Rectangle().fill(theme.hairline).frame(height: 1)
                     }
@@ -121,7 +121,7 @@ struct SetupGoalView: View {
                                     Text(preset.name.uppercased())
                                         .font(theme.font(11, weight: .bold))
                                         .tracking(2)
-                                        .foregroundStyle(theme.textPrimary)
+                                        .foregroundStyle(.primary)
 
                                     Spacer()
 
@@ -151,13 +151,13 @@ struct SetupGoalView: View {
                         Text("TARGET VALUE ($)")
                             .font(theme.font(9, weight: .bold))
                             .tracking(3)
-                            .foregroundStyle(theme.textTertiary)
+                            .foregroundStyle(.tertiary)
 
                         TextField("Amount", text: $amountText)
                             .keyboardType(.numberPad)
                             .multilineTextAlignment(.center)
                             .font(theme.font(44, weight: .ultraLight))
-                            .foregroundStyle(theme.textPrimary)
+                            .foregroundStyle(.primary)
                     }
                     .padding(.horizontal, 24)
 
@@ -167,7 +167,7 @@ struct SetupGoalView: View {
                         Text("REACH IT BY")
                             .font(theme.font(9, weight: .bold))
                             .tracking(3)
-                            .foregroundStyle(theme.textTertiary)
+                            .foregroundStyle(.tertiary)
 
                         DatePicker("", selection: $targetDate, in: Date()..., displayedComponents: .date)
                             .datePickerStyle(.compact)
@@ -228,11 +228,11 @@ struct SetupGoalView: View {
 
             Text("A weekend trip, a gift, a goal just for this week — say it in your own words.")
                 .font(theme.font(12, weight: .light))
-                .foregroundStyle(theme.textSecondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
             TextField("", text: $customGoalDescription, prompt: Text("e.g. \"a weekend trip to Tahoe\"").foregroundColor(theme.textTertiary), axis: .vertical)
-                .foregroundStyle(theme.textPrimary)
+                .foregroundStyle(.primary)
                 .font(theme.font(14, weight: .light))
                 .padding(14)
                 .background(.ultraThinMaterial)
@@ -280,7 +280,7 @@ struct SetupGoalView: View {
                 Text(suggestion.title.uppercased())
                     .font(theme.font(12, weight: .bold))
                     .tracking(1.5)
-                    .foregroundStyle(theme.textPrimary)
+                    .foregroundStyle(.primary)
                 Spacer()
                 Text("$\(Int(suggestion.suggestedAmount))")
                     .font(theme.font(14, weight: .semibold))
@@ -289,7 +289,7 @@ struct SetupGoalView: View {
 
             Text(suggestion.rationale)
                 .font(theme.font(11, weight: .light))
-                .foregroundStyle(theme.textSecondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
 

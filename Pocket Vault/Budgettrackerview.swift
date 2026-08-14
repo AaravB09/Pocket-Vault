@@ -15,8 +15,6 @@ struct BudgetTrackerView: View {
 
     var body: some View {
         ZStack {
-            theme.background.ignoresSafeArea()
-
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 22) {
                     header
@@ -40,6 +38,7 @@ struct BudgetTrackerView: View {
                 .padding(.bottom, 130)
             }
         }
+        .themedSurface(theme)
         .sheet(isPresented: $showAddSheet) {
             AddPaymentSheet()
                 .environmentObject(budgetManager)
@@ -63,7 +62,7 @@ struct BudgetTrackerView: View {
                 .foregroundStyle(theme.accent)
             Text("Budget Tracker")
                 .font(theme.font(22, weight: .light))
-                .foregroundStyle(theme.textPrimary)
+                .foregroundStyle(.primary)
         }
         .padding(.top, 60)
     }
@@ -88,13 +87,13 @@ struct BudgetTrackerView: View {
                 .foregroundStyle(color)
             Text(message)
                 .font(theme.font(12, weight: .semibold))
-                .foregroundStyle(theme.textPrimary)
+                .foregroundStyle(.primary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer()
             Button(action: { withAnimation { budgetManager.justCrossedThreshold = nil } }) {
                 Image(systemName: "xmark")
                     .font(theme.font(11, weight: .bold))
-                    .foregroundStyle(theme.textTertiary)
+                    .foregroundStyle(.tertiary)
             }
         }
         .padding(16)
@@ -122,10 +121,10 @@ struct BudgetTrackerView: View {
                     Text("SPENT THIS MONTH")
                         .font(theme.font(9, weight: .bold))
                         .tracking(2)
-                        .foregroundStyle(theme.textTertiary)
+                        .foregroundStyle(.tertiary)
                     Text("$\(Int(budgetManager.totalSpentThisMonth))")
                         .font(theme.font(34, weight: .light))
-                        .foregroundStyle(theme.textPrimary)
+                        .foregroundStyle(.primary)
                 }
                 Spacer()
                 Button(action: { showLimitEditor = true }) {
@@ -133,7 +132,7 @@ struct BudgetTrackerView: View {
                         Text("LIMIT")
                             .font(theme.font(9, weight: .bold))
                             .tracking(2)
-                            .foregroundStyle(theme.textTertiary)
+                            .foregroundStyle(.tertiary)
                         HStack(spacing: 4) {
                             Text("$\(Int(budgetManager.monthlyLimit))")
                                 .font(theme.font(16, weight: .semibold))
@@ -170,7 +169,7 @@ struct BudgetTrackerView: View {
                 Text(budgetManager.status == .over ? "OVER BY $\(Int(budgetManager.totalSpentThisMonth - budgetManager.monthlyLimit))" : "$\(Int(budgetManager.remaining)) LEFT")
                     .font(theme.font(10, weight: .bold))
                     .tracking(1)
-                    .foregroundStyle(theme.textTertiary)
+                    .foregroundStyle(.tertiary)
             }
             .blur(radius: privacy.shouldMask ? 6 : 0)
 
@@ -203,7 +202,7 @@ struct BudgetTrackerView: View {
                     Text("BY CATEGORY")
                         .font(theme.font(9, weight: .bold))
                         .tracking(2)
-                        .foregroundStyle(theme.textTertiary)
+                        .foregroundStyle(.tertiary)
                         .padding(.horizontal, 24)
 
                     VStack(spacing: 10) {
@@ -215,11 +214,11 @@ struct BudgetTrackerView: View {
                                     .frame(width: 26)
                                 Text(category.displayName)
                                     .font(theme.font(12, weight: .medium))
-                                    .foregroundStyle(theme.textPrimary)
+                                    .foregroundStyle(.primary)
                                 Spacer()
                                 Text("$\(Int(amount))")
                                     .font(theme.font(13, weight: .semibold))
-                                    .foregroundStyle(theme.textPrimary)
+                                    .foregroundStyle(.primary)
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 12)
@@ -240,7 +239,7 @@ struct BudgetTrackerView: View {
             if budgetManager.transactionsThisMonth.isEmpty {
                 Text("No payments logged yet this month. Tap \u{201C}Log a Payment\u{201D} above to start tracking.")
                     .font(theme.font(13, weight: .light))
-                    .foregroundStyle(theme.textTertiary)
+                    .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
                     .padding(.top, 20)
@@ -251,7 +250,7 @@ struct BudgetTrackerView: View {
                             Text(dayLabel(day.date))
                                 .font(theme.font(9, weight: .bold))
                                 .tracking(1.5)
-                                .foregroundStyle(theme.textTertiary)
+                                .foregroundStyle(.tertiary)
                                 .padding(.horizontal, 24)
 
                             VStack(spacing: 8) {
@@ -279,7 +278,7 @@ struct BudgetTrackerView: View {
                 HStack(spacing: 6) {
                     Text(item.note.isEmpty ? item.category.displayName : item.note)
                         .font(theme.font(13, weight: .medium))
-                        .foregroundStyle(theme.textPrimary)
+                        .foregroundStyle(.primary)
                         .lineLimit(1)
                     // Marks bank-synced entries so it's obvious which
                     // rows came in automatically vs. were typed by hand.
@@ -291,12 +290,12 @@ struct BudgetTrackerView: View {
                 }
                 Text(timeLabel(item.date))
                     .font(theme.font(10, weight: .light))
-                    .foregroundStyle(theme.textTertiary)
+                    .foregroundStyle(.tertiary)
             }
             Spacer()
             Text("-$\(Int(item.amount))")
                 .font(theme.font(13, weight: .semibold))
-                .foregroundStyle(theme.textPrimary)
+                .foregroundStyle(.primary)
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 14)
@@ -345,8 +344,6 @@ private struct AddPaymentSheet: View {
 
     var body: some View {
         ZStack {
-            theme.background.ignoresSafeArea()
-
             ScrollView {
                 VStack(spacing: 24) {
                     HStack {
@@ -354,7 +351,7 @@ private struct AddPaymentSheet: View {
                         Button(action: { dismiss() }) {
                             Image(systemName: "xmark.circle.fill")
                                 .font(theme.font(22, weight: .bold))
-                                .foregroundStyle(theme.textTertiary)
+                                .foregroundStyle(.tertiary)
                         }
                     }
                     .padding(.horizontal, 20)
@@ -367,26 +364,26 @@ private struct AddPaymentSheet: View {
                             .foregroundStyle(theme.accent)
                         Text("What did you spend?")
                             .font(theme.font(20, weight: .light))
-                            .foregroundStyle(theme.textPrimary)
+                            .foregroundStyle(.primary)
                     }
 
                     VStack(spacing: 6) {
                         Text("AMOUNT ($)")
                             .font(theme.font(9, weight: .bold))
                             .tracking(3)
-                            .foregroundStyle(theme.textTertiary)
+                            .foregroundStyle(.tertiary)
                         TextField("0", text: $amountText)
                             .keyboardType(.decimalPad)
                             .multilineTextAlignment(.center)
                             .font(theme.font(44, weight: .light))
-                            .foregroundStyle(theme.textPrimary)
+                            .foregroundStyle(.primary)
                     }
 
                     VStack(alignment: .leading, spacing: 10) {
                         Text("CATEGORY")
                             .font(theme.font(9, weight: .bold))
                             .tracking(2)
-                            .foregroundStyle(theme.textTertiary)
+                            .foregroundStyle(.tertiary)
                             .padding(.horizontal, 24)
 
                         LazyVGrid(columns: [GridItem(.adaptive(minimum: 96))], spacing: 10) {
@@ -414,10 +411,10 @@ private struct AddPaymentSheet: View {
                         Text("NOTE (OPTIONAL)")
                             .font(theme.font(9, weight: .bold))
                             .tracking(2)
-                            .foregroundStyle(theme.textTertiary)
+                            .foregroundStyle(.tertiary)
 
                         TextField("e.g. Grocery run", text: $note)
-                            .foregroundStyle(theme.textPrimary)
+                            .foregroundStyle(.primary)
                             .padding(14)
                             .background(.ultraThinMaterial)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -441,6 +438,7 @@ private struct AddPaymentSheet: View {
                 }
             }
         }
+        .themedSurface(theme)
     }
 }
 
@@ -459,15 +457,13 @@ private struct LimitEditorSheet: View {
 
     var body: some View {
         ZStack {
-            theme.background.ignoresSafeArea()
-
             VStack(spacing: 24) {
                 HStack {
                     Spacer()
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(theme.font(22, weight: .bold))
-                            .foregroundStyle(theme.textTertiary)
+                            .foregroundStyle(.tertiary)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -480,18 +476,18 @@ private struct LimitEditorSheet: View {
                         .foregroundStyle(theme.accent)
                     Text("Set your spending cap")
                         .font(theme.font(20, weight: .light))
-                        .foregroundStyle(theme.textPrimary)
+                        .foregroundStyle(.primary)
                 }
 
                 TextField("500", text: $limitInput)
                     .keyboardType(.numberPad)
                     .multilineTextAlignment(.center)
                     .font(theme.font(52, weight: .light))
-                    .foregroundStyle(theme.textPrimary)
+                    .foregroundStyle(.primary)
 
                 Text("You'll get an alert here once you cross 80% and again if you go over.")
                     .font(theme.font(12, weight: .light))
-                    .foregroundStyle(theme.textTertiary)
+                    .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
 
@@ -511,5 +507,6 @@ private struct LimitEditorSheet: View {
                 .padding(.bottom, 50)
             }
         }
+        .themedSurface(theme)
     }
 }

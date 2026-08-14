@@ -124,7 +124,7 @@ struct FeatureTourOverlay: View {
                             Text(step.title.uppercased())
                                 .font(theme.font(11, weight: .bold))
                                 .tracking(2)
-                                .foregroundStyle(theme.textPrimary)
+                                .foregroundStyle(.primary)
                             Text(step.message)
                                 .font(theme.font(12, weight: .light))
                                 .foregroundStyle(theme.textPrimary.opacity(0.7))
@@ -132,10 +132,10 @@ struct FeatureTourOverlay: View {
 
                             HStack(spacing: 12) {
                                 Button("Skip") { finish() }
-                                    .font(theme.font(11)).foregroundStyle(theme.textTertiary)
+                                    .font(theme.font(11)).foregroundStyle(.tertiary)
                                 Spacer()
                                 Text("\(stepIndex + 1)/\(visibleSteps.count)")
-                                    .font(theme.font(11)).foregroundStyle(theme.textTertiary)
+                                    .font(theme.font(11)).foregroundStyle(.tertiary)
                                 Spacer()
                                 Button(stepIndex == visibleSteps.count - 1 ? "Done" : "Next") { advance() }
                                     .font(theme.font(12, weight: .bold))

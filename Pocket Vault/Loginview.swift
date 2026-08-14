@@ -37,8 +37,6 @@ struct LoginView: View {
 
     var body: some View {
         ZStack {
-            theme.background.ignoresSafeArea()
-
             RadialGradient(
                 colors: [theme.textPrimary.opacity(0.08), .clear],
                 center: .top, startRadius: 10, endRadius: 320
@@ -55,11 +53,11 @@ struct LoginView: View {
                             .foregroundStyle(theme.accent)
                         Text(isSignUpMode ? "Create Your Vault" : "Welcome Back")
                             .font(theme.font(26, weight: .light))
-                            .foregroundStyle(theme.textPrimary)
+                            .foregroundStyle(.primary)
                         if hideGuestOption {
                             Text("Create a free account to continue")
                                 .font(theme.font(12, weight: .light))
-                                .foregroundStyle(theme.textSecondary)
+                                .foregroundStyle(.secondary)
                         }
                     }
                     .padding(.top, 110)
@@ -69,7 +67,7 @@ struct LoginView: View {
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .keyboardType(.emailAddress)
-                            .foregroundStyle(theme.textPrimary)
+                            .foregroundStyle(.primary)
                             .tint(theme.accent)
                             .padding(16)
                             .background(.ultraThinMaterial)
@@ -86,7 +84,7 @@ struct LoginView: View {
                                     SecureField("", text: $password, prompt: Text("Password (6+ characters)").foregroundColor(theme.textTertiary))
                                 }
                             }
-                            .foregroundStyle(theme.textPrimary)
+                            .foregroundStyle(.primary)
                             .tint(theme.accent)
                             .padding(16)
                             .padding(.trailing, 40)
@@ -97,7 +95,7 @@ struct LoginView: View {
                             Button(action: { isPasswordVisible.toggle() }) {
                                 Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
                                     .font(theme.font(14))
-                                    .foregroundStyle(theme.textTertiary)
+                                    .foregroundStyle(.tertiary)
                             }
                             .padding(.trailing, 16)
                         }
@@ -146,10 +144,10 @@ struct LoginView: View {
                                 .foregroundStyle(theme.accent)
                             Text("Check your email")
                                 .font(theme.font(13, weight: .semibold))
-                                .foregroundStyle(theme.textPrimary)
+                                .foregroundStyle(.primary)
                             Text("We sent a confirmation link to \(email). Tap it, then come back and sign in.")
                                 .font(theme.font(12, weight: .light))
-                                .foregroundStyle(theme.textSecondary)
+                                .foregroundStyle(.secondary)
                                 .multilineTextAlignment(.center)
                         }
                         .padding(16)
@@ -207,7 +205,7 @@ struct LoginView: View {
                     }) {
                         Text(isSignUpMode ? "Already have an account? Sign in" : "New here? Create an account")
                             .font(theme.font(12, weight: .light))
-                            .foregroundStyle(theme.textSecondary)
+                            .foregroundStyle(.secondary)
                     }
                     .padding(.top, 4)
 
@@ -229,6 +227,7 @@ struct LoginView: View {
                 }
             }
         }
+        .themedSurface(theme)
         .sheet(isPresented: $showForgotPassword) {
             ForgotPasswordSheet(email: $resetEmail)
         }
@@ -255,15 +254,13 @@ private struct ForgotPasswordSheet: View {
 
     var body: some View {
         ZStack {
-            theme.background.ignoresSafeArea()
-
             VStack(spacing: 24) {
                 HStack {
                     Spacer()
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(theme.font(22, weight: .bold))
-                            .foregroundStyle(theme.textTertiary)
+                            .foregroundStyle(.tertiary)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -276,12 +273,12 @@ private struct ForgotPasswordSheet: View {
                         .foregroundStyle(theme.accent)
                     Text("Reset Password")
                         .font(theme.font(22, weight: .light))
-                        .foregroundStyle(theme.textPrimary)
+                        .foregroundStyle(.primary)
                 }
 
                 Text("Enter your account email and we'll send you a link to reset your password.")
                     .font(theme.font(13, weight: .light))
-                    .foregroundStyle(theme.textSecondary)
+                    .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 30)
 
@@ -289,7 +286,7 @@ private struct ForgotPasswordSheet: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .keyboardType(.emailAddress)
-                    .foregroundStyle(theme.textPrimary)
+                    .foregroundStyle(.primary)
                     .tint(theme.accent)
                     .padding(16)
                     .background(.ultraThinMaterial)
@@ -334,6 +331,7 @@ private struct ForgotPasswordSheet: View {
                 Spacer()
             }
         }
+        .themedSurface(theme)
     }
 
     private func sendReset() {

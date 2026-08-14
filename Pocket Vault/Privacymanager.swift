@@ -61,7 +61,7 @@ struct PrivacyRevealOverlay: View {
                     .font(theme.font(9, weight: .bold))
                     .tracking(2)
             }
-            .foregroundStyle(theme.textSecondary)
+            .foregroundStyle(.secondary)
             .padding(14)
             .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -89,7 +89,7 @@ struct PrivacyQuickToggleButton: View {
             }) {
                 Image(systemName: privacy.shouldMask ? "eye.slash.fill" : "eye.fill")
                     .font(theme.font(14, weight: .medium))
-                    .foregroundStyle(theme.textSecondary)
+                    .foregroundStyle(.secondary)
                     .frame(width: 36, height: 36)
                     .background(.ultraThinMaterial)
                     .clipShape(Circle())

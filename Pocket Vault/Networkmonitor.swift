@@ -45,7 +45,7 @@ struct OfflineBanner: View {
                 .font(theme.font(9, weight: .bold))
                 .tracking(1)
         }
-        .foregroundStyle(theme.textSecondary)
+        .foregroundStyle(.secondary)
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .background(.ultraThinMaterial)

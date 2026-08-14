@@ -1,6 +1,6 @@
 import Foundation
 import Combine
-import LinkKit // Add via SPM: https://github.com/plaid/plaid-link-ios-spm.git
+import LinkKit
 
 /// Drives the "Connect Bank" flow in the Budget tab: fetches a Link
 /// token from your Supabase proxy, launches Plaid Link's own hosted UI
