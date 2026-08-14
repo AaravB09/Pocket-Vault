@@ -1,0 +1,28 @@
+# Secrets — never commit
+**/Secrets.swift
+
+# Xcode
+**/*.xcodeproj/*
+!**/*.xcodeproj/project.pbxproj
+!**/*.xcodeproj/xcshareddata/
+**/*.xcworkspace/xcuserdata/
+**/xcuserdata/
+*.xcuserstate
+*.xcscmblueprint
+
+# Build products
+build/
+DerivedData/
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# CocoaPods (if used)
+Pods/
+
+# macOS
+.DS_Store

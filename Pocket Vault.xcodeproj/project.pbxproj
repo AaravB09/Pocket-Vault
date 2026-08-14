@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		414B50DA302140E60099ECF5 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = 414B50D9302140E60099ECF5 /* RevenueCatUI */; };
+		4164FFE8302075EC0014D33B /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 4164FFE7302075EC0014D33B /* RevenueCat */; };
+		4199C29D30295E44002E8F0A /* LinkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 4199C29C30295E44002E8F0A /* LinkKit */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		41BFA7EB3020430F00CF426A /* Pocket Vault.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Pocket Vault.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,16 +29,27 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4199C29D30295E44002E8F0A /* LinkKit in Frameworks */,
+				414B50DA302140E60099ECF5 /* RevenueCatUI in Frameworks */,
+				4164FFE8302075EC0014D33B /* RevenueCat in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		414B50D8302140E60099ECF5 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		41BFA7E23020430F00CF426A = {
 			isa = PBXGroup;
 			children = (
 				41BFA7ED3020430F00CF426A /* Pocket Vault */,
+				414B50D8302140E60099ECF5 /* Frameworks */,
 				41BFA7EC3020430F00CF426A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -65,6 +82,9 @@
 			);
 			name = "Pocket Vault";
 			packageProductDependencies = (
+				4164FFE7302075EC0014D33B /* RevenueCat */,
+				414B50D9302140E60099ECF5 /* RevenueCatUI */,
+				4199C29C30295E44002E8F0A /* LinkKit */,
 			);
 			productName = "Pocket Vault";
 			productReference = 41BFA7EB3020430F00CF426A /* Pocket Vault.app */;
@@ -94,6 +114,10 @@
 			);
 			mainGroup = 41BFA7E23020430F00CF426A;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				4164FFE4302075EC0014D33B /* XCRemoteSwiftPackageReference "purchases-ios" */,
+				4199C29B30295E44002E8F0A /* XCRemoteSwiftPackageReference "plaid-link-ios" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 41BFA7EC3020430F00CF426A /* Products */;
 			projectDirPath = "";
@@ -251,13 +275,16 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5P87W3895B;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Pocket-Vault-Info.plist";
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "Pocket Vault adds your goal's target date to your calendar so you don't lose track of it.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -282,13 +309,16 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 5P87W3895B;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Pocket-Vault-Info.plist";
+				INFOPLIST_KEY_NSCalendarsWriteOnlyAccessUsageDescription = "Pocket Vault adds your goal's target date to your calendar so you don't lose track of it.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -328,6 +358,43 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		4164FFE4302075EC0014D33B /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.83.0;
+			};
+		};
+		4199C29B30295E44002E8F0A /* XCRemoteSwiftPackageReference "plaid-link-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/plaid/plaid-link-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 7.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		414B50D9302140E60099ECF5 /* RevenueCatUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4164FFE4302075EC0014D33B /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCatUI;
+		};
+		4164FFE7302075EC0014D33B /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4164FFE4302075EC0014D33B /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCat;
+		};
+		4199C29C30295E44002E8F0A /* LinkKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4199C29B30295E44002E8F0A /* XCRemoteSwiftPackageReference "plaid-link-ios" */;
+			productName = LinkKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 41BFA7E33020430F00CF426A /* Project object */;
 }
