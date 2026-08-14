@@ -24,8 +24,6 @@ struct SharedBudgetView: View {
 
     private var content: some View {
         ZStack {
-            theme.background.ignoresSafeArea()
-
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
                     HStack {
@@ -80,6 +78,7 @@ struct SharedBudgetView: View {
                 }
             }
         }
+        .themedSurface(theme)
         .task {
             if let sharedID = goalStore.activeGoal?.sharedGoalID {
                 await sharedBudgetManager.loadShare(id: sharedID, accessToken: authManager.accessToken)

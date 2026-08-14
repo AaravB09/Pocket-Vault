@@ -19,14 +19,13 @@ struct FeedbackView: View {
 
     var body: some View {
         ZStack {
-            theme.background.ignoresSafeArea()
-
             if feedbackManager.didSubmitSuccessfully {
                 confirmationState
             } else {
                 formState
             }
         }
+        .themedSurface(theme)
     }
 
     private var formState: some View {

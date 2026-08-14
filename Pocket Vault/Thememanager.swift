@@ -283,16 +283,19 @@ struct ThemePickerSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            // No .foregroundStyle needed here at all — plain Text defaults
+            // to .primary, which themedSurface(_:) below has already mapped
+            // to theme.textPrimary for this whole subtree.
             Text("APPEARANCE")
                 .font(theme.font(9, weight: .bold))
                 .tracking(2)
-                .foregroundStyle(theme.textTertiary)
+                .foregroundStyle(.tertiary)
 
             VStack(alignment: .leading, spacing: 10) {
                 Text("ACCENT COLOR")
                     .font(theme.font(9, weight: .bold))
                     .tracking(1.5)
-                    .foregroundStyle(theme.textTertiary)
+                    .foregroundStyle(.tertiary)
 
                 HStack(spacing: 14) {
                     ForEach(AppColorTheme.allCases) { option in
@@ -304,6 +307,10 @@ struct ThemePickerSection: View {
                         }) {
                             ZStack {
                                 Circle().fill(option.accent).frame(width: 38, height: 38)
+                                // Selection ring still needs the exact resolved
+                                // color (it's animating an opacity, not just
+                                // "the primary text color"), so this one stays
+                                // as theme.textPrimary rather than .primary.
                                 Circle()
                                     .stroke(theme.textPrimary.opacity(option == theme.colorTheme ? 0.9 : 0), lineWidth: 2)
                                     .frame(width: 46, height: 46)
@@ -321,7 +328,7 @@ struct ThemePickerSection: View {
                 Text("APPEARANCE MODE")
                     .font(theme.font(9, weight: .bold))
                     .tracking(1.5)
-                    .foregroundStyle(theme.textTertiary)
+                    .foregroundStyle(.tertiary)
 
                 VStack(spacing: 8) {
                     ForEach(AppAppearanceMode.allCases) { mode in
@@ -331,7 +338,10 @@ struct ThemePickerSection: View {
                         }) {
                             HStack {
                                 Image(systemName: mode.icon).foregroundStyle(theme.accent).frame(width: 18)
-                                Text(mode.displayName).font(theme.font(13, weight: .medium)).foregroundStyle(theme.textPrimary)
+                                // No explicit foregroundStyle — falls back to
+                                // .primary automatically, which resolves to
+                                // theme.textPrimary via themedSurface(_:).
+                                Text(mode.displayName).font(theme.font(13, weight: .medium))
                                 Spacer()
                                 Image(systemName: mode == theme.appearanceMode ? "checkmark.circle.fill" : "circle")
                                     .foregroundStyle(mode == theme.appearanceMode ? theme.accent : theme.textTertiary)
@@ -350,5 +360,11 @@ struct ThemePickerSection: View {
         .clipShape(RoundedRectangle(cornerRadius: 20))
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
         .padding(.horizontal, 24)
+        // This section is embedded inside ProfileView, which already calls
+        // .themedSurface(theme) at its own root — so this nested call isn't
+        // strictly required here. It's included so ThemePickerSection also
+        // renders correctly if you ever preview or reuse it standalone,
+        // outside ProfileView's tree.
+        .themedSurface(theme, ignoresSafeArea: false)
     }
 }

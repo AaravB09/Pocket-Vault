@@ -24,8 +24,6 @@ struct AccountRequiredGateView: View {
 
     var body: some View {
         ZStack {
-            theme.background.ignoresSafeArea()
-
             VStack(spacing: 22) {
                 Spacer()
 
@@ -72,6 +70,7 @@ struct AccountRequiredGateView: View {
                 Spacer()
             }
         }
+        .themedSurface(theme)
         .sheet(isPresented: $showSignUp) {
             LoginView(hideGuestOption: true)
         }

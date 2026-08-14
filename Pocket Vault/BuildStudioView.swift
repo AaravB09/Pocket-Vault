@@ -47,8 +47,6 @@ struct BuildStudioView: View {
 
     var body: some View {
         ZStack {
-            theme.background.ignoresSafeArea()
-
             sculptureView
 
             VStack {
@@ -60,14 +58,14 @@ struct BuildStudioView: View {
 
                     Text(goalTitle.isEmpty ? "MODEL STAGE" : goalTitle.uppercased())
                         .font(theme.font(14, weight: .light))
-                        .foregroundStyle(theme.textPrimary.opacity(0.8))
+                        .foregroundStyle(.primary.opacity(0.8))
 
                     Text(currentSavings > 0
                          ? "\(unlockedCount) OF \(voxels.count) PIECES PLACED"
                          : "1 OF \(voxels.count) PIECES PLACED · STARTER PIECE")
                         .font(theme.font(9, weight: .semibold))
                         .tracking(2)
-                        .foregroundStyle(theme.textTertiary)
+                        .foregroundStyle(.tertiary)
                         .padding(.top, 2)
                 }
                 .padding(.top, 60)
@@ -89,7 +87,6 @@ struct BuildStudioView: View {
 
                         Text(completedModelName)
                             .font(theme.font(16, weight: .light))
-                            .foregroundStyle(theme.textPrimary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal, 30)
                     }
@@ -102,6 +99,7 @@ struct BuildStudioView: View {
                 }
             }
         }
+        .themedSurface(theme)
         .onChange(of: currentSavings) { _, _ in
             if unlockedCount > lastUnlockedCount {
                 UIImpactFeedbackGenerator(style: .rigid).impactOccurred()

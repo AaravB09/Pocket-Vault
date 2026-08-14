@@ -31,8 +31,6 @@ struct ProfileView: View {
 
     var body: some View {
         ZStack {
-            theme.background.ignoresSafeArea()
-
             ScrollView {
                 VStack(spacing: 26) {
                     HStack {
@@ -224,6 +222,7 @@ struct ProfileView: View {
                 }
             }
         }
+        .themedSurface(theme)
         .onAppear {
             displayName = leaderboardManager.myDisplayName
             profileImageData = UserDefaults.standard.data(forKey: profileImageKey)

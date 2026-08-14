@@ -81,26 +81,29 @@ struct AIChatView: View {
 
     var body: some View {
         ZStack {
-            theme.background.ignoresSafeArea()
-
             if !entitlementManager.isPro {
                 lockedState
             } else {
                 chatContent
             }
         }
+        // One call replaces the old `theme.background.ignoresSafeArea()` AND
+        // sets .primary/.secondary/.tertiary for this whole screen — see
+        // ThemedSurface.swift.
+        .themedSurface(theme)
     }
 
     private var lockedState: some View {
         VStack(spacing: 18) {
             Image(systemName: "lock.fill").font(theme.font(34, weight: .bold)).foregroundStyle(theme.accent)
+            // No foregroundStyle set — defaults to .primary, resolved to
+            // theme.textPrimary by themedSurface(_:) above.
             Text("ASK AI IS A PRO FEATURE")
                 .font(theme.font(12, weight: .bold))
                 .tracking(2.2)
-                .foregroundStyle(theme.textPrimary)
             Text("Chat with your savings assistant anytime — ask about pacing, trade-offs, or ways to hit your goal faster.")
                 .font(theme.font(13, weight: .regular))
-                .foregroundStyle(theme.textSecondary)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 30)
 
@@ -135,7 +138,7 @@ struct AIChatView: View {
                         if messages.isEmpty {
                             Text("Ask me anything about your savings — \u{201C}Am I on pace?\u{201D}, \u{201C}How do I save faster?\u{201D}, \u{201C}What if I skip a week?\u{201D}")
                                 .font(theme.font(13, weight: .light))
-                                .foregroundStyle(theme.textTertiary)
+                                .foregroundStyle(.tertiary)
                                 .padding(.horizontal, 24)
                                 .padding(.top, 24) // Added extra top padding to push initial prompt bubble lower
                         }
@@ -145,7 +148,7 @@ struct AIChatView: View {
                         if isSending {
                             HStack {
                                 ProgressView().tint(theme.accent)
-                                Text("Thinking…").font(theme.font(12)).foregroundStyle(theme.textTertiary)
+                                Text("Thinking…").font(theme.font(12)).foregroundStyle(.tertiary)
                             }
                             .padding(.horizontal, 24)
                         }
@@ -169,7 +172,7 @@ struct AIChatView: View {
             if !networkMonitor.isOnline {
                 Text("Ask AI needs a connection — your goal data is still all here, just can't chat about it right now.")
                     .font(theme.font(11))
-                    .foregroundStyle(theme.textTertiary)
+                    .foregroundStyle(.tertiary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
             }
@@ -179,12 +182,18 @@ struct AIChatView: View {
                     .padding(12)
                     .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
-                    .foregroundStyle(theme.textPrimary)
+                    // No explicit color — defaults to .primary, resolved to
+                    // theme.textPrimary by themedSurface(_:) on the screen root.
                     .disabled(!networkMonitor.isOnline)
 
                 Button(action: { Task { await send() } }) {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(theme.font(30))
+                        // Image doesn't participate in the .primary/.secondary/
+                        // .tertiary "free default" the way Text does, so this
+                        // one keeps an explicit color — theme.textTertiary
+                        // rather than .tertiary, since a conditional value
+                        // like this reads clearer as the concrete token.
                         .foregroundStyle(draft.trimmingCharacters(in: .whitespaces).isEmpty ? theme.textTertiary : theme.accent)
                 }
                 .disabled(draft.trimmingCharacters(in: .whitespaces).isEmpty || isSending || !networkMonitor.isOnline)

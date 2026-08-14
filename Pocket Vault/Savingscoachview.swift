@@ -96,8 +96,6 @@ struct SavingsCoachView: View {
 
     var body: some View {
         ZStack {
-            theme.background.ignoresSafeArea()
-
             ScrollView {
                 VStack(spacing: 26) {
                     HStack {
@@ -171,6 +169,7 @@ struct SavingsCoachView: View {
                 }
             }
         }
+        .themedSurface(theme)
     }
 
     private var planCard: some View {

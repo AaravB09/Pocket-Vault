@@ -17,8 +17,6 @@ struct GuestSavePromptView: View {
 
     var body: some View {
         ZStack {
-            theme.background.ignoresSafeArea()
-
             VStack(spacing: 22) {
                 Image(systemName: "exclamationmark.icloud.fill")
                     .font(theme.font(34, weight: .light))
@@ -68,6 +66,7 @@ struct GuestSavePromptView: View {
                 Spacer()
             }
         }
+        .themedSurface(theme)
         .sheet(isPresented: $showSignUp) {
             LoginView()
         }

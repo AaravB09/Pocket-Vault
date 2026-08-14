@@ -38,9 +38,6 @@ struct CalendarView: View {
 
     var body: some View {
         ZStack {
-            theme.background
-                .ignoresSafeArea()
-
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
                     // Header Title
@@ -52,7 +49,6 @@ struct CalendarView: View {
 
                         Text("SAVINGS CALENDAR")
                             .font(theme.font(18, weight: .light))
-                            .foregroundStyle(theme.textPrimary)
                     }
                     .padding(.top, 60)
 
@@ -66,12 +62,11 @@ struct CalendarView: View {
                                 Text("ACTIVE STREAK")
                                     .font(theme.font(8, weight: .bold))
                                     .tracking(2)
-                                    .foregroundStyle(theme.textTertiary)
+                                    .foregroundStyle(.tertiary)
                             }
 
                             Text("\(streakManager.currentStreak) DAYS")
                                 .font(theme.font(22, weight: .light))
-                                .foregroundStyle(theme.textPrimary)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 18)
@@ -87,12 +82,11 @@ struct CalendarView: View {
                                 Text("BEST STREAK")
                                     .font(theme.font(8, weight: .bold))
                                     .tracking(2)
-                                    .foregroundStyle(theme.textTertiary)
+                                    .foregroundStyle(.tertiary)
                             }
 
                             Text("\(streakManager.longestStreak) DAYS")
                                 .font(theme.font(22, weight: .light))
-                                .foregroundStyle(theme.textPrimary)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 18)
@@ -118,7 +112,7 @@ struct CalendarView: View {
                                     .frame(width: 6, height: 6)
                                 Text("DEPOSIT DAY")
                                     .font(theme.font(8, weight: .semibold))
-                                    .foregroundStyle(theme.textTertiary)
+                                    .foregroundStyle(.tertiary)
                             }
                         }
 
@@ -127,7 +121,7 @@ struct CalendarView: View {
                             ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
                                 Text(day)
                                     .font(theme.font(10, weight: .bold))
-                                    .foregroundStyle(theme.textTertiary)
+                                    .foregroundStyle(.tertiary)
                                     .frame(maxWidth: .infinity)
                             }
                         }
@@ -157,11 +151,10 @@ struct CalendarView: View {
                                 Text("TARGET GOAL")
                                     .font(theme.font(9, weight: .bold))
                                     .tracking(2)
-                                    .foregroundStyle(theme.textTertiary)
+                                    .foregroundStyle(.tertiary)
 
                                 Text(goalTitle.isEmpty ? "CURRENT GOAL" : goalTitle.uppercased())
                                     .font(theme.font(12, weight: .bold))
-                                    .foregroundStyle(theme.textPrimary)
                             }
                             Spacer()
 
@@ -173,7 +166,6 @@ struct CalendarView: View {
 
                                 Text(estimatedCompletionDate)
                                     .font(theme.font(12, weight: .bold))
-                                    .foregroundStyle(theme.textPrimary)
                             }
                         }
 
@@ -186,7 +178,7 @@ struct CalendarView: View {
                             Text("REMAINING TO SAVE")
                                 .font(theme.font(9, weight: .bold))
                                 .tracking(2)
-                                .foregroundStyle(theme.textTertiary)
+                                .foregroundStyle(.tertiary)
 
                             Spacer()
 
@@ -243,6 +235,9 @@ struct CalendarView: View {
                 }
             }
         }
+        // Sets the background and maps .primary/.secondary/.tertiary to
+        // theme.textPrimary/Secondary/Tertiary for this whole screen.
+        .themedSurface(theme)
     }
 
     // MARK: - Calendar Helpers
@@ -304,7 +299,7 @@ struct DayCell: View {
                     .frame(width: 30, height: 30)
             } else if isToday {
                 Circle()
-                    .stroke(theme.textPrimary.opacity(0.4), lineWidth: 1)
+                    .stroke(.primary.opacity(0.4), lineWidth: 1)
                     .frame(width: 30, height: 30)
             }
 

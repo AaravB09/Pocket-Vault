@@ -68,9 +68,6 @@ struct SetupGoalView: View {
 
     var body: some View {
         ZStack {
-            theme.background
-                .ignoresSafeArea()
-
             ScrollView {
                 VStack(spacing: 28) {
                     VStack(spacing: 6) {
@@ -201,6 +198,7 @@ struct SetupGoalView: View {
                 }
             }
         }
+        .themedSurface(theme)
         .onAppear {
             if !goalTitle.isEmpty, presets.contains(where: { $0.name == goalTitle }) {
                 selectedPresetName = goalTitle

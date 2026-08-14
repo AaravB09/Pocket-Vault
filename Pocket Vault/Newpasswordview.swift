@@ -35,8 +35,6 @@ struct NewPasswordView: View {
 
     var body: some View {
         ZStack {
-            theme.background.ignoresSafeArea()
-
             ScrollView {
                 VStack(spacing: 24) {
                     VStack(spacing: 6) {
@@ -151,6 +149,7 @@ struct NewPasswordView: View {
                 }
             }
         }
+        .themedSurface(theme)
         .interactiveDismissDisabled(true)
     }
 

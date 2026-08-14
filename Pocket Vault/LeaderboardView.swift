@@ -27,8 +27,6 @@ struct LeaderboardView: View {
 
     private var content: some View {
         ZStack {
-            theme.background.ignoresSafeArea()
-
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
                     HStack {
@@ -189,6 +187,7 @@ struct LeaderboardView: View {
                 }
             }
         }
+        .themedSurface(theme)
         .task {
             await leaderboardManager.syncMyStreak(currentStreak: streakManager.currentStreak, longestStreak: streakManager.longestStreak, identityID: identityID, accessToken: authManager.accessToken)
             await leaderboardManager.fetchLeaderboard(identityID: identityID, accessToken: authManager.accessToken)
