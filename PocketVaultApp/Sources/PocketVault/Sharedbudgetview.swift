@@ -1,0 +1,346 @@
+import SwiftUI
+
+struct SharedBudgetView: View {
+    @EnvironmentObject var sharedBudgetManager: SharedBudgetManager
+    @EnvironmentObject var authManager: AuthManager
+    @EnvironmentObject var leaderboardManager: LeaderboardManager
+    @EnvironmentObject var theme: ThemeManager
+    @ObservedObject var goalStore: GoalStore
+    @Environment(\.dismiss) var dismiss
+
+    /// Set when this view is shown as its own permanent tab (see
+    /// MainTabView) rather than pushed as a sheet from LeaderboardView.
+    /// Leaving the shared budget then routes back to the VAULT tab
+    /// instead of calling `dismiss()`, which has nothing to dismiss in
+    /// that context — and the tab bar hides this tab itself once
+    /// there's no partner left, so there's nowhere else useful to land.
+    var selectedTab: Binding<Int>? = nil
+
+    @State private var joinCodeInput: String = ""
+    @State private var showCopiedToast: Bool = false
+    @State private var showLeaveConfirm: Bool = false
+
+    private var myID: String { authManager.userID ?? leaderboardManager.myUserID }
+    private var myName: String { leaderboardManager.myDisplayName }
+
+    var body: some View {
+        if authManager.isGuest {
+            AccountRequiredGateView(featureName: "Shared Budget")
+        } else {
+            content
+        }
+    }
+
+    private var content: some View {
+        ZStack {
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 24) {
+                    if selectedTab == nil {
+                        HStack {
+                            Spacer()
+                            Button(action: { dismiss() }) {
+                                Image(systemName: "xmark.circle.fill")
+                                    .font(theme.font(22, weight: .bold))
+                                    .foregroundStyle(theme.textTertiary)
+                            }
+                        }
+                        .padding(.horizontal, Layout.pageMargin)
+                        .padding(.top, 20)
+                    } else {
+                        Color.clear.frame(height: 8)
+                    }
+
+                    VStack(spacing: 6) {
+                        SectionLabel("Shared budget")
+                        Text("Save Together")
+                            .font(theme.font(22, weight: .light))
+                            .foregroundStyle(theme.textPrimary)
+                    }
+
+                    if let goal = goalStore.activeGoal, let sharedID = goal.sharedGoalID {
+                        sharedGoalCard(goal: goal, sharedID: sharedID)
+                    } else if let goal = goalStore.activeGoal {
+                        shareThisGoalCard(goal: goal)
+                    } else {
+                        Text("Create a goal first, then come back to share it.")
+                            .font(theme.font(13, weight: .light))
+                            .foregroundStyle(theme.textTertiary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, Layout.pageMargin)
+                    }
+
+                    joinCard
+
+                    if let errorMessage = sharedBudgetManager.errorMessage {
+                        Text(errorMessage)
+                            .font(theme.font(11))
+                            .foregroundStyle(theme.danger.opacity(0.9))
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, Layout.pageMargin)
+                    }
+
+                    Spacer(minLength: 40)
+                }
+            }
+            .refreshable {
+                if let sharedID = goalStore.activeGoal?.sharedGoalID {
+                    await sharedBudgetManager.loadShare(id: sharedID, accessToken: authManager.accessToken)
+                }
+            }
+        }
+        .themedSurface(theme)
+        .task {
+            if let sharedID = goalStore.activeGoal?.sharedGoalID {
+                await sharedBudgetManager.loadShare(id: sharedID, accessToken: authManager.accessToken)
+            }
+        }
+    }
+
+    // MARK: - Active goal isn't shared yet
+    private func shareThisGoalCard(goal: Goal) -> some View {
+        VStack(spacing: 14) {
+            Image(systemName: "person.2.fill")
+                .font(theme.font(26, weight: .light))
+                .foregroundStyle(theme.accent)
+
+            Text("Share “\(goal.title)” with a partner")
+                .font(theme.font(14, weight: .light))
+                .foregroundStyle(theme.textPrimary.opacity(0.7))
+                .multilineTextAlignment(.center)
+
+            Text("You'll both see every deposit and how close you are together.")
+                .font(theme.font(12, weight: .light))
+                .foregroundStyle(theme.textTertiary)
+                .multilineTextAlignment(.center)
+
+            Button(action: {
+                Task {
+                    if let record = await sharedBudgetManager.createShare(
+                        goalTitle: goal.title,
+                        targetAmount: goal.targetAmount,
+                        ownerID: myID,
+                        ownerName: myName,
+                        accessToken: authManager.accessToken
+                    ) {
+                        goalStore.mutateActive { $0.sharedGoalID = record.id }
+                        await sharedBudgetManager.loadShare(id: record.id, accessToken: authManager.accessToken)
+                    }
+                }
+            }) {
+                HStack {
+                    if sharedBudgetManager.isLoading { ProgressView().tint(theme.onAccent) }
+                    Text(sharedBudgetManager.isLoading ? "Please wait…" : "Share this goal")
+                }
+            }
+            .buttonStyle(.primaryCTA(theme))
+            .disabled(sharedBudgetManager.isLoading)
+        }
+        .padding(Layout.cardPadding)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: Layout.cardRadius))
+        .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1))
+        .padding(.horizontal, Layout.pageMargin)
+    }
+
+    // MARK: - Already shared: split-avatar card
+    private func sharedGoalCard(goal: Goal, sharedID: String) -> some View {
+        let mine = sharedBudgetManager.contributed(by: myID)
+        let partnerID = sharedBudgetManager.share?.partner_id
+        let partnerAmount = partnerID.map { sharedBudgetManager.contributed(by: $0) } ?? 0
+        let partnerName = sharedBudgetManager.share?.partner_name ?? "Waiting for partner"
+        let combined = mine + partnerAmount
+        let progress = min(max(combined / max(goal.targetAmount, 1), 0), 1)
+
+        return VStack(spacing: 26) {
+            HStack(spacing: 0) {
+                contributorAvatar(initial: "Y", label: "You", amount: mine)
+                Image(systemName: "arrow.left.arrow.right")
+                    .font(theme.font(12))
+                    .foregroundStyle(theme.accent.opacity(0.6))
+                    .padding(.horizontal, 6)
+                contributorAvatar(
+                    initial: String(partnerName.prefix(1)).uppercased(),
+                    label: partnerName,
+                    amount: partnerAmount,
+                    isPending: partnerID == nil
+                )
+            }
+
+            VStack(spacing: 10) {
+                GeometryReader { geo in
+                    ZStack(alignment: .leading) {
+                        Rectangle().fill(theme.cardStroke)
+                        Rectangle().fill(theme.accent).frame(width: geo.size.width * CGFloat(progress))
+                    }
+                }
+                .frame(height: 4)
+                .clipShape(Capsule())
+
+                HStack {
+                    Text("$\(Int(combined)) combined")
+                        .font(theme.font(11, weight: .semibold))
+                        .foregroundStyle(theme.textSecondary)
+                    Spacer()
+                    Text("of $\(Int(goal.targetAmount))")
+                        .font(theme.font(11, weight: .semibold))
+                        .foregroundStyle(theme.textSecondary)
+                }
+            }
+
+            if let code = sharedBudgetManager.share?.share_code, partnerID == nil {
+                Rectangle().fill(theme.hairline).frame(height: 1)
+                VStack(spacing: 8) {
+                    SectionLabel("Share code")
+                    HStack(spacing: 8) {
+                        Text(code)
+                            .font(theme.font(20, weight: .semibold))
+                            .tracking(3)
+                            .foregroundStyle(theme.textPrimary)
+                        Button(action: {
+                            UIPasteboard.general.string = code
+                            showCopiedToast = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { showCopiedToast = false }
+                        }) {
+                            Image(systemName: "doc.on.doc").foregroundStyle(theme.accent)
+                        }
+                    }
+                    Text(showCopiedToast ? "Copied" : "Send this to your partner")
+                        .font(theme.font(11))
+                        .foregroundStyle(showCopiedToast ? theme.accent : theme.textTertiary)
+                }
+            }
+
+            if !sharedBudgetManager.deposits.isEmpty {
+                Rectangle().fill(theme.hairline).frame(height: 1)
+                VStack(alignment: .leading, spacing: 14) {
+                    SectionLabel("Recent deposits")
+
+                    VStack(spacing: 10) {
+                        ForEach(sharedBudgetManager.deposits.prefix(6)) { deposit in
+                            HStack {
+                                Text(deposit.contributor_id == myID ? "You" : deposit.contributor_name)
+                                    .font(theme.font(12, weight: .light))
+                                    .foregroundStyle(theme.textPrimary.opacity(0.7))
+                                Spacer()
+                                Text("+$\(Int(deposit.amount))")
+                                    .font(theme.font(12, weight: .semibold))
+                                    .foregroundStyle(theme.accent)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Rectangle().fill(theme.hairline).frame(height: 1)
+
+            Button(role: .destructive, action: { showLeaveConfirm = true }) {
+                Text("Leave this shared budget")
+                    .font(theme.font(13, weight: .semibold))
+                    .foregroundStyle(theme.danger.opacity(0.9))
+            }
+            .disabled(sharedBudgetManager.isLoading)
+        }
+        .padding(Layout.cardPadding)
+        .background(.ultraThinMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: Layout.cardRadius))
+        .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1))
+        .padding(.horizontal, Layout.pageMargin)
+        .confirmationDialog(
+            isOwnerOfActiveShare ? "Leave and end this shared budget?" : "Leave this shared budget?",
+            isPresented: $showLeaveConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Leave", role: .destructive) { leaveSharedBudget(sharedID: sharedID) }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text(isOwnerOfActiveShare
+                ? "Since it's your goal, this ends the shared budget for both of you. Your partner will lose access next time they refresh."
+                : "You'll stop seeing combined progress and deposits. \(sharedBudgetManager.share?.owner_name ?? "The owner") can invite someone else to your spot with the same code.")
+        }
+    }
+
+    private var isOwnerOfActiveShare: Bool {
+        sharedBudgetManager.share?.owner_id == myID
+    }
+
+    private func leaveSharedBudget(sharedID: String) {
+        Task {
+            let success = await sharedBudgetManager.leaveShare(sharedGoalID: sharedID, accessToken: authManager.accessToken)
+            if success {
+                goalStore.mutateActive { $0.sharedGoalID = nil }
+                if let selectedTab {
+                    selectedTab.wrappedValue = 0
+                } else {
+                    dismiss()
+                }
+            }
+        }
+    }
+
+    private func contributorAvatar(initial: String, label: String, amount: Double, isPending: Bool = false) -> some View {
+        VStack(spacing: 8) {
+            ZStack {
+                Circle()
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 64, height: 64)
+                Circle()
+                    .stroke(theme.accent.opacity(isPending ? 0.2 : 0.6), lineWidth: 1.5)
+                    .frame(width: 64, height: 64)
+                Text(initial)
+                    .font(theme.font(22, weight: .light))
+                    .foregroundStyle(isPending ? theme.textTertiary : theme.textPrimary)
+            }
+            Text(label)
+                .font(theme.font(11, weight: .semibold))
+                .foregroundStyle(theme.textSecondary)
+                .lineLimit(1)
+            Text(isPending ? "—" : "$\(Int(amount))")
+                .font(theme.font(15, weight: .semibold))
+                .foregroundStyle(theme.accent)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Join someone else's shared budget
+    private var joinCard: some View {
+        VStack(spacing: 12) {
+            SectionLabel("Join a shared budget")
+
+            HStack(spacing: 10) {
+                TextField("Enter their code", text: $joinCodeInput)
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+                    .padding(14)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .foregroundStyle(theme.textPrimary)
+
+                Button(action: {
+                    Task {
+                        if let record = await sharedBudgetManager.joinShare(code: joinCodeInput, partnerName: myName, accessToken: authManager.accessToken) {
+                            goalStore.addGoal(
+                                title: record.goal_title,
+                                kindRaw: GoalKind.custom.rawValue,
+                                targetAmount: record.target_amount,
+                                targetDate: Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
+                            )
+                            goalStore.mutateActive { $0.sharedGoalID = record.id }
+                            await sharedBudgetManager.loadShare(id: record.id, accessToken: authManager.accessToken)
+                            joinCodeInput = ""
+                        }
+                    }
+                }) {
+                    Text("Join")
+                        .font(theme.font(14, weight: .semibold))
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                        .background(theme.accent)
+                        .foregroundColor(theme.onAccent)
+                        .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius))
+                }
+                .disabled(joinCodeInput.trimmingCharacters(in: .whitespaces).isEmpty || sharedBudgetManager.isLoading)
+            }
+        }
+        .padding(.horizontal, Layout.pageMargin)
+    }
+}

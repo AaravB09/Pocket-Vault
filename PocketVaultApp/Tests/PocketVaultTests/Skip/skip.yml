@@ -1,0 +1,4 @@
+# Skip configuration for PocketVaultTests module
+
+#build:
+#  contents:
