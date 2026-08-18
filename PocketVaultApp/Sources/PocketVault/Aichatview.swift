@@ -87,10 +87,8 @@ struct AIChatView: View {
                 chatContent
             }
         }
-        // One call replaces the old `theme.background.ignoresSafeArea()` AND
-        // sets .primary/.secondary/.tertiary for this whole screen — see
-        // ThemedSurface.swift.
-        .themedSurface(theme)
+        // FIX: Replaced `theme` with the required boolean argument label
+        .themedSurface(ignoresSafeArea: true)
     }
 
     private var lockedState: some View {
@@ -138,7 +136,7 @@ struct AIChatView: View {
                         if messages.isEmpty {
                             Text("Ask me anything about your savings — \u{201C}Am I on pace?\u{201D}, \u{201C}How do I save faster?\u{201D}, \u{201C}What if I skip a week?\u{201D}")
                                 .font(theme.font(13, weight: .light))
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(Color.gray.opacity(0.5))
                                 .padding(.horizontal, 24)
                                 .padding(.top, 24) // Added extra top padding to push initial prompt bubble lower
                         }
@@ -148,14 +146,14 @@ struct AIChatView: View {
                         if isSending {
                             HStack {
                                 ProgressView().tint(theme.accent)
-                                Text("Thinking…").font(theme.font(12)).foregroundStyle(.tertiary)
+                                Text("Thinking…").font(theme.font(12)).foregroundStyle(Color.gray.opacity(0.5))
                             }
                             .padding(.horizontal, 24)
                         }
                     }
                     .padding(.vertical, 12)
                 }
-                .onChange(of: messages) { _, _ in
+                .onChange(of: messages) { _ in
                     if let last = messages.last {
                         withAnimation { proxy.scrollTo(last.id, anchor: .bottom) }
                     }
@@ -172,7 +170,7 @@ struct AIChatView: View {
             if !networkMonitor.isOnline {
                 Text("Ask AI needs a connection — your goal data is still all here, just can't chat about it right now.")
                     .font(theme.font(11))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(Color.gray.opacity(0.5))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
             }
@@ -180,7 +178,11 @@ struct AIChatView: View {
             HStack(spacing: 10) {
                 TextField("Ask a question…", text: $draft, axis: .vertical)
                     .padding(12)
+                    #if !SKIP
                     .background(.ultraThinMaterial)
+                    #else
+                    .background(theme.background.opacity(0.8))
+                    #endif
                     .clipShape(RoundedRectangle(cornerRadius: 14))
                     // No explicit color — defaults to .primary, resolved to
                     // theme.textPrimary by themedSurface(_:) on the screen root.

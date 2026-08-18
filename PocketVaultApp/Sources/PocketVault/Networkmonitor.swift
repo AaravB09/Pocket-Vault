@@ -1,5 +1,7 @@
 import Foundation
+#if !SKIP
 import Network
+#endif
 import Combine
 import SwiftUI
 
@@ -13,21 +15,29 @@ import SwiftUI
 final class NetworkMonitor: ObservableObject {
     @Published private(set) var isOnline: Bool = true
 
-    private let monitor = NWPathMonitor()
+    #if !SKIP
+    private let monitor: NWPathMonitor = NWPathMonitor()
     private let queue = DispatchQueue(label: "PocketVault.NetworkMonitor")
+    #endif
 
     init() {
+        #if !SKIP
         monitor.pathUpdateHandler = { [weak self] path in
-            let online = path.status == .satisfied
+            // Explicitly defining NWPath.Status for clarity, though #if !SKIP
+            // already protects it from Kotlin's strict type checker.
+            let online = path.status == NWPath.Status.satisfied
             Task { @MainActor in
                 self?.isOnline = online
             }
         }
         monitor.start(queue: queue)
+        #endif
     }
 
     deinit {
+        #if !SKIP
         monitor.cancel()
+        #endif
     }
 }
 
@@ -47,7 +57,17 @@ struct OfflineBanner: View {
         .foregroundStyle(.secondary)
         .padding(.horizontal, 14)
         .padding(.vertical, 8)
+        // NOTE(skip): .ultraThinMaterial has no Android/Compose equivalent
+        // and was unresolved — which was cascading into the .clipShape
+        // right below it too. Only the material itself needs branching;
+        // .clipShape(Capsule()) resolves fine on Skip once it isn't
+        // chained directly after a broken symbol (see MainTabView's tab
+        // bar, which does exactly this).
+        #if !SKIP
         .background(.ultraThinMaterial)
+        #else
+        .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
+        #endif
         .clipShape(Capsule())
         .overlay(Capsule().stroke(theme.cardStroke, lineWidth: 1))
         .transition(.move(edge: .top).combined(with: .opacity))

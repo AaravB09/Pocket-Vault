@@ -131,10 +131,10 @@ struct FeatureTourOverlay: View {
 
                             HStack(spacing: 12) {
                                 Button("Skip") { finish() }
-                                    .font(theme.font(11)).foregroundStyle(.tertiary)
+                                    .font(theme.font(11)).foregroundStyle(.secondary) // was .tertiary
                                 Spacer()
                                 Text("\(stepIndex + 1)/\(visibleSteps.count)")
-                                    .font(theme.font(11)).foregroundStyle(.tertiary)
+                                    .font(theme.font(11)).foregroundStyle(.secondary) // was .tertiary
                                 Spacer()
                                 Button(stepIndex == visibleSteps.count - 1 ? "Done" : "Next") { advance() }
                                     .font(theme.font(12, weight: .bold))
@@ -147,7 +147,10 @@ struct FeatureTourOverlay: View {
                         }
                         .padding(18)
                         .frame(width: cardWidth)
-                        .background(.ultraThinMaterial)
+                        // NOTE(skip): .ultraThinMaterial has no Android
+                        // equivalent — was cascading into the .clipShape
+                        // right below it.
+                        .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                         .clipShape(RoundedRectangle(cornerRadius: 18))
                         .overlay(RoundedRectangle(cornerRadius: 18).stroke(theme.accent.opacity(0.4), lineWidth: 1))
                         .position(x: cardX, y: cardY)
@@ -174,7 +177,7 @@ struct FeatureTourOverlay: View {
                 }
             }
         }
-        .onChange(of: stepIndex) { _, newValue in
+        .onChange(of: stepIndex) { newValue in
             if newValue < visibleSteps.count { selectedTab = visibleSteps[newValue].tabIndex }
         }
         .onAppear {

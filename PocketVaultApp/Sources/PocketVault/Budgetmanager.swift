@@ -80,7 +80,7 @@ final class BudgetManager: ObservableObject {
         limitKey = "\(namespace)_pv_budgetLimit_v1"
         transactionsKey = "\(namespace)_pv_budgetTransactions_v1"
 
-        monthlyLimit = defaults.object(forKey: limitKey) != nil ? defaults.double(forKey: limitKey) : 500
+        monthlyLimit = defaults.object(forKey: limitKey) != nil ? defaults.double(forKey: limitKey) : 500.0
 
         if let data = defaults.data(forKey: transactionsKey),
            let decoded = try? JSONDecoder().decode([SpendTransaction].self, from: data) {
@@ -94,12 +94,12 @@ final class BudgetManager: ObservableObject {
             .sorted { $0.date > $1.date }
     }
 
-    var totalSpentThisMonth: Double { transactionsThisMonth.reduce(0) { $0 + $1.amount } }
-    var remaining: Double { max(monthlyLimit - totalSpentThisMonth, 0) }
-    var percentUsed: Double { monthlyLimit > 0 ? min(totalSpentThisMonth / monthlyLimit, 1.5) : 0 }
+    var totalSpentThisMonth: Double { transactionsThisMonth.reduce(0.0) { $0 + $1.amount } }
+    var remaining: Double { max(monthlyLimit - totalSpentThisMonth, 0.0) }
+    var percentUsed: Double { monthlyLimit > 0.0 ? min(totalSpentThisMonth / monthlyLimit, 1.5) : 0.0 }
 
     var status: BudgetStatus {
-        guard monthlyLimit > 0 else { return .onTrack }
+        guard monthlyLimit > 0.0 else { return .onTrack }
         let ratio = totalSpentThisMonth / monthlyLimit
         if ratio >= 1.0 { return .over }
         if ratio >= 0.8 { return .approaching }
@@ -107,15 +107,15 @@ final class BudgetManager: ObservableObject {
     }
 
     func totalSpent(in category: SpendCategory) -> Double {
-        transactionsThisMonth.filter { $0.category == category }.reduce(0) { $0 + $1.amount }
+        transactionsThisMonth.filter { $0.category == category }.reduce(0.0) { $0 + $1.amount }
     }
 
     var transactionsByDay: [(date: Date, items: [SpendTransaction])] {
-        var grouped: [Date: [SpendTransaction]] = [:]
+        var grouped = [Date: [SpendTransaction]]()
         
         for transaction in transactionsThisMonth {
             let day = calendar.startOfDay(for: transaction.date)
-            grouped[day, default: []].append(transaction)
+            grouped[day, default: [SpendTransaction]()].append(transaction)
         }
         
         return grouped.keys.sorted(by: >).map { day in
@@ -126,7 +126,7 @@ final class BudgetManager: ObservableObject {
     // MARK: - Manual entry
 
     func addTransaction(amount: Double, category: SpendCategory, note: String, date: Date = Date()) {
-        guard amount > 0 else { return }
+        guard amount > 0.0 else { return }
         transactions.append(SpendTransaction(amount: amount, category: category, note: note, date: date))
         evaluateThresholdChange()
     }
@@ -137,7 +137,7 @@ final class BudgetManager: ObservableObject {
     }
 
     func setLimit(_ newLimit: Double) {
-        guard newLimit >= 0 else { return }
+        guard newLimit >= 0.0 else { return }
         monthlyLimit = newLimit
         evaluateThresholdChange()
     }

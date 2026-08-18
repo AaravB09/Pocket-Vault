@@ -127,13 +127,24 @@ struct SavingsCoachView: View {
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal, 30)
 
-                            DatePicker("Target date", selection: $targetDate, in: Date()..., displayedComponents: .date)
-                                .datePickerStyle(.graphical)
+                            // Fix: Explicitly typing `DatePickerComponents.date`
+                            DatePicker("Target date", selection: $targetDate, in: Date()...Date.distantFuture, displayedComponents: DatePickerComponents.date)
+                                .datePickerStyle(.compact)
                                 .tint(theme.accent)
                                 .colorScheme(theme.isLight ? .light : .dark)
                                 .padding(16)
+                                // NOTE(skip): `.ultraThinMaterial` and `.clipShape`
+                                // aren't resolved by Skip's SwiftUI shim — iOS keeps
+                                // the real material + shape clip, Android gets a
+                                // plain tinted background + `.cornerRadius`, same
+                                // pattern used everywhere else in the app.
+                                #if !SKIP
                                 .background(.ultraThinMaterial)
                                 .clipShape(RoundedRectangle(cornerRadius: 16))
+                                #else
+                                .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                                .cornerRadius(16)
+                                #endif
                                 .padding(.horizontal, 24)
 
                             Button(action: { Task { await requestPlan() } }) {
@@ -147,7 +158,14 @@ struct SavingsCoachView: View {
                                 .padding(.vertical, 19)
                                 .background(theme.accent)
                                 .foregroundColor(theme.onAccent)
+                                // NOTE(skip): background here is already
+                                // theme-agnostic, but `.clipShape` itself is
+                                // still unresolved under Skip.
+                                #if !SKIP
                                 .clipShape(Capsule())
+                                #else
+                                .cornerRadius(100)
+                                #endif
                                 .shadow(color: theme.accent.opacity(0.5), radius: 18, y: 8)
                             }
                             .disabled(isLoading)
@@ -169,7 +187,7 @@ struct SavingsCoachView: View {
                 }
             }
         }
-        .themedSurface(theme)
+        .themedSurface(ignoresSafeArea: true)
     }
 
     private var planCard: some View {
@@ -199,13 +217,25 @@ struct SavingsCoachView: View {
                     .padding(.vertical, 16)
                     .background(theme.textPrimary)
                     .foregroundColor(theme.background)
+                    // NOTE(skip): same clipShape-only fix as the
+                    // GENERATE MY PLAN button above — background is
+                    // already theme-agnostic.
+                    #if !SKIP
                     .clipShape(Capsule())
+                    #else
+                    .cornerRadius(100)
+                    #endif
             }
             .padding(.top, 8)
         }
         .padding(20)
+        #if !SKIP
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 20))
+        #else
+        .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+        .cornerRadius(20)
+        #endif
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
         .padding(.horizontal, 24)
     }

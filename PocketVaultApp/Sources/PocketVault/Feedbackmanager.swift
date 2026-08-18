@@ -1,5 +1,7 @@
 import Foundation
+#if !SKIP
 import UIKit
+#endif
 import Combine
 
 /// Backs the in-app Feedback sheet. Same Supabase project and REST
@@ -45,14 +47,24 @@ final class FeedbackManager: ObservableObject {
         errorMessage = nil
         defer { isSubmitting = false }
 
+        // UIDevice is UIKit-only, so it's not available under Skip —
+        // Android just reports itself plainly instead.
+        #if !SKIP
+        let osVersion = UIDevice.current.systemVersion
+        let deviceModel = UIDevice.current.model
+        #else
+        let osVersion = "Android"
+        let deviceModel = "Android"
+        #endif
+
         let payload: [String: Any?] = [
             "user_id": userID,
             "display_name": displayName,
             "message": trimmed,
             "app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String,
             "build_number": Bundle.main.infoDictionary?["CFBundleVersion"] as? String,
-            "ios_version": UIDevice.current.systemVersion,
-            "device_model": UIDevice.current.model
+            "ios_version": osVersion,
+            "device_model": deviceModel
         ]
         guard let body = try? JSONSerialization.data(withJSONObject: payload.compactMapValues { $0 }) else {
             errorMessage = "Couldn't prepare that feedback. Try again."

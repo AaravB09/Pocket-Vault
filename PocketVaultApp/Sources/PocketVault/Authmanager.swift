@@ -1,4 +1,10 @@
 import Foundation
+// NOTE(skip): Combine must NOT be guarded by #if !SKIP. Skip provides its
+// own Combine-compatible shim that ObservableObject/@Published transpile
+// against on Android; guarding it out here was making ObservableObject
+// (and the auto-synthesized ObservableObjectPublisher for objectWillChange)
+// unresolved on the Skip build. RevenueCat has no Android equivalent, so
+// it correctly stays guarded on its own.
 import Combine
 #if !SKIP
 import RevenueCat
@@ -39,11 +45,10 @@ private struct SupabaseAuthError: Codable {
 /// each namespace is its own isolated bucket:
 ///   - Authenticated:  "user_<supabase user id>"
 ///   - Guest:          "guest_<random session id>", regenerated every
-///                      time someone taps "Continue as Guest" fresh (a
-///                      real incognito start), but kept stable across
-///                      an app relaunch that happens *while still in*
-///                      that same guest session so they don't lose
-///                      progress just from backgrounding the app.
+///                     time someone taps "Continue as Guest" fresh (a real incognito start), but kept stable across
+///                     an app relaunch that happens *while still in*
+///                     that same guest session so they don't lose
+///                     progress just from backgrounding the app.
 /// If a guest signs up or signs in mid-session, their in-progress guest
 /// data is migrated onto the new account's namespace (see
 /// `migrateNamespace`) instead of being silently orphaned. If a guest
@@ -96,6 +101,15 @@ final class AuthManager: ObservableObject {
         isGuest = defaults.bool(forKey: guestKey)
 
         if let storedID = defaults.string(forKey: userIDKey) {
+            // A cached authenticated user always wins over any stale
+            // guest flag left behind by an interrupted transition (e.g.
+            // a crash between completeSignIn's userIDKey write and its
+            // guestKey write). Without this, isAuthenticated and isGuest
+            // could both be true at once, which downstream views don't
+            // expect.
+            isGuest = false
+            defaults.set(false, forKey: guestKey)
+
             // Optimistically show the app immediately using the cached
             // session — avoids a login-screen flash on every launch —
             // then verify the token is still valid against Supabase in
@@ -203,7 +217,10 @@ final class AuthManager: ObservableObject {
         userEmail = nil
         errorMessage = nil
         storageNamespace = Self.guestNamespace
+
+        #if !SKIP
         _ = try? await Purchases.shared.logOut()
+        #endif
     }
 
     private func performAuth(path: String, email: String, password: String) async {
@@ -216,7 +233,7 @@ final class AuthManager: ObservableObject {
         req.httpMethod = "POST"
         req.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
         req.setValue("application/json", forHTTPHeaderField: "content-type")
-        req.httpBody = try? JSONSerialization.data(withJSONObject: ["email": email, "password": password])
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["email": email, "password": password] as [String: Any])
 
         do {
             let (data, response) = try await URLSession.shared.data(for: req)
@@ -228,9 +245,14 @@ final class AuthManager: ObservableObject {
                 print("Supabase auth error [\(http.statusCode)]:", String(data: data, encoding: .utf8) ?? "no body")
                 let err = try? JSONDecoder().decode(SupabaseAuthError.self, from: data)
                 let rawMessage = err?.error_description ?? err?.msg ?? err?.error ?? ""
-                if rawMessage.localizedCaseInsensitiveContains("already registered")
-                    || rawMessage.localizedCaseInsensitiveContains("already exists")
-                    || rawMessage.localizedCaseInsensitiveContains("user_already_exists") {
+                // NOTE(skip): localizedCaseInsensitiveContains isn't
+                // implemented in Skip's Foundation shim — unresolved
+                // reference. A plain lowercased() comparison does the
+                // same job and works on both platforms.
+                let lowerMessage = rawMessage.lowercased()
+                if lowerMessage.contains("already registered")
+                    || lowerMessage.contains("already exists")
+                    || lowerMessage.contains("user_already_exists") {
                     errorMessage = "That email is already in use — try signing in instead."
                 } else if !rawMessage.isEmpty {
                     errorMessage = rawMessage
@@ -270,7 +292,7 @@ final class AuthManager: ObservableObject {
         guard let fragment = url.fragment else { return }
         var fragmentComponents = URLComponents()
         fragmentComponents.query = fragment
-        let items = fragmentComponents.queryItems ?? []
+        let items: [URLQueryItem] = fragmentComponents.queryItems ?? [URLQueryItem]()
 
         guard let accessToken = items.first(where: { $0.name == "access_token" })?.value else {
             errorMessage = "That confirmation link looks invalid or expired."
@@ -325,7 +347,7 @@ final class AuthManager: ObservableObject {
         req.httpMethod = "POST"
         req.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
         req.setValue("application/json", forHTTPHeaderField: "content-type")
-        req.httpBody = try? JSONSerialization.data(withJSONObject: ["email": email])
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["email": email] as [String: Any])
 
         let (data, response) = try await URLSession.shared.data(for: req)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
@@ -351,7 +373,7 @@ final class AuthManager: ObservableObject {
         req.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
         req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         req.setValue("application/json", forHTTPHeaderField: "content-type")
-        req.httpBody = try? JSONSerialization.data(withJSONObject: ["password": newPassword])
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["password": newPassword] as [String: Any])
 
         let (data, response) = try await URLSession.shared.data(for: req)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
@@ -419,6 +441,8 @@ final class AuthManager: ObservableObject {
     }
 
     private func identifyWithRevenueCat(userID: String) async {
+        #if !SKIP
         _ = try? await Purchases.shared.logIn(userID)
+        #endif
     }
 }

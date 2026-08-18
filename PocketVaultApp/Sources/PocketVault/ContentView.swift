@@ -1,5 +1,7 @@
 import SwiftUI
+#if !SKIP
 import RealityKit
+#endif
 
 struct ContentView: View {
     @EnvironmentObject var streakManager: StreakManager
@@ -33,8 +35,8 @@ struct ContentView: View {
     @State private var showAddGoalSheet: Bool = false
     @State private var newGoalTitle: String = ""
     @State private var newGoalKindRaw: String = GoalKind.flight.rawValue
-    @State private var newGoalTarget: Double = 1200
-    @State private var newGoalSavings: Double = 0
+    @State private var newGoalTarget: Double = 1200.0
+    @State private var newGoalSavings: Double = 0.0
     @State private var newGoalDate: Date = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
     @State private var newGoalVoxelBlueprintJSON: String? = nil
 
@@ -44,12 +46,21 @@ struct ContentView: View {
     // account id when signed in, falls back to the local guest id.
     private var myID: String { authManager.userID ?? leaderboardManager.myUserID }
 
+    // FIX: nested `min(max(...))` over Doubles is the same generic-
+    // overload pattern that's broken every other file in this project
+    // (AmountScrubPicker, BudgetTrackerView, BuildStudioView,
+    // CalendarView) — Skip's Kotlin codegen can't resolve the overload.
+    // Clamp with plain comparisons instead.
     var progress: Double {
-        min(max(currentSavings / max(targetGoal, 1.0), 0.0), 1.0)
+        let safeTarget = targetGoal > 1.0 ? targetGoal : 1.0
+        let raw = currentSavings / safeTarget
+        if raw < 0.0 { return 0.0 }
+        if raw > 1.0 { return 1.0 }
+        return raw
     }
 
     private var displayProgress: Double {
-        currentSavings > 0 ? progress : 0.05
+        currentSavings > 0.0 ? progress : 0.05
     }
 
     private var greetingText: String {
@@ -93,7 +104,10 @@ struct ContentView: View {
                                         .clipShape(Circle())
                                 } else {
                                     Circle()
-                                        .fill(.ultraThinMaterial)
+                                        // NOTE(skip): .ultraThinMaterial has no
+                                        // Android equivalent — was cascading
+                                        // into the .clipShape/'frame' errors.
+                                        .fill(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                                         .frame(width: 40, height: 40)
                                     Image(systemName: "person.fill")
                                         .font(theme.font(15, weight: .light))
@@ -144,7 +158,7 @@ struct ContentView: View {
                             }
                             .padding(.horizontal, 16)
                             .padding(.vertical, 10)
-                            .background(.ultraThinMaterial)
+                            .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                             .clipShape(Capsule())
                             .overlay(Capsule().stroke(theme.cardStroke, lineWidth: 1))
                         }
@@ -159,8 +173,8 @@ struct ContentView: View {
                 GoalPickerBar(goalStore: goalStore) {
                     newGoalTitle = ""
                     newGoalKindRaw = GoalKind.flight.rawValue
-                    newGoalTarget = 1200
-                    newGoalSavings = 0
+                    newGoalTarget = 1200.0
+                    newGoalSavings = 0.0
                     newGoalDate = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
                     newGoalVoxelBlueprintJSON = nil
                     showAddGoalSheet = true
@@ -187,13 +201,13 @@ struct ContentView: View {
 
                             Text("of $\(Int(targetGoal))")
                                 .font(theme.font(13, weight: .medium))
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(.secondary) // was .tertiary
                         }
 
-                        if currentSavings == 0 {
+                        if currentSavings == 0.0 {
                             Text("Head start for creating your goal — deposit to keep it moving")
                                 .font(theme.font(9, weight: .light))
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(.secondary) // was .tertiary
                                 .padding(.top, 2)
                         }
 
@@ -212,7 +226,16 @@ struct ContentView: View {
                         .padding(.horizontal, 80)
                         .padding(.top, 12)
                     }
-                    .blur(radius: privacy.shouldMask ? 14 : 0)
+                    // FIX: `privacy.shouldMask ? 14 : 0` — Swift infers
+                    // Double for both ternary branches from the `radius:
+                    // Double` parameter, but Skip's Kotlin codegen doesn't
+                    // do that implicit Int-to-Double literal promotion
+                    // inside a ternary (same issue the `quickAmounts`
+                    // array below already works around by spelling out
+                    // the decimal points) — reports "actual type is
+                    // 'Int', but 'Double' was expected". Spell out the
+                    // decimals here too.
+                    .blur(radius: privacy.shouldMask ? 14.0 : 0.0)
                     .overlay {
                         if privacy.shouldMask {
                             PrivacyRevealOverlay()
@@ -249,10 +272,9 @@ struct ContentView: View {
                 // drive toward, so it's the only fully-filled control on
                 // screen and shares the same edge margin as everything
                 // else (including the dock below it).
-                Button(action: { showDepositSheet = true }) {
+                PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: { showDepositSheet = true }) {
                     Text("Deposit funds")
                 }
-                .buttonStyle(.primaryCTA(theme))
                 .padding(.horizontal, Layout.pageMargin)
                 .padding(.bottom, 78)
             }
@@ -272,7 +294,7 @@ struct ContentView: View {
                 targetDate: $targetDate
             )
         }
-        .themedSurface(theme)
+        .themedSurface(ignoresSafeArea: true)
         .sheet(isPresented: $showAddGoalSheet) {
             SetupGoalView(
                 goalTitle: $newGoalTitle,
@@ -350,41 +372,28 @@ struct AestheticDepositModalView: View {
     var onDeposit: (Double) -> Void
 
     @State private var customAmount: String = "100"
-    @State private var artifactRotation: Float = 0.0
-    let quickAmounts: [Double] = [25, 50, 100, 250]
+    @State private var artifactRotation: Float = Float(0.0)
+    // NOTE(skip): without the decimal points, Skip transpiles this
+    // literal array as Array<Int>, not Array<Double>, which is exactly
+    // the "Assignment type mismatch" error — Swift infers Double from
+    // the `[Double]` annotation, but Kotlin needs the literals spelled
+    // out.
+    let quickAmounts: [Double] = [25.0, 50.0, 100.0, 250.0]
 
     var body: some View {
         ZStack {
             // 3D Assembly Preview Forge Background
-            RealityView { content in
-                let mesh = MeshResource.generateBox(size: [0.4, 0.4, 0.4], cornerRadius: 0.04)
-                let material = SimpleMaterial(color: UIColor(theme.accent), isMetallic: true)
-                let entity = ModelEntity(mesh: mesh, materials: [material])
-                entity.name = "forgeArtifact"
-                entity.position = [0, 0.1, -0.9]
-                content.add(entity)
-
-                let keyLight = Entity()
-                keyLight.components.set(DirectionalLightComponent(color: .white, intensity: 4000))
-                keyLight.look(at: [0, 0.1, -0.9], from: [0.5, 0.6, -0.4], relativeTo: nil)
-                content.add(keyLight)
-
-                let fillLight = Entity()
-                fillLight.components.set(PointLightComponent(color: .white, intensity: 3000, attenuationRadius: 4))
-                fillLight.position = [-0.4, 0, -0.7]
-                content.add(fillLight)
-            } update: { content in
-                if let entity = content.entities.first(where: { $0.name == "forgeArtifact" }) {
-                    entity.orientation = simd_quatf(angle: artifactRotation, axis: [0, 1, 0])
+            forgeBackground
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+                .onAppear {
+                    withAnimation(.linear(duration: 8.0).repeatForever(autoreverses: false)) {
+                        // Explicit Float(...) cast: Kotlin needs a concrete
+                        // type here rather than inferring it from context
+                        // the way Swift does with bare `.pi`.
+                        artifactRotation = Float(Double.pi * 2)
+                    }
                 }
-            }
-            .ignoresSafeArea()
-            .allowsHitTesting(false)
-            .onAppear {
-                withAnimation(.linear(duration: 8).repeatForever(autoreverses: false)) {
-                    artifactRotation = .pi * 2
-                }
-            }
 
             VStack(spacing: 28) {
                 Text("Add a deposit")
@@ -421,7 +430,7 @@ struct AestheticDepositModalView: View {
 
                 Spacer()
 
-                Button(action: {
+                PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: {
                     if let amt = Double(customAmount), amt > 0 {
                         onDeposit(amt)
                         dismiss()
@@ -429,11 +438,62 @@ struct AestheticDepositModalView: View {
                 }) {
                     Text("Confirm deposit")
                 }
-                .buttonStyle(.primaryCTA(theme))
                 .padding(.horizontal, Layout.pageMargin)
                 .padding(.bottom, 44)
             }
         }
-        .themedSurface(theme)
+        .themedSurface(ignoresSafeArea: true)
+    }
+
+    /// The rotating 3D "forge" artifact behind the deposit sheet on iOS,
+    /// with a pure-SwiftUI animated equivalent on Android — RealityKit
+    /// itself isn't available under Skip, but the same spinning-object
+    /// feel is easy to approximate with a rotating gradient shape so the
+    /// screen isn't just flat on Android.
+    @ViewBuilder
+    private var forgeBackground: some View {
+        #if !SKIP
+        if #available(iOS 18.0, *) {
+            RealityView { content in
+                let mesh = MeshResource.generateBox(size: [0.4, 0.4, 0.4], cornerRadius: 0.04)
+                let material = SimpleMaterial(color: UIColor(theme.accent), isMetallic: true)
+                let entity = ModelEntity(mesh: mesh, materials: [material])
+                entity.name = "forgeArtifact"
+                entity.position = [0, 0.1, -0.9]
+                content.add(entity)
+
+                let keyLight = Entity()
+                keyLight.components.set(DirectionalLightComponent(color: .white, intensity: 4000))
+                keyLight.look(at: [0, 0.1, -0.9], from: [0.5, 0.6, -0.4], relativeTo: nil)
+                content.add(keyLight)
+
+                let fillLight = Entity()
+                fillLight.components.set(PointLightComponent(color: .white, intensity: 3000, attenuationRadius: 4))
+                fillLight.position = [-0.4, 0, -0.7]
+                content.add(fillLight)
+            } update: { content in
+                if let entity = content.entities.first(where: { $0.name == "forgeArtifact" }) {
+                    entity.orientation = simd_quatf(angle: artifactRotation, axis: [0, 1, 0])
+                }
+            }
+        } else {
+            // Fallback for earlier iOS versions
+            EmptyView()
+        }
+        #else
+        GeometryReader { geo in
+            RoundedRectangle(cornerRadius: 24)
+                .fill(
+                    LinearGradient(
+                        colors: [theme.accent.opacity(0.35), theme.accent.opacity(0.05)],
+                        startPoint: .topLeading, endPoint: .bottomTrailing
+                    )
+                )
+                .frame(width: 140, height: 140)
+                .rotation3DEffect(.radians(Double(artifactRotation)), axis: (x: 0, y: 1, z: 0))
+                .position(x: geo.size.width / 2, y: geo.size.height * 0.32)
+                .blur(radius: 2)
+        }
+        #endif
     }
 }

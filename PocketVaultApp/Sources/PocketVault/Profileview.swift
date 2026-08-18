@@ -1,5 +1,8 @@
 import SwiftUI
+import UIKit
+#if !SKIP
 import PhotosUI
+#endif
 
 struct ProfileView: View {
     @Environment(\.dismiss) var dismiss
@@ -25,7 +28,10 @@ struct ProfileView: View {
     }
 
     @State private var profileImageData: Data?
+    
+    #if !SKIP
     @State private var selectedItem: PhotosPickerItem? = nil
+    #endif
 
     private var profileImageKey: String { "pv_profileImage_\(leaderboardManager.myUserID)" }
 
@@ -44,8 +50,9 @@ struct ProfileView: View {
                             .foregroundStyle(theme.textPrimary)
                             .padding(.horizontal, 14)
                             .padding(.vertical, 10)
-                            .background(.ultraThinMaterial)
-                            .clipShape(Capsule())
+                            // Unified cross-platform styling
+                            .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                            .cornerRadius(100)
                             .overlay(
                                 Capsule().stroke(
                                     LinearGradient(
@@ -59,18 +66,13 @@ struct ProfileView: View {
                             .shadow(color: .black.opacity(0.25), radius: 10, y: 4)
                         }
 
-                        // Opens the leaderboard/add-friend screen, which
-                        // also has the entry point into Shared Budget —
-                        // ProfileView itself only ever showed the "invite"
-                        // share sheet and the friend code, with no way
-                        // back into the fuller Friends experience.
                         Button(action: { showLeaderboard = true }) {
                             Image(systemName: "trophy.fill")
                                 .font(theme.font(13, weight: .semibold))
                                 .foregroundStyle(theme.accent)
                                 .frame(width: 38, height: 38)
-                                .background(.ultraThinMaterial)
-                                .clipShape(Circle())
+                                .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                                .cornerRadius(19)
                                 .overlay(Circle().stroke(theme.cardStroke, lineWidth: 1))
                         }
 
@@ -87,35 +89,9 @@ struct ProfileView: View {
 
                     // Profile Header & Avatar Picker
                     VStack(spacing: 12) {
-                        PhotosPicker(selection: $selectedItem, matching: .images) {
-                            ZStack {
-                                if let profileImageData, let uiImage = UIImage(data: profileImageData) {
-                                    Image(uiImage: uiImage)
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 80, height: 80)
-                                        .clipShape(Circle())
-                                } else {
-                                    Circle()
-                                        .fill(.ultraThinMaterial)
-                                        .frame(width: 80, height: 80)
-                                    Image(systemName: "person.fill")
-                                        .font(theme.font(30, weight: .light))
-                                        .foregroundStyle(theme.accent)
-                                }
-
-                                Circle()
-                                    .stroke(theme.accent.opacity(0.6), lineWidth: 1.5)
-                                    .frame(width: 80, height: 80)
-
-                                Image(systemName: "camera.fill")
-                                    .font(theme.font(10, weight: .bold))
-                                    .foregroundStyle(theme.onAccent)
-                                    .padding(6)
-                                    .background(theme.accent)
-                                    .clipShape(Circle())
-                                    .offset(x: 28, y: 28)
-                            }
+                        #if !SKIP
+                        PhotosPicker(selection: $selectedItem, matching: PHPickerFilter.images) {
+                            avatarContent
                         }
                         .onChange(of: selectedItem) {
                             Task {
@@ -125,6 +101,9 @@ struct ProfileView: View {
                                 }
                             }
                         }
+                        #else
+                        avatarContent
+                        #endif
 
                         Text("Your vault")
                             .font(theme.font(15, weight: .semibold))
@@ -145,8 +124,8 @@ struct ProfileView: View {
                                 .autocorrectionDisabled()
                                 .foregroundStyle(theme.textPrimary)
                                 .padding(14)
-                                .background(.ultraThinMaterial)
-                                .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius))
+                                .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                                .cornerRadius(Layout.controlRadius)
                                 .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius).stroke(theme.cardStroke, lineWidth: 1))
 
                             Button(action: saveDisplayName) {
@@ -156,7 +135,7 @@ struct ProfileView: View {
                                     .padding(.vertical, 14)
                                     .background(theme.accent)
                                     .foregroundColor(theme.onAccent)
-                                    .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius))
+                                    .cornerRadius(Layout.controlRadius)
                             }
                             .disabled(displayName.trimmingCharacters(in: .whitespaces).isEmpty)
                         }
@@ -173,17 +152,12 @@ struct ProfileView: View {
                     }
                     .frame(maxWidth: .infinity)
                     .padding(18)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                    .cornerRadius(16)
                     .overlay(RoundedRectangle(cornerRadius: 16).stroke(theme.cardStroke, lineWidth: 1))
                     .padding(.horizontal, Layout.pageMargin)
 
-                    // Privacy Mode + local data export — nothing here is
-                    // gated behind Pro: manual tracking and getting your
-                    // own data back out should always be free.
                     privacyAndDataSection
-
-                    // Appearance — accent color + light/dark/system
                     ThemePickerSection()
 
                     Button(action: { showFeedback = true }) {
@@ -192,17 +166,13 @@ struct ProfileView: View {
                             Text("Send feedback")
                         }
                     }
-                    .buttonStyle(.secondaryCTA(theme))
+                    .secondaryCTA(accent: theme.accent)
                     .padding(.horizontal, Layout.pageMargin)
 
-                    // theme.danger (not a hardcoded Color.red) so this
-                    // stays legible against the dark background — a flat
-                    // semi-transparent red on near-black is exactly the
-                    // low-contrast combination that's hard to read.
                     Button(action: { showSignOutConfirm = true }) {
                         Text("Sign out")
                     }
-                    .buttonStyle(SecondaryCTAButtonStyle(accent: theme.danger))
+                    .secondaryCTA(accent: theme.danger)
                     .padding(.horizontal, Layout.pageMargin)
                     .padding(.top, 8)
 
@@ -210,7 +180,18 @@ struct ProfileView: View {
                 }
             }
         }
-        .themedSurface(theme)
+        // FIX: themedSurface() no longer takes `theme` as a parameter —
+        // it reads ThemeManager via @EnvironmentObject internally now
+        // (see ThemedSurface.swift). The old `.themedSurface(theme)` call
+        // was passing `theme` positionally into the `ignoresSafeArea: Bool`
+        // slot, which is what produced "Cannot convert value of type
+        // 'ThemeManager' to expected argument type 'Bool'" and "Missing
+        // argument label 'ignoresSafeArea:' in call" together. It also
+        // broke type inference for the rest of this modifier chain, which
+        // is why Skip couldn't resolve `.visible` in the
+        // `.confirmationDialog(titleVisibility:)` call further down —
+        // that error should clear along with this one.
+        .themedSurface()
         .onAppear {
             displayName = leaderboardManager.myDisplayName
             profileImageData = UserDefaults.standard.data(forKey: profileImageKey)
@@ -235,16 +216,52 @@ struct ProfileView: View {
             LeaderboardView(goalStore: goalStore)
         }
     }
+    
+    // MARK: - Extracted Avatar Content
+    private var avatarContent: some View {
+        ZStack {
+            if let profileImageData, let uiImage = UIImage(data: profileImageData) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 80, height: 80)
+                    .cornerRadius(40)
+            } else {
+                Circle()
+                    .fill(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                    .frame(width: 80, height: 80)
+                Image(systemName: "person.fill")
+                    .font(theme.font(30, weight: .light))
+                    .foregroundStyle(theme.accent)
+            }
+
+            Circle()
+                .stroke(theme.accent.opacity(0.6), lineWidth: 1.5)
+                .frame(width: 80, height: 80)
+
+            #if !SKIP
+            Image(systemName: "camera.fill")
+                .font(theme.font(10, weight: .bold))
+                .foregroundStyle(theme.onAccent)
+                .padding(6)
+                .background(theme.accent)
+                .clipShape(Circle())
+                .offset(x: 28, y: 28)
+            #endif
+        }
+    }
 
     private func saveDisplayName() {
         let trimmed = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         leaderboardManager.myDisplayName = trimmed
+        
+        #if !SKIP
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        #endif
     }
 
     // MARK: - Privacy & Data
-
     private var privacyAndDataSection: some View {
         VStack(alignment: .leading, spacing: 16) {
             SectionLabel("Privacy & data")
@@ -266,7 +283,7 @@ struct ProfileView: View {
             }
             .padding(14)
             .background(theme.isLight ? Color.black.opacity(0.03) : Color.white.opacity(0.05))
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .cornerRadius(14)
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
 
             VStack(alignment: .leading, spacing: 10) {
@@ -276,16 +293,28 @@ struct ProfileView: View {
                     }
                 }
                 .pickerStyle(.segmented)
-                .onChange(of: exportFormat) { _, _ in exportURLs = nil }
+                .onChange(of: exportFormat) { _ in exportURLs = nil }
 
                 if let exportURLs, !exportURLs.isEmpty {
+                    #if !SKIP
                     ShareLink(items: exportURLs) {
                         HStack(spacing: 10) {
                             Image(systemName: "square.and.arrow.up")
                             Text("EXPORT MY DATA")
                         }
                     }
-                    .buttonStyle(.secondaryCTA(theme))
+                    .secondaryCTA(accent: theme.accent)
+                    #else
+                    if let firstURL = exportURLs.first {
+                        ShareLink(item: firstURL) {
+                            HStack(spacing: 10) {
+                                Image(systemName: "square.and.arrow.up")
+                                Text("EXPORT MY DATA")
+                            }
+                        }
+                        .secondaryCTA(accent: theme.accent)
+                    }
+                    #endif
                 } else {
                     Button(action: prepareExport) {
                         HStack(spacing: 10) {
@@ -293,7 +322,7 @@ struct ProfileView: View {
                             Text("EXPORT MY DATA")
                         }
                     }
-                    .buttonStyle(.secondaryCTA(theme))
+                    .secondaryCTA(accent: theme.accent)
                 }
 
                 Text("Exports your goals, savings history, and transactions as plain \(exportFormat.rawValue) files — a format any spreadsheet or other app can open. Nothing leaves your device unless you choose to share it.")
@@ -302,15 +331,12 @@ struct ProfileView: View {
             }
         }
         .padding(20)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+        .cornerRadius(20)
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
         .padding(.horizontal, Layout.pageMargin)
     }
 
-    /// Builds the export files fresh right before sharing, rather than
-    /// keeping them around, so an export never goes stale against
-    /// whatever's actually in GoalStore/BudgetManager right now.
     private func prepareExport() {
         var urls: [URL] = []
         switch exportFormat {
@@ -329,7 +355,35 @@ struct ProfileView: View {
                 urls.append(transactionsURL)
             }
         }
+        
+        #if !SKIP
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        #endif
+        
         exportURLs = urls
+    }
+}
+
+// MARK: - App Button Styles
+
+struct SecondaryCTAStyleModifier: ViewModifier {
+    var accent: Color
+    
+    func body(content: Content) -> some View {
+        content
+            .font(.system(size: 15, weight: .semibold))
+            .padding(.vertical, 14)
+            .padding(.horizontal, 16)
+            .frame(maxWidth: .infinity)
+            .background(accent.opacity(0.12))
+            .foregroundColor(accent)
+            .cornerRadius(12)
+    }
+}
+
+extension View {
+    // For specific colors like your danger accent
+    func secondaryCTA(accent: Color) -> some View {
+        self.modifier(SecondaryCTAStyleModifier(accent: accent))
     }
 }

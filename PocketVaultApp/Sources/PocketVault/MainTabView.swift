@@ -5,9 +5,11 @@ import SwiftUI
 /// `FeatureTourOverlay` can point its arrow at the actual element instead
 /// of guessing its position from hardcoded screen-height math.
 struct TourAnchorPreferenceKey: PreferenceKey {
-    static var defaultValue: [Int: CGRect] = [:]
+    static let defaultValue: [Int: CGRect] = [:]
     static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
-        value.merge(nextValue()) { _, new in new }
+        for (key, rect) in nextValue() {
+            value[key] = rect
+        }
     }
 }
 
@@ -65,10 +67,35 @@ struct MainTabView: View {
     /// Attaches an invisible frame reporter to a view so its on-screen
     /// rect (in the "tourOverlay" coordinate space) gets merged into
     /// `tourFrames` under `key`.
+    /// Tab bar's frosted-glass background — real `UIVisualEffectView` on
+    /// iOS (via `BlurView`, unavailable under Skip), SwiftUI's own
+    /// Material (already used everywhere else in the app) on Android.
+    @ViewBuilder
+    private var tabBarBlurBackground: some View {
+        #if !SKIP
+        BlurView(style: themeManager.isLight ? .systemUltraThinMaterialLight : .systemUltraThinMaterialDark)
+        #else
+        // NOTE(skip): a bare `Color` value returned directly as this
+        // @ViewBuilder's result doesn't transpile cleanly — Skip's Compose
+        // codegen expects the last statement to be an actual composable
+        // invocation, not a plain expression, so it infers `Color` where
+        // it wanted `ComposeResult`. Wrapping in `Group { }` forces a
+        // proper composable call on both platforms; `Group` renders
+        // invisibly either way, so the output is unchanged.
+        Group {
+            themeManager.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35)
+        }
+        #endif
+    }
+
     private func tourAnchorReporter(key: Int) -> some View {
         GeometryReader { g in
             Color.clear
+                #if !SKIP
                 .preference(key: TourAnchorPreferenceKey.self, value: [key: g.frame(in: .named("tourOverlay"))])
+                #else
+                .preference(key: TourAnchorPreferenceKey.self, value: [key: g.frame(in: .global)])
+                #endif
         }
     }
 
@@ -109,14 +136,21 @@ struct MainTabView: View {
 
     private var currentSavingsBinding: Binding<Double> {
         Binding(
-            get: { goalStore.activeGoal?.currentSavings ?? 0 },
+            // NOTE(skip): `?? 0` left the Elvis operator's two branches as
+            // Double and Int, which Kotlin can't unify — it infers the
+            // intersection type `Number & Comparable<CapturedType(*)>`
+            // instead of `Double`, so the closure's return type no longer
+            // matches `Binding<Double>`. Explicit `.0` fixes it.
+            get: { goalStore.activeGoal?.currentSavings ?? 0.0 },
             set: { newValue in goalStore.mutateActive { $0.currentSavings = newValue } }
         )
     }
 
     private var targetGoalBinding: Binding<Double> {
         Binding(
-            get: { goalStore.activeGoal?.targetAmount ?? 1200 },
+            // NOTE(skip): same Elvis-operator type-unification issue as
+            // currentSavingsBinding above.
+            get: { goalStore.activeGoal?.targetAmount ?? 1200.0 },
             set: { newValue in goalStore.mutateActive { $0.targetAmount = newValue } }
         )
     }
@@ -177,8 +211,13 @@ struct MainTabView: View {
                         selectedTab: $selectedTab,
                         messages: $chatMessages,
                         goalTitle: goalStore.activeGoal?.title ?? "",
-                        targetGoal: goalStore.activeGoal?.targetAmount ?? 0,
-                        currentSavings: goalStore.activeGoal?.currentSavings ?? 0,
+                        // NOTE(skip): bare `?? 0` here left the two Elvis
+                        // branches as Double/Int, which Kotlin can't unify
+                        // into the Double the parameter expects — same
+                        // fix as currentSavingsBinding/targetGoalBinding
+                        // above.
+                        targetGoal: goalStore.activeGoal?.targetAmount ?? 0.0,
+                        currentSavings: goalStore.activeGoal?.currentSavings ?? 0.0,
                         targetDate: goalStore.activeGoal?.targetDate ?? Date()
                     )
                 case 6:
@@ -191,8 +230,9 @@ struct MainTabView: View {
                     if entitlementManager.isPro {
                         SavingsCoachView(
                             goalTitle: goalStore.activeGoal?.title ?? "",
-                            targetAmount: goalStore.activeGoal?.targetAmount ?? 0,
-                            currentSavings: goalStore.activeGoal?.currentSavings ?? 0,
+                            // NOTE(skip): same `?? 0` -> `?? 0.0` fix as above.
+                            targetAmount: goalStore.activeGoal?.targetAmount ?? 0.0,
+                            currentSavings: goalStore.activeGoal?.currentSavings ?? 0.0,
                             goalTargetDate: goalStore.activeGoal?.targetDate ?? Date(),
                             chatMessages: $chatMessages,
                             selectedTab: $selectedTab
@@ -200,8 +240,8 @@ struct MainTabView: View {
                     } else {
                         CustomPaywallView(
                             goalTitle: goalStore.activeGoal?.title ?? "",
-                            targetGoal: goalStore.activeGoal?.targetAmount ?? 0,
-                            currentSavings: goalStore.activeGoal?.currentSavings ?? 0,
+                            targetGoal: goalStore.activeGoal?.targetAmount ?? 0.0,
+                            currentSavings: goalStore.activeGoal?.currentSavings ?? 0.0,
                             chatMessages: $chatMessages,
                             selectedTab: $selectedTab
                         )
@@ -217,7 +257,14 @@ struct MainTabView: View {
                 // ever mounted. See `fixedBottomSafeInset`.
                 GeometryReader { g in
                     Color.clear.onAppear {
-                        if fixedBottomSafeInset == 0 {
+                        // FIX: bare Int literal `0` compared against a
+                        // CGFloat doesn't transpile cleanly through Skip's
+                        // Kotlin codegen (Skip treats it as `Int`, not
+                        // `Double`, producing "Operator '==' cannot be
+                        // applied to 'Double' and 'Int'"). Swift infers the
+                        // right type from context; Skip needs it spelled
+                        // out.
+                        if fixedBottomSafeInset == 0.0 {
                             fixedBottomSafeInset = g.safeAreaInsets.bottom
                         }
                     }
@@ -265,16 +312,17 @@ struct MainTabView: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
             .animation(.spring(response: 0.4, dampingFraction: 0.75), value: hasActiveSharedBudget)
-            .background(
-                BlurView(style: themeManager.isLight ? .systemUltraThinMaterialLight : .systemUltraThinMaterialDark)
-            )
+            .background(tabBarBlurBackground)
             .clipShape(Capsule())
             .overlay(
                 Capsule().stroke(themeManager.cardStroke, lineWidth: 1)
             )
             .shadow(color: Color.black.opacity(0.25), radius: 16, x: 0, y: 8)
             .padding(.horizontal, Layout.pageMargin)
-            .padding(.bottom, fixedBottomSafeInset + 2)
+            // NOTE(skip): bare `+ 2` mixed CGFloat with an Int literal,
+            // which Kotlin's codegen doesn't unify implicitly the way
+            // Swift does. Explicit `.0` fixes it.
+            .padding(.bottom, fixedBottomSafeInset + 2.0)
             .ignoresSafeArea(.container, edges: .bottom)
 
             AskAIBubble(selectedTab: $selectedTab, isPro: entitlementManager.isPro, extraBottomInset: fixedBottomSafeInset)
@@ -291,7 +339,7 @@ struct MainTabView: View {
                 )
                 .transition(.opacity)
                 .zIndex(10)
-                .onChange(of: showFeatureTour) { _, isShowing in
+                .onChange(of: showFeatureTour) { isShowing in
                     if !isShowing {
                         hasSeenFeatureTour = true
                         selectedTab = 0
@@ -299,7 +347,9 @@ struct MainTabView: View {
                 }
             }
         }
-        .coordinateSpace(name: "tourOverlay")
+        #if !SKIP
+        .coordinateSpace(.named("tourOverlay"))
+        #endif
         .onPreferenceChange(TourAnchorPreferenceKey.self) { tourFrames = $0 }
         .environmentObject(streakManager)
         .environmentObject(entitlementManager)
@@ -313,7 +363,8 @@ struct MainTabView: View {
             if !networkMonitor.isOnline {
                 OfflineBanner()
                     .padding(.top, 54)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    // Added explicit Edge type for Skip compiler
+                    .transition(.move(edge: Edge.top).combined(with: .opacity))
             }
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: networkMonitor.isOnline)
@@ -336,7 +387,7 @@ struct MainTabView: View {
                 }
             }
         }
-        .onChange(of: streakManager.currentStreak) { _, newValue in
+        .onChange(of: streakManager.currentStreak) { newValue in
             Task {
                 await leaderboardManager.syncMyStreak(
                     currentStreak: newValue,
@@ -408,11 +459,17 @@ struct AskAIBubble: View {
                     .background(
                         GeometryReader { g in
                             Color.clear
+                                #if !SKIP
                                 .preference(key: TourAnchorPreferenceKey.self, value: [4: g.frame(in: .named("tourOverlay"))])
+                                #else
+                                .preference(key: TourAnchorPreferenceKey.self, value: [4: g.frame(in: .global)])
+                                #endif
                         }
                     )
                     .padding(.trailing, Layout.pageMargin)
-                    .padding(.bottom, 142 + extraBottomInset)
+                    // NOTE(skip): same bare-Int-plus-CGFloat issue as the
+                    // tab bar's bottom padding above.
+                    .padding(.bottom, 142.0 + extraBottomInset)
             }
         }
         .allowsHitTesting(true)
@@ -435,7 +492,9 @@ struct AskAIButton: View {
 
     var body: some View {
         Button(action: {
+            #if !SKIP
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            #endif
             tapCount += 1
             selectedTab = 4
         }) {
@@ -449,7 +508,7 @@ struct AskAIButton: View {
             }
             .foregroundStyle(themeManager.onAccent)
             .padding(.vertical, 13)
-            .padding(.horizontal, showsLabel ? 16 : 13)
+            .padding(.horizontal, showsLabel ? 16.0 : 13.0)
             .background(themeManager.accent)
             .clipShape(Capsule())
             .overlay(
@@ -490,7 +549,9 @@ struct LiquidTabButton: View {
 
     var body: some View {
         Button(action: {
+            #if !SKIP
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            #endif
             action()
         }) {
             HStack(spacing: 6) {
@@ -503,11 +564,16 @@ struct LiquidTabButton: View {
                         .font(themeManager.font(13, weight: .semibold))
                         .foregroundStyle(themeManager.onAccent)
                         .fixedSize()
-                        .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: .leading)))
+                        // Added explicit UnitPoint type for Skip compiler
+                        #if !SKIP
+                        .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: UnitPoint.leading)))
+                        #else
+                        .transition(.opacity)
+                        #endif
                 }
             }
             .padding(.vertical, 10)
-            .padding(.horizontal, isSelected ? 14 : 12)
+            .padding(.horizontal, isSelected ? 14.0 : 12.0)
             .frame(minWidth: 44)
             .background(isSelected ? themeManager.accent : Color.clear)
             .clipShape(Capsule())
@@ -518,6 +584,12 @@ struct LiquidTabButton: View {
 }
 
 // MARK: - Blur View Helper
+//
+// UIViewRepresentable bridges to a real UIKit view, which Skip can't
+// transpile — the rest of the app already uses SwiftUI's own Material
+// (.ultraThinMaterial etc.) everywhere else for this same frosted-glass
+// look, so Android just uses that directly instead of this UIKit bridge.
+#if !SKIP
 struct BlurView: UIViewRepresentable {
     var style: UIBlurEffect.Style
 
@@ -527,3 +599,4 @@ struct BlurView: UIViewRepresentable {
 
     func updateUIView(_ uiView: UIVisualEffectView, context: Context) {}
 }
+#endif

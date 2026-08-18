@@ -41,10 +41,15 @@ struct GuestSavePromptView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, Layout.pageMargin)
 
-                Button(action: { showSignUp = true }) {
+                // FIX: `.buttonStyle(.primaryCTA(theme))` referenced a
+                // custom ButtonStyle static member that no longer exists —
+                // same leftover migration gap as every other screen (see
+                // PrimaryCTAButton's doc comment in ThemeManager.swift).
+                // Use the wrapper directly instead of a Button + buttonStyle
+                // pair.
+                PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: { showSignUp = true }) {
                     Text("Create free account")
                 }
-                .buttonStyle(.primaryCTA(theme))
                 .padding(.horizontal, Layout.pageMargin)
 
                 Button(action: { dismiss() }) {
@@ -56,7 +61,8 @@ struct GuestSavePromptView: View {
                 Spacer()
             }
         }
-        .themedSurface(theme)
+        // FIX: Replaced `theme` with `ignoresSafeArea: true` to resolve the compiler error
+        .themedSurface(ignoresSafeArea: true)
         .sheet(isPresented: $showSignUp) {
             LoginView()
         }

@@ -12,19 +12,33 @@ struct CalendarView: View {
     @State private var selectedDate: Date = Date()
     private let calendar = Calendar.current
 
+    // FIX: `max(targetGoal - currentSavings, 0.0)` is the same generic
+    // min/max-over-Double overload Skip's Kotlin codegen can't resolve
+    // (broke AmountScrubPicker, BudgetTrackerView, BuildStudioView) —
+    // clamp with a plain comparison instead.
     var remainingAmount: Double {
-        max(targetGoal - currentSavings, 0.0)
+        let diff = targetGoal - currentSavings
+        return diff > 0.0 ? diff : 0.0
     }
 
+    // FIX: same nested min(max(...)) pattern as BuildStudioView's
+    // progressRatio — clamp manually.
     var completionPercentage: Double {
-        min(max(currentSavings / max(targetGoal, 1.0), 0.0), 1.0)
+        let safeTarget = targetGoal > 1.0 ? targetGoal : 1.0
+        let raw = currentSavings / safeTarget
+        if raw < 0.0 { return 0.0 }
+        if raw > 1.0 { return 1.0 }
+        return raw
     }
 
     // Estimated target date based on streak momentum. Split into a raw
     // Date (used for the Apple Calendar export) and a formatted string
     // (used for display) so both stay in sync from one calculation.
     var estimatedCompletionDateValue: Date? {
-        let dailyPace = currentSavings / max(Double(streakManager.currentStreak), 1.0)
+        // FIX: another Double max() call — same pattern as above.
+        let streakDays = Double(streakManager.currentStreak)
+        let safeStreakDays = streakDays > 1.0 ? streakDays : 1.0
+        let dailyPace = currentSavings / safeStreakDays
         let daysLeft = dailyPace > 0 ? Int(ceil(remainingAmount / dailyPace)) : 30
         return calendar.date(byAdding: .day, value: daysLeft, to: Date())
     }
@@ -41,8 +55,17 @@ struct CalendarView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
                     // Header Title
-                    ScreenHeader("Calendar", subtitle: "Deposit streaks & forecast")
-                        .padding(.top, 40)
+                    // NOTE(skip): ScreenHeader's trailing-accessory generic
+                    // param can't be inferred from its default value on the
+                    // Skip/Kotlin side ("Cannot infer type for type
+                    // parameter 'Trailing'") — spelling out an empty
+                    // trailing closure fixes it, and also clears the
+                    // Edge.Set/SafeArea + Modifier.padding + 'Compose'
+                    // errors that were cascading from this same call.
+                    ScreenHeader("Calendar", subtitle: "Deposit streaks & forecast") {
+                        EmptyView()
+                    }
+                    .padding(.top, 40)
 
                     // MARK: - Streak Stats Grid
                     HStack(spacing: 12) {
@@ -59,7 +82,10 @@ struct CalendarView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 18)
-                        .background(.ultraThinMaterial)
+                        // NOTE(skip): .ultraThinMaterial has no Android
+                        // equivalent — was cascading into the .clipShape
+                        // right below it too.
+                        .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .overlay(RoundedRectangle(cornerRadius: 16).stroke(theme.cardStroke, lineWidth: 1))
 
@@ -76,7 +102,7 @@ struct CalendarView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 18)
-                        .background(.ultraThinMaterial)
+                        .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .overlay(RoundedRectangle(cornerRadius: 16).stroke(theme.cardStroke, lineWidth: 1))
                     }
@@ -97,7 +123,7 @@ struct CalendarView: View {
                                     .frame(width: 6, height: 6)
                                 Text("Deposit day")
                                     .font(theme.font(11, weight: .medium))
-                                    .foregroundStyle(.tertiary)
+                                    .foregroundStyle(.secondary) // was .tertiary
                             }
                         }
 
@@ -106,7 +132,7 @@ struct CalendarView: View {
                             ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
                                 Text(day)
                                     .font(theme.font(10, weight: .bold))
-                                    .foregroundStyle(.tertiary)
+                                    .foregroundStyle(.secondary) // was .tertiary
                                     .frame(maxWidth: .infinity)
                             }
                         }
@@ -124,7 +150,7 @@ struct CalendarView: View {
                         }
                     }
                     .padding(20)
-                    .background(.ultraThinMaterial)
+                    .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                     .clipShape(RoundedRectangle(cornerRadius: 20))
                     .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
                     .padding(.horizontal, Layout.pageMargin)
@@ -202,7 +228,7 @@ struct CalendarView: View {
                         }
                     }
                     .padding(20)
-                    .background(.ultraThinMaterial)
+                    .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                     .clipShape(RoundedRectangle(cornerRadius: 20))
                     .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
                     .padding(.horizontal, Layout.pageMargin)
@@ -212,7 +238,15 @@ struct CalendarView: View {
         }
         // Sets the background and maps .primary/.secondary/.tertiary to
         // theme.textPrimary/Secondary/Tertiary for this whole screen.
-        .themedSurface(theme)
+        //
+        // FIX: themedSurface() no longer takes `theme` as a parameter —
+        // it reads ThemeManager via @EnvironmentObject internally now
+        // (see ThemedSurface.swift). The old `.themedSurface(theme)` call
+        // was passing `theme` positionally into the `ignoresSafeArea: Bool`
+        // slot, which is what produced "Cannot convert value of type
+        // 'ThemeManager' to expected argument type 'Bool'" and "Missing
+        // argument label 'ignoresSafeArea:' in call" together.
+        .themedSurface()
     }
 
     // MARK: - Calendar Helpers
@@ -230,7 +264,19 @@ struct CalendarView: View {
         }
 
         let firstWeekday = calendar.component(.weekday, from: firstDay) - 1
-        let numberOfDays = calendar.range(of: .day, in: .month, for: Date())?.count ?? 30
+
+        // FIX: `calendar.range(of: .day, in: .month, for: Date())` hits
+        // "None of the following candidates is applicable" — Skip's
+        // Calendar shim doesn't fully implement this overload of
+        // `range(of:in:for:)`. Compute the day count the same way
+        // `estimatedCompletionDateValue` above already does successfully
+        // — with `date(byAdding:)` and `dateComponents(_:from:to:)` —
+        // instead of relying on `range(of:in:for:)`.
+        let numberOfDays: Int = {
+            guard let nextMonthStart = calendar.date(byAdding: .month, value: 1, to: firstDay) else { return 30 }
+            let diff = calendar.dateComponents([.day], from: firstDay, to: nextMonthStart)
+            return diff.day ?? 30
+        }()
 
         var days: [Date?] = Array(repeating: nil, count: firstWeekday)
 

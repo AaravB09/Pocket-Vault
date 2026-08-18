@@ -62,8 +62,18 @@ struct PrivacyRevealOverlay: View {
             }
             .foregroundStyle(.secondary)
             .padding(14)
+            // NOTE(skip): `.ultraThinMaterial` and `.clipShape` aren't
+            // resolved by Skip's SwiftUI shim — iOS keeps the real
+            // material + shape clip, Android gets a plain tinted
+            // background + `.cornerRadius`, same pattern used everywhere
+            // else in the app (LoginView, MainTabView, etc.).
+            #if !SKIP
             .background(.ultraThinMaterial)
             .clipShape(RoundedRectangle(cornerRadius: 14))
+            #else
+            .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+            .cornerRadius(14)
+            #endif
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
         }
     }
@@ -90,8 +100,19 @@ struct PrivacyQuickToggleButton: View {
                     .font(theme.font(14, weight: .medium))
                     .foregroundStyle(.secondary)
                     .frame(width: 36, height: 36)
+                    // NOTE(skip): same `.ultraThinMaterial`/`.clipShape`
+                    // gap as PrivacyRevealOverlay above. `.clipShape(Circle())`
+                    // isn't resolved under Skip either, so Android gets
+                    // `.cornerRadius` at half the frame's width/height,
+                    // which renders as a circle on a square frame just
+                    // like the real clip does.
+                    #if !SKIP
                     .background(.ultraThinMaterial)
                     .clipShape(Circle())
+                    #else
+                    .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                    .cornerRadius(18)
+                    #endif
                     .overlay(Circle().stroke(theme.cardStroke, lineWidth: 1))
             }
         }

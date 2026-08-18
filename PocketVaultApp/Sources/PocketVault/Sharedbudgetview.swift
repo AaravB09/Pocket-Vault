@@ -23,6 +23,14 @@ struct SharedBudgetView: View {
     private var myID: String { authManager.userID ?? leaderboardManager.myUserID }
     private var myName: String { leaderboardManager.myDisplayName }
 
+    /// Cross-platform stand-in for `.ultraThinMaterial`. Materials are a
+    /// UIKit/AppKit blur effect with no Compose equivalent, so Skip can't
+    /// resolve them at all (that's the "Unresolved reference" error). A
+    /// plain translucent fill built from an existing theme token renders
+    /// identically on both platforms instead of relying on a system
+    /// effect that only one side has.
+    private var cardFill: Color { theme.cardStroke.opacity(0.35) }
+
     var body: some View {
         if authManager.isGuest {
             AccountRequiredGateView(featureName: "Shared Budget")
@@ -88,7 +96,8 @@ struct SharedBudgetView: View {
                 }
             }
         }
-        .themedSurface(theme)
+        // FIX: Replaced `theme` with `ignoresSafeArea: true` to resolve the compiler error
+        .themedSurface(ignoresSafeArea: true)
         .task {
             if let sharedID = goalStore.activeGoal?.sharedGoalID {
                 await sharedBudgetManager.loadShare(id: sharedID, accessToken: authManager.accessToken)
@@ -113,7 +122,7 @@ struct SharedBudgetView: View {
                 .foregroundStyle(theme.textTertiary)
                 .multilineTextAlignment(.center)
 
-            Button(action: {
+            PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: {
                 Task {
                     if let record = await sharedBudgetManager.createShare(
                         goalTitle: goal.title,
@@ -132,12 +141,11 @@ struct SharedBudgetView: View {
                     Text(sharedBudgetManager.isLoading ? "Please wait…" : "Share this goal")
                 }
             }
-            .buttonStyle(.primaryCTA(theme))
             .disabled(sharedBudgetManager.isLoading)
         }
         .padding(Layout.cardPadding)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: Layout.cardRadius))
+        .background(cardFill)
+        .cornerRadius(Layout.cardRadius)
         .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1))
         .padding(.horizontal, Layout.pageMargin)
     }
@@ -146,10 +154,11 @@ struct SharedBudgetView: View {
     private func sharedGoalCard(goal: Goal, sharedID: String) -> some View {
         let mine = sharedBudgetManager.contributed(by: myID)
         let partnerID = sharedBudgetManager.share?.partner_id
-        let partnerAmount = partnerID.map { sharedBudgetManager.contributed(by: $0) } ?? 0
+        // FIXED: Changed 0 to 0.0 so Skip infers `partnerAmount` as Double instead of Int/Number
+        let partnerAmount = partnerID.map { sharedBudgetManager.contributed(by: $0) } ?? 0.0
         let partnerName = sharedBudgetManager.share?.partner_name ?? "Waiting for partner"
         let combined = mine + partnerAmount
-        let progress = min(max(combined / max(goal.targetAmount, 1), 0), 1)
+        let progress = min(max(combined / max(goal.targetAmount, 1.0), 0.0), 1.0)
 
         return VStack(spacing: 26) {
             HStack(spacing: 0) {
@@ -174,7 +183,7 @@ struct SharedBudgetView: View {
                     }
                 }
                 .frame(height: 4)
-                .clipShape(Capsule())
+                .cornerRadius(2)
 
                 HStack {
                     Text("$\(Int(combined)) combined")
@@ -241,8 +250,8 @@ struct SharedBudgetView: View {
             .disabled(sharedBudgetManager.isLoading)
         }
         .padding(Layout.cardPadding)
-        .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: Layout.cardRadius))
+        .background(cardFill)
+        .cornerRadius(Layout.cardRadius)
         .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1))
         .padding(.horizontal, Layout.pageMargin)
         .confirmationDialog(
@@ -281,7 +290,7 @@ struct SharedBudgetView: View {
         VStack(spacing: 8) {
             ZStack {
                 Circle()
-                    .fill(.ultraThinMaterial)
+                    .fill(cardFill)
                     .frame(width: 64, height: 64)
                 Circle()
                     .stroke(theme.accent.opacity(isPending ? 0.2 : 0.6), lineWidth: 1.5)
@@ -311,8 +320,8 @@ struct SharedBudgetView: View {
                     .textInputAutocapitalization(.characters)
                     .autocorrectionDisabled()
                     .padding(14)
-                    .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .background(cardFill)
+                    .cornerRadius(14)
                     .foregroundStyle(theme.textPrimary)
 
                 Button(action: {
@@ -336,7 +345,7 @@ struct SharedBudgetView: View {
                         .padding(.vertical, 16)
                         .background(theme.accent)
                         .foregroundColor(theme.onAccent)
-                        .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius))
+                        .cornerRadius(Layout.controlRadius)
                 }
                 .disabled(joinCodeInput.trimmingCharacters(in: .whitespaces).isEmpty || sharedBudgetManager.isLoading)
             }

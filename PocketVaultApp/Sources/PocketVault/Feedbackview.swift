@@ -25,7 +25,8 @@ struct FeedbackView: View {
                 formState
             }
         }
-        .themedSurface(theme)
+        // FIX: Replaced `theme` with `ignoresSafeArea: true` to resolve the compiler error
+        .themedSurface(ignoresSafeArea: true)
     }
 
     private var formState: some View {
@@ -65,7 +66,10 @@ struct FeedbackView: View {
                         .font(theme.font(14, weight: .light))
                         .frame(height: 160)
                         .padding(12)
-                        .background(.ultraThinMaterial)
+                        // NOTE(skip): .ultraThinMaterial has no Android
+                        // equivalent — was cascading into the .clipShape
+                        // right below it.
+                        .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                         .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
                         .overlay(alignment: .topLeading) {
@@ -89,7 +93,14 @@ struct FeedbackView: View {
                         .padding(.horizontal, Layout.pageMargin)
                 }
 
-                Button(action: {
+                // FIX: `.buttonStyle(.primaryCTA(theme))` referenced a
+                // custom ButtonStyle static member that no longer exists —
+                // same leftover migration gap as every other screen (see
+                // PrimaryCTAButton's doc comment in ThemeManager.swift for
+                // why custom ButtonStyle conformance was dropped app-wide).
+                // Use the wrapper directly instead of a Button + buttonStyle
+                // pair.
+                PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: {
                     isFocused = false
                     Task {
                         await feedbackManager.submit(
@@ -104,7 +115,6 @@ struct FeedbackView: View {
                         Text(feedbackManager.isSubmitting ? "Sending…" : "Send feedback")
                     }
                 }
-                .buttonStyle(.primaryCTA(theme))
                 .disabled(!isValid || feedbackManager.isSubmitting)
                 .padding(.horizontal, Layout.pageMargin)
 
@@ -132,10 +142,14 @@ struct FeedbackView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
 
-            Button(action: { dismiss() }) {
+            // FIX: same leftover-ButtonStyle pattern as above, using the
+            // secondary variant. SecondaryCTAButton has no onAccent
+            // parameter — its own text color is `accent` — so nothing
+            // else needs to change here since this label has no tint call
+            // to fix up.
+            SecondaryCTAButton(accent: theme.accent, action: { dismiss() }) {
                 Text("Done")
             }
-            .buttonStyle(.secondaryCTA(theme))
             .padding(.horizontal, 40)
             .padding(.top, 8)
         }

@@ -24,43 +24,42 @@ struct AccountRequiredGateView: View {
 
     var body: some View {
         ZStack {
-            VStack(spacing: 22) {
+            VStack(spacing: 22.0) {
                 Spacer()
 
                 ZStack {
-                    Circle().fill(theme.accent.opacity(0.12)).frame(width: 76, height: 76)
+                    Circle().fill(theme.accent.opacity(0.12)).frame(width: 76.0, height: 76.0)
                     Image(systemName: "lock.fill")
-                        .font(theme.font(26, weight: .light))
+                        .font(theme.font(26.0, weight: .light))
                         .foregroundStyle(theme.accent)
                 }
 
-                VStack(spacing: 8) {
+                VStack(spacing: 8.0) {
                     SectionLabel("Account required")
 
                     Text(featureName)
-                        .font(theme.font(20, weight: .light))
+                        .font(theme.font(20.0, weight: .light))
                         .foregroundStyle(theme.textPrimary)
                         .multilineTextAlignment(.center)
                 }
 
                 Text(message)
-                    .font(theme.font(13, weight: .light))
+                    .font(theme.font(13.0, weight: .light))
                     .foregroundStyle(theme.textSecondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, Layout.pageMargin)
 
-                Button(action: { showSignUp = true }) {
+                PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: { showSignUp = true }) {
                     Text("Create free account")
                 }
-                .buttonStyle(.primaryCTA(theme))
                 .padding(.horizontal, Layout.pageMargin)
-                .padding(.top, 6)
+                .padding(.top, 6.0)
 
                 Spacer()
                 Spacer()
             }
         }
-        .themedSurface(theme)
+        .themedSurface(ignoresSafeArea: true)
         .sheet(isPresented: $showSignUp) {
             LoginView(hideGuestOption: true)
         }

@@ -74,8 +74,17 @@ struct LeaderboardView: View {
                     }
                     .padding(Layout.cardPadding)
                     .frame(maxWidth: .infinity)
+                    // NOTE(skip): `.ultraThinMaterial` and `.clipShape` aren't
+                    // resolved by Skip's SwiftUI shim — iOS keeps the real
+                    // material + shape clip, Android gets a plain tinted
+                    // background + `.cornerRadius`.
+                    #if !SKIP
                     .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: Layout.cardRadius))
+                    #else
+                    .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                    .cornerRadius(Layout.cardRadius)
+                    #endif
                     .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1))
                     .padding(.horizontal, Layout.pageMargin)
 
@@ -103,8 +112,13 @@ struct LeaderboardView: View {
                                 .foregroundStyle(theme.textTertiary)
                         }
                         .padding(16)
+                        #if !SKIP
                         .background(.ultraThinMaterial)
                         .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius))
+                        #else
+                        .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                        .cornerRadius(Layout.controlRadius)
+                        #endif
                         .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius).stroke(theme.cardStroke, lineWidth: 1))
                     }
                     .padding(.horizontal, Layout.pageMargin)
@@ -115,8 +129,13 @@ struct LeaderboardView: View {
                             .textInputAutocapitalization(.characters)
                             .autocorrectionDisabled()
                             .padding(14)
+                            #if !SKIP
                             .background(.ultraThinMaterial)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
+                            #else
+                            .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                            .cornerRadius(14)
+                            #endif
                             .foregroundStyle(theme.textPrimary)
 
                         Button(action: {
@@ -131,7 +150,14 @@ struct LeaderboardView: View {
                                 .padding(.vertical, 16)
                                 .background(theme.accent)
                                 .foregroundColor(theme.onAccent)
+                                // NOTE(skip): `.clipShape` isn't resolved by Skip's
+                                // SwiftUI shim — `.cornerRadius` gives the same
+                                // rounded look on Android.
+                                #if !SKIP
                                 .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius))
+                                #else
+                                .cornerRadius(Layout.controlRadius)
+                                #endif
                         }
                         .disabled(friendCodeInput.trimmingCharacters(in: .whitespaces).isEmpty || leaderboardManager.isLoading)
                     }
@@ -175,7 +201,8 @@ struct LeaderboardView: View {
                 }
             }
         }
-        .themedSurface(theme)
+        // FIX: Replaced `theme` with `ignoresSafeArea: true` to resolve the compiler error
+        .themedSurface(ignoresSafeArea: true)
         .task {
             await leaderboardManager.syncMyStreak(currentStreak: streakManager.currentStreak, longestStreak: streakManager.longestStreak, identityID: identityID, accessToken: authManager.accessToken)
             await leaderboardManager.fetchLeaderboard(identityID: identityID, accessToken: authManager.accessToken)
@@ -217,7 +244,11 @@ struct LeaderboardView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .background(isMe ? (theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06)) : Color.clear)
+        #if !SKIP
         .clipShape(RoundedRectangle(cornerRadius: 14))
+        #else
+        .cornerRadius(14)
+        #endif
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
     }
 }

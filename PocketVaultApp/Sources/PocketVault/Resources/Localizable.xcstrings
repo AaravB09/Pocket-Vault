@@ -1,8 +1,40 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "" : {
+
+    },
+    "-$%lld" : {
+
+    },
+    "—" : {
+
+    },
+    "#%lld" : {
+
+    },
+    "%@ only lives on this device" : {
+
+    },
+    "%@$%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@$%2$lld"
+          }
+        }
+      }
+    },
+    "%lld" : {
+
+    },
+    "%lld days" : {
+
+    },
     "%lld Items" : {
       "comment" : "Header title for a list that contains the number of items",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -29,6 +61,59 @@
           }
         }
       }
+    },
+    "%lld OF %lld PIECES PLACED" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld OF %2$lld PIECES PLACED"
+          }
+        }
+      }
+    },
+    "%lld/%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "%lld%%" : {
+
+    },
+    "%lld%% used" : {
+
+    },
+    "+$%lld" : {
+
+    },
+    "$" : {
+
+    },
+    "$%lld" : {
+
+    },
+    "$%lld combined" : {
+
+    },
+    "$%lld left" : {
+
+    },
+    "0" : {
+
+    },
+    "1 OF %lld PIECES PLACED · STARTER PIECE" : {
+
+    },
+    "500" : {
+
+    },
+    "A weekend trip, a gift, a goal just for this week — say it in your own words." : {
+
     },
     "Add" : {
       "comment" : "Button in items list that will cause a new item to be added",
@@ -59,6 +144,21 @@
         }
       }
     },
+    "Add a deposit" : {
+
+    },
+    "Add a friend's code above to start comparing streaks." : {
+
+    },
+    "Add to Apple Calendar" : {
+
+    },
+    "Already have an account? Sign in" : {
+
+    },
+    "Amount" : {
+
+    },
     "Appearance" : {
       "comment" : "Settings select label for the interface style of the controls (light, dark, or default)",
       "localizations" : {
@@ -88,6 +188,54 @@
         }
       }
     },
+    "Applied" : {
+
+    },
+    "Ask a question…" : {
+
+    },
+    "Ask AI" : {
+
+    },
+    "ASK AI" : {
+
+    },
+    "ASK AI IS A PRO FEATURE" : {
+
+    },
+    "Ask AI needs a connection — your goal data is still all here, just can't chat about it right now." : {
+
+    },
+    "Ask me anything about your savings — “Am I on pace?”, “How do I save faster?”, “What if I skip a week?”" : {
+
+    },
+    "Auto-import spending instead of logging by hand" : {
+
+    },
+    "Balance" : {
+
+    },
+    "BANK SYNC" : {
+
+    },
+    "BANK SYNC — PRO" : {
+
+    },
+    "Bank sync needs a connection — log payments by hand until you're back online." : {
+
+    },
+    "Blurs balances until you tap to reveal — handy with people around." : {
+
+    },
+    "Bugs, ideas, anything at all — it goes straight to the team." : {
+
+    },
+    "BUILD STUDIO" : {
+
+    },
+    "BUILDING YOUR PLAN…" : {
+
+    },
     "Cancel" : {
       "comment" : "Button title indicating that the operation should be cancelled",
       "localizations" : {
@@ -116,6 +264,57 @@
           }
         }
       }
+    },
+    "Chat with your savings assistant anytime — ask about pacing, trade-offs, or ways to hit your goal faster." : {
+
+    },
+    "Check your email" : {
+
+    },
+    "Choose a New Password" : {
+
+    },
+    "Close" : {
+
+    },
+    "Confirm deposit" : {
+
+    },
+    "Confirm new password" : {
+
+    },
+    "Connect a bank to auto-log spending" : {
+
+    },
+    "CONNECT BANK" : {
+
+    },
+    "Connected — new transactions import automatically" : {
+
+    },
+    "Continue" : {
+
+    },
+    "Continue as Guest — try it free" : {
+
+    },
+    "Copied" : {
+
+    },
+    "Create a free account to continue" : {
+
+    },
+    "Create a goal first, then come back to share it." : {
+
+    },
+    "Create account" : {
+
+    },
+    "Create free account" : {
+
+    },
+    "Create Your Vault" : {
+
     },
     "Dark" : {
       "comment" : "Menu item indicating that the appearance should be in dark mode",
@@ -175,8 +374,48 @@
         }
       }
     },
+    "Deposit day" : {
+
+    },
+    "Deposit funds" : {
+
+    },
+    "Describe your own goal" : {
+
+    },
+    "Done" : {
+
+    },
+    "drag the ruler, tap ahead to jump, or tap the amount to type" : {
+
+    },
+    "e.g. \"a weekend trip to Tahoe\"" : {
+
+    },
+    "e.g. Grocery run" : {
+
+    },
+    "Email" : {
+
+    },
+    "Enter a friend's code" : {
+
+    },
+    "Enter their code" : {
+
+    },
+    "Enter your account email and we'll send you a link to reset your password." : {
+
+    },
+    "EXPORT MY DATA" : {
+
+    },
+    "Exports your goals, savings history, and transactions as plain %@ files — a format any spreadsheet or other app can open. Nothing leaves your device unless you choose to share it." : {
+
+    },
     "Favorite" : {
       "comment" : "Item editor title label for marking the item as a favorite",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -204,8 +443,36 @@
         }
       }
     },
+    "Feedback sent" : {
+
+    },
+    "Floor" : {
+
+    },
+    "Forgot password?" : {
+
+    },
+    "Format" : {
+
+    },
+    "Friends & Streaks" : {
+
+    },
+    "GENERATE MY PLAN" : {
+
+    },
+    "Generate with AI" : {
+
+    },
+    "Goal" : {
+
+    },
+    "Head start for creating your goal — deposit to keep it moving" : {
+
+    },
     "Hello [%@](https://skip.dev)!" : {
       "comment" : "Welcome tab contents",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -235,6 +502,7 @@
     },
     "Home" : {
       "comment" : "Tab bar item title for the Home tab",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -261,6 +529,33 @@
           }
         }
       }
+    },
+    "How much are you aiming for?" : {
+
+    },
+    "If you lose this device or delete the app, everything you've built disappears with it. A free account keeps it safe." : {
+
+    },
+    "If you lose this device or delete the app, your %lld-day streak and everything you've built disappears with it. A free account keeps it safe." : {
+
+    },
+    "Invite friends" : {
+
+    },
+    "Join" : {
+
+    },
+    "Leave" : {
+
+    },
+    "Leave and end this shared budget?" : {
+
+    },
+    "Leave this shared budget" : {
+
+    },
+    "Leave this shared budget?" : {
+
     },
     "Light" : {
       "comment" : "Menu item indicating that the appearance should be in light mode",
@@ -291,8 +586,15 @@
         }
       }
     },
+    "Log a payment" : {
+
+    },
+    "Make a couple deposits to see your trend take shape." : {
+
+    },
     "Name" : {
       "comment" : "Placeholder title for the Name field in a form",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -320,8 +622,24 @@
         }
       }
     },
+    "New here? Create an account" : {
+
+    },
+    "New password" : {
+
+    },
+    "Next" : {
+
+    },
+    "No payments logged yet this month. Tap “Log a Payment” above to start tracking." : {
+
+    },
+    "Not now" : {
+
+    },
     "Notes" : {
       "comment" : "Item editor form label for the Notes field",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -349,8 +667,33 @@
         }
       }
     },
+    "of $%lld" : {
+
+    },
+    "Offline — goals & budget still editable" : {
+
+    },
+    "or pick a quick preset" : {
+
+    },
+    "Over by $%lld" : {
+
+    },
+    "Password (6+ characters)" : {
+
+    },
+    "Passwords match" : {
+
+    },
+    "Please wait…" : {
+
+    },
+    "POCKET VAULT" : {
+
+    },
     "Powered by [Skip](https://skip.dev)" : {
       "comment" : "Link markdown text for the Powered by… label",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -377,6 +720,27 @@
           }
         }
       }
+    },
+    "Privacy Mode" : {
+
+    },
+    "Pro plans aren't set up yet" : {
+
+    },
+    "Processing…" : {
+
+    },
+    "Reset Password" : {
+
+    },
+    "Resetting the password for %@" : {
+
+    },
+    "Restore purchases" : {
+
+    },
+    "Restoring…" : {
+
     },
     "Save" : {
       "comment" : "Button title indicating that the current contents should be saved",
@@ -407,8 +771,57 @@
         }
       }
     },
+    "Save limit" : {
+
+    },
+    "Save new password" : {
+
+    },
+    "Save payment" : {
+
+    },
+    "Save Together" : {
+
+    },
+    "Save toward one goal together" : {
+
+    },
+    "Saver" : {
+
+    },
+    "Saving…" : {
+
+    },
+    "SAVINGS COACH" : {
+
+    },
+    "Savings trend" : {
+
+    },
+    "SCULPTURE COMPLETE" : {
+
+    },
+    "Send feedback" : {
+
+    },
+    "Send Feedback" : {
+
+    },
+    "Send reset link" : {
+
+    },
+    "Send this to your partner" : {
+
+    },
+    "Sending…" : {
+
+    },
+    "Set your spending cap" : {
+
+    },
     "Settings" : {
       "comment" : "Tab bar item title for the Settings tab",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -436,8 +849,48 @@
         }
       }
     },
+    "Share “%@” with a partner" : {
+
+    },
+    "Share this goal" : {
+
+    },
+    "Share this so friends can add you" : {
+
+    },
+    "Shared budget" : {
+
+    },
+    "Sign in" : {
+
+    },
+    "Sign out" : {
+
+    },
+    "Sign Out" : {
+
+    },
+    "Sign out of Pocket Vault?" : {
+
+    },
+    "Since it's your goal, this ends the shared budget for both of you. Your partner will lose access next time they refresh." : {
+
+    },
+    "Skip" : {
+
+    },
+    "START SAVING" : {
+
+    },
+    "SYNC NOW" : {
+
+    },
+    "Syncing…" : {
+
+    },
     "System" : {
       "comment" : "Menu item indicating that the appearance should be in the default system mode",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -465,8 +918,30 @@
         }
       }
     },
+    "tap elsewhere to confirm" : {
+
+    },
+    "Tap to reveal" : {
+
+    },
+    "Target" : {
+
+    },
+    "Target date" : {
+
+    },
+    "Tell me when you want to hit your goal and I'll build a tailored plan to get you there." : {
+
+    },
+    "Thinking…" : {
+
+    },
+    "This screen renders live from your RevenueCat Offering. Add an Offering with Packages in the RevenueCat dashboard (and matching products in App Store Connect), then this screen will populate automatically." : {
+
+    },
     "Title" : {
       "comment" : "Label for the item editor form indicating the title of the item",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -494,8 +969,15 @@
         }
       }
     },
+    "Unlock Pro" : {
+
+    },
+    "Use this goal" : {
+
+    },
     "Version %@ (%@)" : {
       "comment" : "Settings label showing the current version of the app",
+      "extractionState" : "stale",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -529,8 +1011,18 @@
         }
       }
     },
+    "VIEW PRO PLANS" : {
+
+    },
+    "We read every message — appreciate you taking the time." : {
+
+    },
+    "We sent a confirmation link to %@. Tap it, then come back and sign in." : {
+
+    },
     "Welcome" : {
       "comment" : "Tab bar item title for the Welcome tab",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -557,6 +1049,39 @@
           }
         }
       }
+    },
+    "Welcome Back" : {
+
+    },
+    "Welcome to Pro" : {
+
+    },
+    "What are you building toward?" : {
+
+    },
+    "What did you spend?" : {
+
+    },
+    "What's on your mind?" : {
+
+    },
+    "You'll both see every deposit and how close you are together." : {
+
+    },
+    "You'll create a free account on the next step" : {
+
+    },
+    "You'll get an alert here once you cross 80% and again if you go over." : {
+
+    },
+    "You'll stop seeing combined progress and deposits. %@ can invite someone else to your spot with the same code." : {
+
+    },
+    "YOUR TAILORED PLAN" : {
+
+    },
+    "Your vault" : {
+
     }
   },
   "version" : "1.0"

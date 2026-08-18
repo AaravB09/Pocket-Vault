@@ -26,7 +26,14 @@ struct NewPasswordView: View {
     private let requirements: [PasswordRequirement] = [
         PasswordRequirement(label: "At least 6 characters", isMet: { $0.count >= 6 }),
         PasswordRequirement(label: "One uppercase letter", isMet: { $0.contains(where: { $0.isUppercase }) }),
-        PasswordRequirement(label: "One number", isMet: { $0.contains(where: { $0.isNumber }) })
+        // NOTE(skip): with bare string-literal bounds ("0"..."9"), Skip's
+        // transpiler doesn't apply Swift's contextual String-literal-to-
+        // Character inference here, and emits a Kotlin range typed for
+        // String — so calling .contains($0) on it, where $0 is a
+        // Character, fails ("actual type is 'Char', but 'String' was
+        // expected"). Explicit Character(...) bounds fix it (same issue
+        // as Loginview.swift's password requirements).
+        PasswordRequirement(label: "One number", isMet: { $0.contains(where: { (Character("0")...Character("9")).contains($0) }) })
     ]
 
     private var isValid: Bool {
@@ -71,7 +78,14 @@ struct NewPasswordView: View {
                             .tint(theme.accent)
                             .padding(16)
                             .padding(.trailing, 40)
+                            // NOTE(skip): .ultraThinMaterial has no Android
+                            // equivalent and was unresolved, cascading into
+                            // the .clipShape right below it too.
+                            #if !SKIP
                             .background(.ultraThinMaterial)
+                            #else
+                            .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
+                            #endif
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
 
@@ -89,7 +103,11 @@ struct NewPasswordView: View {
                             .foregroundStyle(theme.textPrimary)
                             .tint(theme.accent)
                             .padding(16)
+                            #if !SKIP
                             .background(.ultraThinMaterial)
+                            #else
+                            .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
+                            #endif
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
 
@@ -147,7 +165,8 @@ struct NewPasswordView: View {
                 }
             }
         }
-        .themedSurface(theme)
+        // FIX: Replaced `theme` with `ignoresSafeArea: true`
+        .themedSurface(ignoresSafeArea: true)
         .interactiveDismissDisabled(true)
     }
 

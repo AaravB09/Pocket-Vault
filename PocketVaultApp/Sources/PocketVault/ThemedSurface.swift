@@ -32,9 +32,37 @@ extension View {
     /// - Parameter ignoresSafeArea: pass `false` if this screen's background
     ///   should stop at the safe area instead of bleeding under it (rare —
     ///   most full-screen views want the default `true`).
-    func themedSurface(_ theme: ThemeManager, ignoresSafeArea: Bool = true) -> some View {
-        self
+    ///
+    /// NOTE: this reads `ThemeManager` via `@EnvironmentObject` inside
+    /// `ThemedSurfaceModifier` rather than taking it as a parameter here.
+    /// That keeps `ThemeManager` out of this function's signature, so it
+    /// can stay `internal` even though this extension itself has to be
+    /// `public` to be callable across the package boundary (Swift won't
+    /// let a `public` function expose an `internal` parameter type —
+    /// that's the "'public' function exposes its 'internal' parameter
+    /// type" error). Requires `ThemeManager` to already be injected
+    /// higher up via `.environmentObject(theme)` before this is called.
+    public func themedSurface(ignoresSafeArea: Bool = true) -> some View {
+        modifier(ThemedSurfaceModifier(ignoresSafeArea: ignoresSafeArea))
+    }
+}
+
+private struct ThemedSurfaceModifier: ViewModifier {
+    @EnvironmentObject private var theme: ThemeManager
+    let ignoresSafeArea: Bool
+
+    func body(content: Content) -> some View {
+        content
+            // The 3-argument hierarchical .foregroundStyle(primary:secondary:tertiary:)
+            // isn't implemented by Skip, so Android falls back to just the
+            // primary color here — screens that need the secondary/tertiary
+            // distinction already reference those tokens explicitly (see
+            // the doc comment above).
+            #if !SKIP
             .foregroundStyle(theme.textPrimary, theme.textSecondary, theme.textTertiary)
+            #else
+            .foregroundStyle(theme.textPrimary)
+            #endif
             .background {
                 if ignoresSafeArea {
                     theme.background.ignoresSafeArea()

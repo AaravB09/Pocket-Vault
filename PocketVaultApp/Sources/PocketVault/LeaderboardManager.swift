@@ -10,6 +10,27 @@ struct LeaderboardEntry: Identifiable, Codable, Equatable {
     var longest_streak: Int
 }
 
+// NOTE(skip): these two used to be decoded as raw `[String: String]`
+// dictionaries. Skip's `JSONDecoder` shim only reliably resolves
+// `decode(_:)` against a concrete `Codable` type — asking it to decode
+// into a bare `Dictionary` left the element type unresolved on the
+// Kotlin side, which cascaded into a pile of unrelated-looking errors
+// downstream (ambiguous overloads on the `$0[...]` subscript, "cannot
+// infer type for 'it'", and even a `MatchGroup`/`String` mismatch on
+// the `matches` variable below — none of that is really about regex,
+// it's fallout from the unresolved decode). Small dedicated structs,
+// same as `LeaderboardEntry` above, decode cleanly on both platforms.
+
+/// Shape of one row returned by the `lookup_friend_by_code` RPC.
+private struct FriendLookupResult: Codable {
+    let id: String
+}
+
+/// Shape of one row from a `friendships` select limited to `friend_id`.
+private struct FriendshipRow: Codable {
+    let friend_id: String
+}
+
 /// Backs the Friends tab. Talks directly to Supabase's REST API; see
 /// SupabaseConfig.swift and supabase_schema.sql for the one-time setup
 /// this depends on.
@@ -154,8 +175,8 @@ final class LeaderboardManager: ObservableObject {
                 errorMessage = "Couldn't look up that code."
                 return
             }
-            let matches = try JSONDecoder().decode([[String: String]].self, from: data)
-            guard let friendID = matches.first?["id"] else {
+            let matches = try JSONDecoder().decode([FriendLookupResult].self, from: data)
+            guard let friendID = matches.first?.id else {
                 errorMessage = "No one has that code."
                 return
             }
@@ -201,8 +222,8 @@ final class LeaderboardManager: ObservableObject {
                 URLQueryItem(name: "select", value: "friend_id")
             ])
             let (friendData, _) = try await URLSession.shared.data(for: friendIDsReq)
-            let friendRows = (try? JSONDecoder().decode([[String: String]].self, from: friendData)) ?? []
-            let friendIDs = friendRows.compactMap { $0["friend_id"] }
+            let friendRows = (try? JSONDecoder().decode([FriendshipRow].self, from: friendData)) ?? []
+            let friendIDs = friendRows.map { $0.friend_id }
 
             let quotedIDs = ([identityID] + friendIDs).map { "\"\($0)\"" }.joined(separator: ",")
             let profilesReq = request(path: "profiles", accessToken: accessToken, queryItems: [

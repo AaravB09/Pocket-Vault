@@ -21,19 +21,63 @@ struct BuildStudioView: View {
     @State private var lastUnlockedCount: Int = 0
 
     private var goalKind: GoalKind { GoalKind(rawValue: goalKindRaw) ?? .flight }
+
+    // FIX: Apple's UIKit ships a special `UIColor(Color)` bridging
+    // initializer (SwiftUI -> UIKit) that Skip's Android `UIColor`
+    // compatibility shim does not implement — the shim only provides the
+    // plain component initializers (e.g. `UIColor(white:alpha:)`, used
+    // further down for the base/light entities, which is why those calls
+    // aren't flagged). Calling `UIColor(theme.accent)` therefore gets
+    // matched against `UIColor(red:green:blue:alpha:)` with only one
+    // positional argument, producing "actual type is 'Color', but
+    // 'Double' was expected" plus "No value passed for parameter
+    // 'green'/'blue'/'alpha'".
+    //
+    // The follow-up attempt — resolving the `Color` into RGBA via
+    // `Color.resolve(in:)` and building the `UIColor` from that — hits
+    // the same wall one call earlier: that API isn't implemented by Skip
+    // on Android either ("This API is not yet available in Skip"). There
+    // is no way to introspect a `Color`'s components on both platforms.
+    //
+    // So don't: take the RGB `theme.accent` was built from in the first
+    // place. `ThemeManager.accentRGB` (see ThemeManager.swift) exposes
+    // exactly those numbers, already resolved for light/dark — no
+    // `Color`/`UIColor` bridging involved at all.
+    private func trimUIColor(from components: (r: Double, g: Double, b: Double)) -> UIColor {
+        UIColor(red: components.r, green: components.g, blue: components.b, alpha: 1.0)
+    }
+
     // The 3D build's trim/accent pieces (gold bow ribbon, spoiler, lock
     // shackle, etc.) now follow whichever accent color the user picked in
     // Appearance instead of always rendering champagne gold — same accent
     // driving every 2D screen also drives the trim color here.
     private var voxels: [VoxelUnit] {
+        // NOTE(skip): GoalBuildLibrary's voxel builders take UIColor on
+        // both platforms — Skip provides a UIColor compatibility shim
+        // (used a few lines down for UIColor.white etc.), so there's no
+        // need to branch this. The previous #if SKIP branch was handing
+        // the SKIP build a raw Color where UIColor was expected, which is
+        // exactly the "actual type is 'Color', but 'UIColor' was
+        // expected" error at both call sites below.
+        let trimColor = trimUIColor(from: theme.accentRGB)
+
         if let blueprint = customVoxelBlueprint, !blueprint.isEmpty {
-            return GoalBuildLibrary.customVoxels(fromBlueprintJSON: blueprint, trimColor: UIColor(theme.accent))
+            return GoalBuildLibrary.customVoxels(fromBlueprintJSON: blueprint, trimColor: trimColor)
         }
-        return GoalBuildLibrary.voxels(for: goalKind, trimColor: UIColor(theme.accent))
+        return GoalBuildLibrary.voxels(for: goalKind, trimColor: trimColor)
     }
 
+    // FIX: nested `min(max(...))` over Doubles is the same generic-
+    // overload pattern that broke AmountScrubPicker, BudgetTrackerView,
+    // and TransactionRow — Skip's Kotlin codegen can't resolve the
+    // overload and reports it as an argument type mismatch / "Number &
+    // Comparable<CapturedType(*)>". Clamp with plain comparisons instead.
     private var progressRatio: Double {
-        min(max(currentSavings / max(targetGoal, 1.0), 0.0), 1.0)
+        let safeTarget = targetGoal > 1.0 ? targetGoal : 1.0
+        let raw = currentSavings / safeTarget
+        if raw < 0.0 { return 0.0 }
+        if raw > 1.0 { return 1.0 }
+        return raw
     }
 
     // Goal-Gradient Effect: the moment a goal exists, the first brick is
@@ -63,12 +107,12 @@ struct BuildStudioView: View {
                         .font(theme.font(14, weight: .light))
                         .foregroundStyle(.primary.opacity(0.8))
 
-                    Text(currentSavings > 0
-                         ? "\(unlockedCount) OF \(voxels.count) PIECES PLACED"
-                         : "1 OF \(voxels.count) PIECES PLACED · STARTER PIECE")
+                    Text(currentSavings > 0.0
+                        ? "\(unlockedCount) OF \(voxels.count) PIECES PLACED"
+                        : "1 OF \(voxels.count) PIECES PLACED · STARTER PIECE")
                         .font(theme.font(9, weight: .semibold))
                         .tracking(2)
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(.secondary) // was .tertiary — unsupported by Skip
                         .padding(.top, 2)
                 }
                 .padding(.top, 60)
@@ -95,17 +139,22 @@ struct BuildStudioView: View {
                     }
                     .padding(.horizontal, 22)
                     .padding(.vertical, 14)
-                    .background(.ultraThinMaterial)
+                    // NOTE(skip): .ultraThinMaterial has no Android/Compose
+                    // equivalent and was unresolved, cascading into the
+                    // .clipShape right below it.
+                    .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                     .clipShape(RoundedRectangle(cornerRadius: 18))
                     .overlay(RoundedRectangle(cornerRadius: 18).stroke(theme.accent.opacity(0.4), lineWidth: 1))
                     .padding(.bottom, 110)
                 }
             }
         }
-        .themedSurface(theme)
-        .onChange(of: currentSavings) { _, _ in
+        .themedSurface(ignoresSafeArea: true)
+        .onChange(of: currentSavings) { newValue in
             if unlockedCount > lastUnlockedCount {
+                #if !SKIP
                 UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
+                #endif
             }
             lastUnlockedCount = unlockedCount
         }
@@ -190,6 +239,8 @@ struct BuildStudioView: View {
     #if !SKIP
     @available(iOS 18.0, *)
     private func spawnVoxel(index: Int, unit: VoxelUnit, on base: Entity) {
+        let position = SIMD3<Float>(unit.position.x, unit.position.y, unit.position.z)
+        let axis = SIMD3<Float>(unit.orientation.axis.x, unit.orientation.axis.y, unit.orientation.axis.z)
         let name = "voxel_\(index)"
         guard base.findEntity(named: name) == nil else { return }
 
@@ -208,17 +259,17 @@ struct BuildStudioView: View {
         let material = SimpleMaterial(color: unit.color, isMetallic: unit.isMetallic)
         let entity = ModelEntity(mesh: mesh, materials: [material])
         entity.name = name
-        entity.orientation = unit.orientation
+        entity.orientation = simd_quatf(angle: unit.orientation.angle, axis: axis)
 
-        entity.position = unit.position + SIMD3<Float>(0, 0.3, 0)
+        entity.position = position + SIMD3<Float>(0, 0.3, 0)
         entity.scale = [0.15, 0.15, 0.15]
         base.addChild(entity)
 
         var finalTransform = entity.transform
-        finalTransform.translation = unit.position
+        finalTransform.translation = position
         finalTransform.scale = [1, 1, 1]
 
         entity.move(to: finalTransform, relativeTo: base, duration: 0.5, timingFunction: .easeOut)
     }
-    #endif
+    #endif // !SKIP
 }

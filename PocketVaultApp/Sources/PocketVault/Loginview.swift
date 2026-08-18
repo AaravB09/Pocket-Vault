@@ -32,7 +32,17 @@ struct LoginView: View {
     private let passwordRequirements: [PasswordRequirement] = [
         PasswordRequirement(label: "At least 6 characters", isMet: { $0.count >= 6 }),
         PasswordRequirement(label: "One uppercase letter", isMet: { $0.contains(where: { $0.isUppercase }) }),
-        PasswordRequirement(label: "One number", isMet: { $0.contains(where: { $0.isNumber }) })
+        PasswordRequirement(label: "One number", isMet: { password in
+            // NOTE(skip): with the bare string-literal bounds ("0"..."9"),
+            // Skip's transpiler doesn't apply the same contextual
+            // String-literal-to-Character inference Swift does here, and
+            // emits a Kotlin `ClosedRange<String>` even though the
+            // declared type is `ClosedRange<Character>`. Wrapping each
+            // bound in an explicit `Character(...)` forces the right type
+            // on both platforms.
+            let digits: ClosedRange<Character> = Character("0")...Character("9")
+            return password.contains(where: { digits.contains($0) })
+        })
     ]
 
     var body: some View {
@@ -70,8 +80,17 @@ struct LoginView: View {
                             .foregroundStyle(.primary)
                             .tint(theme.accent)
                             .padding(16)
+                            // NOTE(skip): `.ultraThinMaterial` and `.clipShape`
+                            // aren't resolved by Skip's SwiftUI shim — iOS keeps
+                            // the real material + shape clip, Android gets a
+                            // plain tinted background + `.cornerRadius`.
+                            #if !SKIP
                             .background(.ultraThinMaterial)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
+                            #else
+                            .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                            .cornerRadius(14)
+                            #endif
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
 
                         ZStack(alignment: .trailing) {
@@ -88,14 +107,19 @@ struct LoginView: View {
                             .tint(theme.accent)
                             .padding(16)
                             .padding(.trailing, 40)
+                            #if !SKIP
                             .background(.ultraThinMaterial)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
+                            #else
+                            .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                            .cornerRadius(14)
+                            #endif
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
 
                             Button(action: { isPasswordVisible.toggle() }) {
                                 Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
                                     .font(theme.font(14))
-                                    .foregroundStyle(.tertiary)
+                                    .foregroundStyle(theme.textTertiary)
                             }
                             .padding(.trailing, 16)
                         }
@@ -151,8 +175,13 @@ struct LoginView: View {
                                 .multilineTextAlignment(.center)
                         }
                         .padding(16)
+                        #if !SKIP
                         .background(.ultraThinMaterial)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
+                        #else
+                        .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                        .cornerRadius(14)
+                        #endif
                         .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.accent.opacity(0.3), lineWidth: 1))
                         .padding(.horizontal, Layout.pageMargin)
                     } else if let errorMessage = authManager.errorMessage {
@@ -188,7 +217,14 @@ struct LoginView: View {
                         .padding(.vertical, 17)
                         .background(isValid ? theme.textPrimary : theme.textPrimary.opacity(0.25))
                         .foregroundColor(theme.background)
+                        // NOTE(skip): `.clipShape` isn't resolved by Skip's
+                        // SwiftUI shim — `.cornerRadius` gives the same
+                        // rounded look on Android.
+                        #if !SKIP
                         .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius))
+                        #else
+                        .cornerRadius(Layout.controlRadius)
+                        #endif
                     }
                     .disabled(!isValid || authManager.isLoading)
                     .padding(.horizontal, Layout.pageMargin)
@@ -222,11 +258,11 @@ struct LoginView: View {
                 }
             }
         }
-        .themedSurface(theme)
+        .themedSurface(ignoresSafeArea: true)
         .sheet(isPresented: $showForgotPassword) {
             ForgotPasswordSheet(email: $resetEmail)
         }
-        .onChange(of: authManager.needsPasswordReset) { _, needsReset in
+        .onChange(of: authManager.needsPasswordReset) { needsReset in
             if needsReset {
                 showForgotPassword = false
             }
@@ -255,7 +291,7 @@ private struct ForgotPasswordSheet: View {
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(theme.font(22, weight: .bold))
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(theme.textTertiary)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -284,8 +320,13 @@ private struct ForgotPasswordSheet: View {
                     .foregroundStyle(.primary)
                     .tint(theme.accent)
                     .padding(16)
+                    #if !SKIP
                     .background(.ultraThinMaterial)
                     .clipShape(RoundedRectangle(cornerRadius: 14))
+                    #else
+                    .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                    .cornerRadius(14)
+                    #endif
                     .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
                     .padding(.horizontal, Layout.pageMargin)
 
@@ -303,20 +344,32 @@ private struct ForgotPasswordSheet: View {
                         .padding(.horizontal, Layout.pageMargin)
                 }
 
-                Button(action: sendReset) {
+                // FIX: `PrimaryCTAButtonStyle(...)` no longer exists as a
+                // type — same underlying migration as everywhere else
+                // (BuildStudioView, AccountRequiredGateView, SetupGoalView,
+                // CustomPaywallView): custom ButtonStyle conformance isn't
+                // supported by Skip, so it was replaced app-wide with the
+                // plain PrimaryCTAButton wrapper view (see ThemeManager.swift).
+                // This call site was passing the accent/onAccent colors
+                // straight into the ButtonStyle initializer — those become
+                // PrimaryCTAButton's own accent/onAccent parameters instead.
+                PrimaryCTAButton(
+                    accent: isValidEmail ? theme.textPrimary : theme.textPrimary.opacity(0.25),
+                    onAccent: theme.background,
+                    action: sendReset
+                ) {
                     HStack {
                         if isSending { ProgressView().tint(theme.background) }
                         Text(isSending ? "Sending…" : "Send reset link")
                     }
                 }
-                .buttonStyle(PrimaryCTAButtonStyle(accent: isValidEmail ? theme.textPrimary : theme.textPrimary.opacity(0.25), onAccent: theme.background))
                 .disabled(!isValidEmail || isSending)
                 .padding(.horizontal, Layout.pageMargin)
 
                 Spacer()
             }
         }
-        .themedSurface(theme)
+        .themedSurface(ignoresSafeArea: true)
     }
 
     private func sendReset() {

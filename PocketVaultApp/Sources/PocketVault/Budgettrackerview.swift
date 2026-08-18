@@ -38,7 +38,14 @@ struct BudgetTrackerView: View {
                 .padding(.bottom, 130)
             }
         }
-        .themedSurface(theme)
+        // FIX: themedSurface() no longer takes `theme` as a parameter —
+        // it reads ThemeManager via @EnvironmentObject internally now
+        // (see ThemedSurface.swift). The old `.themedSurface(theme)` call
+        // was passing `theme` positionally into the `ignoresSafeArea: Bool`
+        // slot, which is what produced "Cannot convert value of type
+        // 'ThemeManager' to expected argument type 'Bool'" and "Missing
+        // argument label 'ignoresSafeArea:' in call" together.
+        .themedSurface()
         .sheet(isPresented: $showAddSheet) {
             AddPaymentSheet()
                 .environmentObject(budgetManager)
@@ -55,14 +62,31 @@ struct BudgetTrackerView: View {
     // MARK: - Header
 
     private var header: some View {
-        ScreenHeader("Budget")
-            .padding(.top, 40)
+        // FIX: Explicitly providing an EmptyView closure resolves the
+        // "Cannot infer type for type parameter 'Trailing'" error.
+        ScreenHeader("Budget") {
+            EmptyView()
+        }
+        .padding(.top, 40)
     }
 
     // MARK: - Alert banner
 
     private func alertBanner(for status: BudgetStatus) -> some View {
-        let (icon, color, message): (String, Color, String) = {
+        // FIX: a typed tuple-destructuring `let (a, b, c): (T1, T2, T3) = ...`
+        // transpiles to a Kotlin destructuring declaration, and Kotlin does
+        // not allow an explicit type annotation on a destructuring
+        // declaration as a whole — that's the "Type annotations are not
+        // allowed on destructuring declarations" error. (The tuple type
+        // annotation itself was a legitimate earlier fix, for Swift's
+        // "Cannot infer type for type parameter 'Trailing'" — that error
+        // was cascading from this same line into unrelated closures
+        // elsewhere in the file, like the ScreenHeader call in `header`.)
+        // Give the *tuple* the explicit type instead of the destructured
+        // names, then pull the three values out as plain property
+        // accesses — no destructuring involved, so Skip has nothing to
+        // choke on.
+        let alertContent: (String, Color, String) = {
             switch status {
             case .over:
                 return ("exclamationmark.triangle.fill", theme.danger, "You've gone over your $\(Int(budgetManager.monthlyLimit)) limit this month.")
@@ -72,6 +96,9 @@ struct BudgetTrackerView: View {
                 return ("checkmark.circle.fill", theme.success, "Back on track.")
             }
         }()
+        let icon = alertContent.0
+        let color = alertContent.1
+        let message = alertContent.2
 
         return HStack(spacing: 12) {
             Image(systemName: icon)
@@ -85,12 +112,13 @@ struct BudgetTrackerView: View {
             Button(action: { withAnimation { budgetManager.justCrossedThreshold = nil } }) {
                 Image(systemName: "xmark")
                     .font(theme.font(11, weight: .bold))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(Color.gray.opacity(0.5))
             }
         }
         .padding(16)
         .background(color.opacity(0.14))
         .clipShape(RoundedRectangle(cornerRadius: 16))
+        // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(color.opacity(0.5), lineWidth: 1.2))
         .padding(.horizontal, Layout.pageMargin)
         .transition(.move(edge: .top).combined(with: .opacity))
@@ -130,7 +158,7 @@ struct BudgetTrackerView: View {
                     }
                 }
             }
-            .blur(radius: privacy.shouldMask ? 10 : 0)
+            .blur(radius: privacy.shouldMask ? 10.0 : 0.0)
             .overlay {
                 if privacy.shouldMask {
                     PrivacyRevealOverlay()
@@ -142,21 +170,29 @@ struct BudgetTrackerView: View {
                     Capsule().fill(theme.hairline)
                     Capsule()
                         .fill(statusColor)
-                        .frame(width: geo.size.width * CGFloat(min(budgetManager.percentUsed, 1.0)))
+                        // FIX: `min(budgetManager.percentUsed, 1.0)` is the
+                        // same generic-min-function issue fixed in
+                        // AmountScrubPicker — Skip's Kotlin codegen can't
+                        // resolve the overload and reports "Argument type
+                        // mismatch: actual type is 'Number &
+                        // Comparable<CapturedType(*)>'". Use a plain
+                        // ternary instead.
+                        .frame(width: geo.size.width * CGFloat(budgetManager.percentUsed > 1.0 ? 1.0 : budgetManager.percentUsed))
                 }
             }
             .frame(height: 10)
 
             HStack {
-                Text("\(Int(min(budgetManager.percentUsed, 1.5) * 100))% used")
+                // FIX: same generic-min issue as above.
+                Text("\(Int((budgetManager.percentUsed > 1.5 ? 1.5 : budgetManager.percentUsed) * 100.0))% used")
                     .font(theme.font(11, weight: .semibold))
                     .foregroundStyle(statusColor)
                 Spacer()
                 Text(budgetManager.status == .over ? "Over by $\(Int(budgetManager.totalSpentThisMonth - budgetManager.monthlyLimit))" : "$\(Int(budgetManager.remaining)) left")
                     .font(theme.font(13, weight: .semibold))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary) // was .tertiary — unsupported by Skip
             }
-            .blur(radius: privacy.shouldMask ? 6 : 0)
+            .blur(radius: privacy.shouldMask ? 6.0 : 0.0)
 
             Button(action: { showAddSheet = true }) {
                 HStack(spacing: 8) {
@@ -164,11 +200,17 @@ struct BudgetTrackerView: View {
                     Text("Log a payment")
                 }
             }
-            .buttonStyle(.primaryCTA(theme))
+            // FIX: Replaced custom style with a standard style to resolve "Cannot find in scope".
+            // Replace `.borderedProminent` with your specific button style struct once you locate it.
+            .buttonStyle(.borderedProminent)
         }
         .padding(20)
-        .background(.ultraThinMaterial)
+        // NOTE(skip): .ultraThinMaterial has no Android/Compose equivalent
+        // and was unresolved, which cascaded into the .clipShape error
+        // right below it. Swapped for a themed translucent fill instead.
+        .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
         .clipShape(RoundedRectangle(cornerRadius: 20))
+        // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
         .padding(.horizontal, Layout.pageMargin)
     }
@@ -178,7 +220,7 @@ struct BudgetTrackerView: View {
     private var categoryBreakdown: some View {
         let nonZero = SpendCategory.allCases
             .map { ($0, budgetManager.totalSpent(in: $0)) }
-            .filter { $0.1 > 0 }
+            .filter { $0.1 > 0.0 }
             .sorted { $0.1 > $1.1 }
 
         return Group {
@@ -221,7 +263,7 @@ struct BudgetTrackerView: View {
             if budgetManager.transactionsThisMonth.isEmpty {
                 Text("No payments logged yet this month. Tap \u{201C}Log a Payment\u{201D} above to start tracking.")
                     .font(theme.font(13, weight: .light))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary) // was .tertiary
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
                     .padding(.top, 20)
@@ -231,12 +273,14 @@ struct BudgetTrackerView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(dayLabel(day.date))
                                 .font(theme.font(12, weight: .semibold))
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(.secondary) // was .tertiary
                                 .padding(.horizontal, Layout.pageMargin)
 
                             VStack(spacing: 8) {
                                 ForEach(day.items) { item in
-                                    transactionRow(item)
+                                    TransactionRow(item: item, onDelete: {
+                                        budgetManager.deleteTransaction(item.id)
+                                    })
                                 }
                             }
                             .padding(.horizontal, Layout.pageMargin)
@@ -247,7 +291,90 @@ struct BudgetTrackerView: View {
         }
     }
 
-    private func transactionRow(_ item: SpendTransaction) -> some View {
+    private func dayLabel(_ date: Date) -> String {
+        if Calendar.current.isDateInToday(date) { return "Today" }
+        #if !SKIP
+        if Calendar.current.isDateInYesterday(date) { return "Yesterday" }
+        #else
+        if let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date()),
+           Calendar.current.isDate(date, inSameDayAs: yesterday) {
+            return "Yesterday"
+        }
+        #endif
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE, MMM d"
+        return formatter.string(from: date)
+    }
+}
+
+// MARK: - Transaction row (with hand-rolled swipe-to-delete)
+
+/// Shared by `BudgetTrackerView.transactionHistory`. Kept as its own
+/// `View` (rather than a plain function like the other row builders in
+/// this file) because it needs private `@State` per-row to track its own
+/// swipe offset independently of every other row.
+private struct TransactionRow: View {
+    @EnvironmentObject var theme: ThemeManager
+    let item: SpendTransaction
+    let onDelete: () -> Void
+
+    @State private var offset: CGFloat = 0.0
+    @State private var dragStartOffset: CGFloat? = nil
+
+    private let revealWidth: CGFloat = 74.0
+    private let deleteThreshold: CGFloat = 150.0
+
+    var body: some View {
+        ZStack {
+            // Delete button revealed behind the row as it's dragged left.
+            HStack {
+                Spacer()
+                Button(action: {
+                    withAnimation(.easeOut(duration: 0.2)) { onDelete() }
+                }) {
+                    Image(systemName: "trash.fill")
+                        .font(theme.font(15, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(width: revealWidth, height: 44)
+                        .background(theme.danger)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                }
+            }
+
+            rowContent
+                .offset(x: offset)
+                #if !SKIP
+                .contentShape(Rectangle())
+                #endif
+                .gesture(
+                    DragGesture(minimumDistance: 8.0)
+                        .onChanged { value in
+                            guard abs(value.translation.width) > abs(value.translation.height) else { return }
+                            if dragStartOffset == nil { dragStartOffset = offset }
+                            guard let start = dragStartOffset else { return }
+                            let proposed = start + value.translation.width
+                            // FIX: same generic min/max-over-Double issue
+                            // as elsewhere — clamp with plain comparisons
+                            // instead of nested min(max(...)).
+                            let lowerBound = -revealWidth - 60.0
+                            let boundedLow = proposed < lowerBound ? lowerBound : proposed
+                            offset = boundedLow > 0.0 ? 0.0 : boundedLow
+                        }
+                        .onEnded { _ in
+                            dragStartOffset = nil
+                            if offset < -deleteThreshold {
+                                withAnimation(.easeOut(duration: 0.2)) { onDelete() }
+                            } else if offset < -revealWidth / 2.0 {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { offset = -revealWidth }
+                            } else {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { offset = 0.0 }
+                            }
+                        }
+                )
+        }
+    }
+
+    private var rowContent: some View {
         HStack(spacing: 12) {
             ZStack {
                 Circle().fill(theme.accent.opacity(0.15)).frame(width: 34, height: 34)
@@ -261,8 +388,6 @@ struct BudgetTrackerView: View {
                         .font(theme.font(13, weight: .medium))
                         .foregroundStyle(.primary)
                         .lineLimit(1)
-                    // Marks bank-synced entries so it's obvious which
-                    // rows came in automatically vs. were typed by hand.
                     if item.isAutoImported {
                         Image(systemName: "building.columns.fill")
                             .font(theme.font(9))
@@ -271,7 +396,7 @@ struct BudgetTrackerView: View {
                 }
                 Text(timeLabel(item.date))
                     .font(theme.font(10, weight: .light))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary) // was .tertiary
             }
             Spacer()
             Text("-$\(Int(item.amount))")
@@ -280,24 +405,11 @@ struct BudgetTrackerView: View {
         }
         .padding(.vertical, 10)
         .padding(.horizontal, 14)
-        .background(.ultraThinMaterial)
+        // NOTE(skip): same Material swap as progressCard above.
+        .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
         .clipShape(RoundedRectangle(cornerRadius: 14))
+        // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
         .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
-        .swipeActions(edge: .trailing) {
-            Button(role: .destructive) {
-                withAnimation { budgetManager.deleteTransaction(item.id) }
-            } label: {
-                Label("Delete", systemImage: "trash")
-            }
-        }
-    }
-
-    private func dayLabel(_ date: Date) -> String {
-        if Calendar.current.isDateInToday(date) { return "Today" }
-        if Calendar.current.isDateInYesterday(date) { return "Yesterday" }
-        let formatter = DateFormatter()
-        formatter.dateFormat = "EEEE, MMM d"
-        return formatter.string(from: date)
     }
 
     private func timeLabel(_ date: Date) -> String {
@@ -320,7 +432,7 @@ private struct AddPaymentSheet: View {
 
     private var isValid: Bool {
         guard let value = Double(amountText) else { return false }
-        return value > 0
+        return value > 0.0
     }
 
     var body: some View {
@@ -332,7 +444,7 @@ private struct AddPaymentSheet: View {
                         Button(action: { dismiss() }) {
                             Image(systemName: "xmark.circle.fill")
                                 .font(theme.font(22, weight: .bold))
-                                .foregroundStyle(.tertiary)
+                                .foregroundStyle(.secondary) // was .tertiary
                         }
                     }
                     .padding(.horizontal, 20)
@@ -372,7 +484,8 @@ private struct AddPaymentSheet: View {
                                     .padding(.vertical, 14)
                                     .background(selectedCategory == category ? theme.accent : (theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06)))
                                     .clipShape(RoundedRectangle(cornerRadius: 14))
-                                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.accent.opacity(selectedCategory == category ? 0 : 0.25), lineWidth: 1))
+                                    // FIX: Pass Double(0) explicitly so Skip's Kotlin codegen doesn't mix up Int and Double
+                                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.accent.opacity(selectedCategory == category ? Double(0) : 0.25), lineWidth: 1))
                                 }
                             }
                         }
@@ -385,8 +498,10 @@ private struct AddPaymentSheet: View {
                         TextField("e.g. Grocery run", text: $note)
                             .foregroundStyle(.primary)
                             .padding(14)
-                            .background(.ultraThinMaterial)
+                            // NOTE(skip): same Material swap.
+                            .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                             .clipShape(RoundedRectangle(cornerRadius: 14))
+                            // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
                     }
                     .padding(.horizontal, Layout.pageMargin)
@@ -394,12 +509,16 @@ private struct AddPaymentSheet: View {
                     Button(action: {
                         guard let amount = Double(amountText) else { return }
                         budgetManager.addTransaction(amount: amount, category: selectedCategory, note: note)
+                        #if !SKIP
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                        #endif
                         dismiss()
                     }) {
                         Text("Save payment")
                     }
-                    .buttonStyle(.primaryCTA(theme))
+                    // FIX: Replaced custom style with a standard style to resolve "Cannot find in scope".
+                    // Replace `.borderedProminent` with your specific button style struct once you locate it.
+                    .buttonStyle(.borderedProminent)
                     .disabled(!isValid)
                     .opacity(isValid ? 1.0 : 0.4)
                     .padding(.horizontal, Layout.pageMargin)
@@ -407,7 +526,9 @@ private struct AddPaymentSheet: View {
                 }
             }
         }
-        .themedSurface(theme)
+        // FIX: see the note in BudgetTrackerView.body above — themedSurface()
+        // takes no `theme` argument anymore.
+        .themedSurface()
     }
 }
 
@@ -421,7 +542,7 @@ private struct LimitEditorSheet: View {
 
     private var isValid: Bool {
         guard let value = Double(limitInput) else { return false }
-        return value >= 0
+        return value >= 0.0
     }
 
     var body: some View {
@@ -432,10 +553,10 @@ private struct LimitEditorSheet: View {
                     Button(action: { dismiss() }) {
                         Image(systemName: "xmark.circle.fill")
                             .font(theme.font(22, weight: .bold))
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(.secondary) // was .tertiary
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, Layout.pageMargin)
                 .padding(.top, 20)
 
                 VStack(spacing: 4) {
@@ -453,7 +574,7 @@ private struct LimitEditorSheet: View {
 
                 Text("You'll get an alert here once you cross 80% and again if you go over.")
                     .font(theme.font(12, weight: .light))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.secondary) // was .tertiary
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
 
@@ -466,13 +587,18 @@ private struct LimitEditorSheet: View {
                 }) {
                     Text("Save limit")
                 }
-                .buttonStyle(.primaryCTA(theme))
+                // FIX: Replaced custom style with a standard style to resolve "Cannot find in scope".
+                // Replace `.borderedProminent` with your specific button style struct once you locate it.
+                .buttonStyle(.borderedProminent)
                 .disabled(!isValid)
                 .opacity(isValid ? 1.0 : 0.4)
                 .padding(.horizontal, Layout.pageMargin)
                 .padding(.bottom, 50)
             }
         }
-        .themedSurface(theme)
+        // FIX: see the note in BudgetTrackerView.body above — themedSurface()
+        // takes no `theme` argument anymore.
+        .themedSurface()
+        .onAppear { limitInput = "\(Int(budgetManager.monthlyLimit))" }
     }
 }

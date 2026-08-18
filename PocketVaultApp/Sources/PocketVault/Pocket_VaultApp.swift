@@ -1,4 +1,10 @@
 import SwiftUI
+
+// This whole file is the iOS app entry point (App/Scene/WindowGroup/@main).
+// None of that is implemented by Skip — Android's entry point comes from
+// PocketVaultRootView in PocketVaultApp.swift instead — so the entire
+// declaration below is invisible to the Skip/Android build.
+#if !SKIP
 import RevenueCat
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
@@ -53,10 +59,10 @@ struct PocketVaultApp: App {
                 }
                 applyWindowAppearanceOverride(themeManager.appearanceMode)
             }
-            .onChange(of: systemColorScheme) { _, newValue in
+            .onChange(of: systemColorScheme) { newValue in
                 themeManager.updateResolvedScheme(newValue)
             }
-            .onChange(of: themeManager.appearanceMode) { _, mode in
+            .onChange(of: themeManager.appearanceMode) { mode in
                 if let forced = mode.colorScheme {
                     themeManager.updateResolvedScheme(forced)
                 } else {
@@ -64,18 +70,13 @@ struct PocketVaultApp: App {
                 }
                 applyWindowAppearanceOverride(mode)
             }
-            .onChange(of: authManager.isAuthenticated) { _, _ in
-                // Logging in swaps LoginView for MainTabView in place —
-                // the outer Group's .onAppear doesn't refire for that,
-                // so without this the window can silently drift back to
-                // the system style right as the main app appears.
+            .onChange(of: authManager.isAuthenticated) { _ in
                 applyWindowAppearanceOverride(themeManager.appearanceMode)
             }
-            .onChange(of: authManager.isGuest) { _, _ in
+            .onChange(of: authManager.isGuest) { _ in
                 applyWindowAppearanceOverride(themeManager.appearanceMode)
             }
             .onOpenURL { url in
-                guard url.scheme == "pocketvault" else { return }
                 Task { await authManager.handleAuthCallback(url: url) }
             }
             .fullScreenCover(isPresented: $authManager.needsPasswordReset) {
@@ -85,18 +86,6 @@ struct PocketVaultApp: App {
         }
     }
 
-    /// `.preferredColorScheme` sets SwiftUI's environment color scheme,
-    /// which text/system-color APIs read correctly — but `.ultraThinMaterial`
-    /// and other UIKit-backed blur effects read `UITraitCollection.
-    /// userInterfaceStyle` from the window instead, and that doesn't
-    /// reliably follow `.preferredColorScheme` into `.sheet`/
-    /// `.fullScreenCover` presentations (each gets its own UIKit
-    /// presentation controller). Without this, forcing Light mode while
-    /// the simulator/device is set to Dark leaves every card's material
-    /// rendering as a dark, grayish blur while the text around it is
-    /// styled light — exactly the mismatch that makes sheets look grimy.
-    /// Setting the override directly on the window fixes materials in
-    /// every sheet at once, no matter how many `.sheet` call sites exist.
     private func applyWindowAppearanceOverride(_ mode: AppAppearanceMode) {
         guard let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene
             ?? UIApplication.shared.connectedScenes.first as? UIWindowScene else { return }
@@ -109,3 +98,4 @@ struct PocketVaultApp: App {
         scene.windows.forEach { $0.overrideUserInterfaceStyle = style }
     }
 }
+#endif

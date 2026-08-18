@@ -42,18 +42,28 @@ struct ParticleBurstView: View {
     private func fire() {
         particles = (0..<24).map { i in
             Particle(
-                angle: Double(i) * (.pi * 2 / 24) + Double.random(in: -0.15...0.15),
-                distance: 0,
+                angle: Double(i) * (Double.pi * 2.0 / 24.0) + Double.random(in: -0.15...0.15),
+                distance: 0.0,
                 scale: 1.0,
                 opacity: 1.0,
-                rotation: Double.random(in: 0...360)
+                // NOTE(skip): bare `0...360` here is an integer-literal
+                // range. Swift infers it as ClosedRange<Double> from the
+                // `Double.random(in:)` parameter type, but Skip's Kotlin
+                // codegen doesn't apply that contextual inference — it
+                // emits an IntRange, which doesn't match the
+                // ClosedFloatingPointRange<Double> random(in:) expects.
+                // Spelling out the Double literals fixes it on both
+                // platforms.
+                rotation: Double.random(in: 0.0...360.0)
             )
         }
 
         withAnimation(.easeOut(duration: 0.9)) {
             for i in particles.indices {
-                particles[i].distance = CGFloat.random(in: 90...160)
-                particles[i].opacity = 0
+                // NOTE(skip): same bare-Int-range issue as `rotation`
+                // above, here against CGFloat.random(in:).
+                particles[i].distance = CGFloat.random(in: 90.0...160.0)
+                particles[i].opacity = 0.0
                 particles[i].scale = 0.3
             }
         }

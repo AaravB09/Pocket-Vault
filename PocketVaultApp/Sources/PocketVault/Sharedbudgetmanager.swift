@@ -24,6 +24,18 @@ struct SharedDepositRecord: Identifiable, Codable, Equatable {
     var created_at: String
 }
 
+/// Shape of the error body PostgREST/RPC sends back on failure, e.g.
+/// `{"message": "...", "code": "...", ...}`. We only care about `message`.
+/// Decoded with `Codable` rather than `JSONSerialization` + a dictionary
+/// cast — Skip's Kotlin transpilation doesn't reliably support casting to
+/// `[String: Any]` or `NSDictionary` (generic type erasure / no Foundation
+/// bridging), so both of those approaches fail to compile under Skip.
+/// `Codable` goes through `JSONDecoder`, which Skip supports the same way
+/// on iOS and Android.
+private struct RPCErrorBody: Codable {
+    var message: String?
+}
+
 /// Backs the "Shared Budget" feature: two people contributing to the same
 /// goal, each deposit tagged with who made it. Same Supabase project and
 /// request pattern as LeaderboardManager — see supabase_shared_budget.sql
@@ -40,16 +52,24 @@ final class SharedBudgetManager: ObservableObject {
     @Published var errorMessage: String?
 
     var totalContributed: Double {
-        deposits.reduce(0) { $0 + $1.amount }
+        deposits.reduce(0.0) { $0 + $1.amount }
     }
 
     func contributed(by contributorID: String) -> Double {
-        deposits.filter { $0.contributor_id == contributorID }.reduce(0) { $0 + $1.amount }
+        deposits.filter { $0.contributor_id == contributorID }.reduce(0.0) { $0 + $1.amount }
     }
 
     private static func generateShareCode() -> String {
         let letters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
         return String((0..<6).map { _ in letters.randomElement()! })
+    }
+
+    /// Pulls the `message` field out of an RPC/PostgREST error response
+    /// body, if present. Centralized here so all call sites decode errors
+    /// the same Skip-safe way instead of each rolling their own
+    /// JSONSerialization cast.
+    private func rpcErrorMessage(from data: Data) -> String? {
+        (try? JSONDecoder().decode(RPCErrorBody.self, from: data))?.message
     }
 
     /// `accessToken` is the signed-in user's real Supabase session JWT
@@ -136,8 +156,10 @@ final class SharedBudgetManager: ObservableObject {
             guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
                 // The RPC raises a specific message (own code / already has
                 // a partner / no such code) — surface it when we can.
-                if let body = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let message = body["message"] as? String {
+                // Decoded via Codable (see RPCErrorBody) instead of
+                // JSONSerialization + a dictionary cast, since Skip can't
+                // resolve NSDictionary / [String: Any] casts in Kotlin.
+                if let message = rpcErrorMessage(from: data) {
                     errorMessage = message
                 } else {
                     errorMessage = "Couldn't join that shared budget."
@@ -194,13 +216,9 @@ final class SharedBudgetManager: ObservableObject {
     /// authoritative from the server rather than a local increment, since
     /// the partner's deposits also count.
     ///
-    /// Unlike the old version, this now actually checks the response
-    /// instead of discarding it with `try?` — a failed insert (RLS
-    /// rejection, network error, bad payload) used to fail completely
-    /// silently: the UI would just re-load the same old total and look
-    /// like nothing happened, with zero indication of why. Now a failure
-    /// populates `errorMessage` with the real reason, same as every other
-    /// method in this file.
+    /// A failed insert (RLS rejection, network error, bad payload)
+    /// populates `errorMessage` with the real reason rather than failing
+    /// silently, same as every other method in this file.
     @discardableResult
     func addDeposit(sharedGoalID: String, contributorID: String, contributorName: String, amount: Double, accessToken: String?) async -> Double? {
         guard let accessToken else {
@@ -226,8 +244,7 @@ final class SharedBudgetManager: ObservableObject {
         do {
             let (data, response) = try await URLSession.shared.data(for: req)
             guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-                if let body = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let message = body["message"] as? String {
+                if let message = rpcErrorMessage(from: data) {
                     errorMessage = message
                 } else {
                     errorMessage = "Couldn't add that deposit."
@@ -269,8 +286,7 @@ final class SharedBudgetManager: ObservableObject {
         do {
             let (data, response) = try await URLSession.shared.data(for: req)
             guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-                if let body = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let message = body["message"] as? String {
+                if let message = rpcErrorMessage(from: data) {
                     errorMessage = message
                 } else {
                     errorMessage = "Couldn't leave the shared budget."

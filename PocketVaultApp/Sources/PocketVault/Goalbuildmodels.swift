@@ -1,5 +1,7 @@
 import SwiftUI
+#if !SKIP
 import RealityKit
+#endif
 
 enum GoalKind: String, CaseIterable {
     case flight
@@ -72,26 +74,83 @@ struct AIVoxelPart: Codable {
     let metallic: Bool
 }
 
-private extension UIColor {
-    /// Parses a "#RRGGBB" or "RRGGBB" hex string. Fails (rather than
+private enum HexColorParser {
+    /// Parses a "#RRGGBB" or "RRGGBB" hex string. Returns nil (rather than
     /// silently defaulting to black) so the caller can drop a part with
     /// a malformed color instead of rendering it wrong.
-    convenience init?(hex: String) {
+    static func parse(hex: String) -> UIColor? {
         let cleaned = hex.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "#", with: "")
-        guard cleaned.count == 6, let value = UInt32(cleaned, radix: 16) else { return nil }
-        let r = CGFloat((value >> 16) & 0xFF) / 255.0
-        let g = CGFloat((value >> 8) & 0xFF) / 255.0
-        let b = CGFloat(value & 0xFF) / 255.0
-        self.init(red: r, green: g, blue: b, alpha: 1.0)
+        
+        guard cleaned.count == 6 else { return nil }
+        
+        var value = 0
+        for char in cleaned.utf8 {
+            value *= 16
+            let c = Int(char)
+            if c >= 48 && c <= 57 {
+                value += c - 48 // 0-9
+            } else if c >= 65 && c <= 70 {
+                value += c - 55 // A-F (65 - 10 = 55)
+            } else if c >= 97 && c <= 102 {
+                value += c - 87 // a-f (97 - 10 = 87)
+            } else {
+                return nil
+            }
+        }
+        
+        let r = CGFloat((value / 65536) % 256) / CGFloat(255.0)
+        let g = CGFloat((value / 256) % 256) / CGFloat(255.0)
+        let b = CGFloat(value % 256) / CGFloat(255.0)
+        return UIColor(red: r, green: g, blue: b, alpha: 1.0)
     }
 }
 
+
+/// A lightweight, fully cross-platform stand-in for `SIMD3<Float>`.
+/// `SIMD3` comes from Apple's `simd` framework, which isn't available
+/// under Skip, so `VoxelUnit` — which has to compute its `voxels.count`
+/// on Android too, for the "X OF Y PIECES PLACED" label in
+/// BuildStudioView — uses this instead of `SIMD3<Float>` for both
+/// `position` and `VoxelOrientation.axis`. BuildStudioView's iOS-only
+/// `spawnVoxel` converts it back to a real `SIMD3<Float>` right before
+/// handing it to RealityKit. A single plain initializer only (no
+/// `ExpressibleByArrayLiteral`/variadic init) — every call site below
+/// uses `Vector3(x, y, z)` explicitly, since Skip's transpiler has
+/// trouble disambiguating overloaded/variadic constructs.
+struct Vector3 {
+    var x: Float
+    var y: Float
+    var z: Float
+
+    init(_ x: Float, _ y: Float, _ z: Float) {
+        self.x = x
+        self.y = y
+        self.z = z
+    }
+
+    static let zero = Vector3(Float(0.0), Float(0.0), Float(0.0))
+}
+
+/// A lightweight, fully cross-platform stand-in for RealityKit's
+/// `simd_quatf` (axis + angle rotation). `simd_quatf` itself comes from
+/// Apple's `simd` framework, which isn't available under Skip, so
+/// `VoxelUnit` — which has to compute its `voxels.count` on Android too,
+/// for the "X OF Y PIECES PLACED" label in BuildStudioView — uses this
+/// instead. BuildStudioView's iOS-only `spawnVoxel` converts it back to
+/// a real `simd_quatf` right before handing it to RealityKit.
+struct VoxelOrientation {
+    var angle: Float
+    var axis: Vector3
+
+    static let identity = VoxelOrientation(angle: Float(0.0), axis: Vector3(Float(0.0), Float(1.0), Float(0.0)))
+}
+
 struct VoxelUnit {
-    let position: SIMD3<Float>
+    let position: Vector3
     let mesh: VoxelMeshKind
     let color: UIColor
     let isMetallic: Bool
-    var orientation: simd_quatf = simd_quatf(angle: 0, axis: [0, 1, 0])
+    var orientation: VoxelOrientation
 }
 
 struct GoalBuildLibrary {
@@ -151,17 +210,18 @@ struct GoalBuildLibrary {
 
         for part in parts {
             guard
-                abs(part.x) <= bound, part.y >= -0.05, part.y <= bound, abs(part.z) <= bound,
+                part.x >= -bound, part.x <= bound, part.y >= -0.05, part.y <= bound, part.z >= -bound, part.z <= bound,
                 let mesh = VoxelMeshKind(aiString: part.mesh),
-                let color = UIColor(hex: part.color)
+                let color = HexColorParser.parse(hex: part.color)
             else {
                 continue
             }
             units.append(VoxelUnit(
-                position: [Float(part.x), Float(part.y), Float(part.z)],
+                position: Vector3(Float(part.x), Float(part.y), Float(part.z)),
                 mesh: mesh,
                 color: color,
-                isMetallic: part.metallic
+                isMetallic: part.metallic,
+                orientation: .identity
             ))
         }
 
@@ -183,44 +243,49 @@ struct GoalBuildLibrary {
     /// or call sites that haven't been updated to pass one).
     static let defaultTrimColor = UIColor(red: 0.82, green: 0.72, blue: 0.52, alpha: 1.0)
     private static let crimson = UIColor(red: 0.72, green: 0.2, blue: 0.24, alpha: 1.0)
-    private static let frostedGlass = UIColor(white: 0.97, alpha: 0.75)
+    // NOTE(skip): Skip's UIColor compatibility shim doesn't implement the
+    // grayscale `init(white:alpha:)` overload — only `init(red:green:blue:alpha:)`.
+    // Kotlin was matching this call against the RGB initializer instead,
+    // finding no `white:` parameter, and then reporting `green`/`blue` as
+    // missing too. Spelling out equal R/G/B is the same color either way.
+    private static let frostedGlass = UIColor(red: 0.97, green: 0.97, blue: 0.97, alpha: 0.75)
 
     // MARK: - Aircraft: ~27 bricks, base -> fuselage -> wings -> tail -> nose reveal
     private static func flightVoxels(trimColor: UIColor) -> [VoxelUnit] {
         var units: [VoxelUnit] = []
-        let u: Float = 0.092 // brick pitch
+        let u = Float(0.092) // brick pitch
 
         // Pedestal base (4 bricks, charcoal, non-metallic)
         for i in -1...2 {
-            units.append(VoxelUnit(position: [0, 0, Float(i) * u], mesh: .cube, color: charcoal, isMetallic: false))
+            units.append(VoxelUnit(position: Vector3(Float(0.0), Float(0.0), Float(i) * u), mesh: .cube, color: charcoal, isMetallic: false, orientation: .identity))
         }
 
         // Fuselage spine (8 bricks, ivory, non-metallic)
         for i in -4...3 {
-            units.append(VoxelUnit(position: [0, u, Float(i) * u], mesh: .cube, color: ivory, isMetallic: false))
+            units.append(VoxelUnit(position: Vector3(Float(0.0), u, Float(i) * u), mesh: .cube, color: ivory, isMetallic: false, orientation: .identity))
         }
 
         // Wings, symmetric, built outward (8 bricks, indigo, non-metallic)
         for i in [1, -1, 2, -2, 3, -3, 4, -4] {
-            units.append(VoxelUnit(position: [Float(i) * u, u, 0], mesh: .cube, color: indigo, isMetallic: false))
+            units.append(VoxelUnit(position: Vector3(Float(i) * u, u, Float(0.0)), mesh: .cube, color: indigo, isMetallic: false, orientation: .identity))
         }
 
         // Tail assembly (5 bricks)
-        units.append(VoxelUnit(position: [0, u * 2, 3 * u], mesh: .cube, color: ivory, isMetallic: false))
-        units.append(VoxelUnit(position: [0, u * 3, 3 * u], mesh: .cube, color: ivory, isMetallic: false))
-        units.append(VoxelUnit(position: [-u, u * 2, 3 * u], mesh: .cube, color: trimColor, isMetallic: true))
-        units.append(VoxelUnit(position: [u, u * 2, 3 * u], mesh: .cube, color: trimColor, isMetallic: true))
-        units.append(VoxelUnit(position: [0, u, 4 * u], mesh: .cube, color: charcoal, isMetallic: false))
+        units.append(VoxelUnit(position: Vector3(Float(0.0), u * Float(2.0), Float(3.0) * u), mesh: .cube, color: ivory, isMetallic: false, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(Float(0.0), u * Float(3.0), Float(3.0) * u), mesh: .cube, color: ivory, isMetallic: false, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(-u, u * Float(2.0), Float(3.0) * u), mesh: .cube, color: trimColor, isMetallic: true, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(u, u * Float(2.0), Float(3.0) * u), mesh: .cube, color: trimColor, isMetallic: true, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(Float(0.0), u, Float(4.0) * u), mesh: .cube, color: charcoal, isMetallic: false, orientation: .identity))
 
         // Turbine accents (2 bricks, charcoal cylinders under the wings)
-        units.append(VoxelUnit(position: [-2 * u, 0, u * 0.5], mesh: .cylinder, color: charcoal, isMetallic: false,
-                                orientation: simd_quatf(angle: .pi / 2, axis: [1, 0, 0])))
-        units.append(VoxelUnit(position: [2 * u, 0, u * 0.5], mesh: .cylinder, color: charcoal, isMetallic: false,
-                                orientation: simd_quatf(angle: .pi / 2, axis: [1, 0, 0])))
+        units.append(VoxelUnit(position: Vector3(Float(-2.0) * u, Float(0.0), u * Float(0.5)), mesh: .cylinder, color: charcoal, isMetallic: false,
+                                orientation: VoxelOrientation(angle: Float.pi / Float(2.0), axis: Vector3(Float(1.0), Float(0.0), Float(0.0)))))
+        units.append(VoxelUnit(position: Vector3(Float(2.0) * u, Float(0.0), u * Float(0.5)), mesh: .cylinder, color: charcoal, isMetallic: false,
+                                orientation: VoxelOrientation(angle: Float.pi / Float(2.0), axis: Vector3(Float(1.0), Float(0.0), Float(0.0)))))
 
         // Nose cone — final reveal piece, glass + gold-lit
-        units.append(VoxelUnit(position: [0, u, -5 * u], mesh: .cone, color: frostedGlass, isMetallic: false,
-                                orientation: simd_quatf(angle: .pi / 2, axis: [1, 0, 0])))
+        units.append(VoxelUnit(position: Vector3(Float(0.0), u, Float(-5.0) * u), mesh: .cone, color: frostedGlass, isMetallic: false,
+                                orientation: VoxelOrientation(angle: Float.pi / Float(2.0), axis: Vector3(Float(1.0), Float(0.0), Float(0.0)))))
 
         return units
     }
@@ -228,37 +293,37 @@ struct GoalBuildLibrary {
     // MARK: - Car: ~21 bricks, chassis -> wheels -> body -> roof -> spoiler reveal
     private static func carVoxels(trimColor: UIColor) -> [VoxelUnit] {
         var units: [VoxelUnit] = []
-        let u: Float = 0.096
+        let u = Float(0.096)
 
         // Chassis (6 bricks, charcoal, non-metallic)
         for i in -3...2 {
-            units.append(VoxelUnit(position: [0, 0, Float(i) * u], mesh: .cube, color: charcoal, isMetallic: false))
+            units.append(VoxelUnit(position: Vector3(Float(0.0), Float(0.0), Float(i) * u), mesh: .cube, color: charcoal, isMetallic: false, orientation: .identity))
         }
 
         // Wheels (4 bricks, charcoal cylinders at the corners)
-        for x in [-1.4, 1.4] as [Float] {
-            for z in [-2.0, 1.5] as [Float] {
-                units.append(VoxelUnit(position: [x * u, -u * 0.4, z * u], mesh: .cylinder, color: charcoal, isMetallic: false,
-                                        orientation: simd_quatf(angle: .pi / 2, axis: [0, 0, 1])))
+        for x in [Float(-1.4), Float(1.4)] {
+            for z in [Float(-2.0), Float(1.5)] {
+                units.append(VoxelUnit(position: Vector3(x * u, -u * Float(0.4), z * u), mesh: .cylinder, color: charcoal, isMetallic: false,
+                                        orientation: VoxelOrientation(angle: Float.pi / Float(2.0), axis: Vector3(Float(0.0), Float(0.0), Float(1.0)))))
             }
         }
 
         // Body shell (6 bricks, crimson, non-metallic — the car's dominant color)
         for i in -2...3 {
-            units.append(VoxelUnit(position: [0, u, Float(i) * u], mesh: .cube, color: crimson, isMetallic: false))
+            units.append(VoxelUnit(position: Vector3(Float(0.0), u, Float(i) * u), mesh: .cube, color: crimson, isMetallic: false, orientation: .identity))
         }
 
         // Roof (3 bricks, ivory)
         for i in -1...1 {
-            units.append(VoxelUnit(position: [0, u * 2, Float(i) * u], mesh: .cube, color: ivory, isMetallic: false))
+            units.append(VoxelUnit(position: Vector3(Float(0.0), u * Float(2.0), Float(i) * u), mesh: .cube, color: ivory, isMetallic: false, orientation: .identity))
         }
 
         // Side mirrors accent (2 bricks, gold, metallic)
-        units.append(VoxelUnit(position: [-1.3 * u, u * 1.6, u], mesh: .cube, color: trimColor, isMetallic: true))
-        units.append(VoxelUnit(position: [1.3 * u, u * 1.6, u], mesh: .cube, color: trimColor, isMetallic: true))
+        units.append(VoxelUnit(position: Vector3(Float(-1.3) * u, u * Float(1.6), u), mesh: .cube, color: trimColor, isMetallic: true, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(Float(1.3) * u, u * Float(1.6), u), mesh: .cube, color: trimColor, isMetallic: true, orientation: .identity))
 
         // Spoiler — final reveal piece, gold, metallic
-        units.append(VoxelUnit(position: [0, u * 2.2, 3 * u], mesh: .flatSlab, color: trimColor, isMetallic: true))
+        units.append(VoxelUnit(position: Vector3(Float(0.0), u * Float(2.2), Float(3.0) * u), mesh: .flatSlab, color: trimColor, isMetallic: true, orientation: .identity))
 
         return units
     }
@@ -266,39 +331,39 @@ struct GoalBuildLibrary {
     // MARK: - Gaming Rig: ~20 bricks, desk -> tower -> RGB glow -> monitor/keyboard -> power button reveal
     private static func gamingRigVoxels(trimColor: UIColor) -> [VoxelUnit] {
         var units: [VoxelUnit] = []
-        let u: Float = 0.09
+        let u = Float(0.09)
 
         // Desk pedestal (4 bricks, charcoal)
         for i in -1...2 {
-            units.append(VoxelUnit(position: [0, 0, Float(i) * u], mesh: .cube, color: charcoal, isMetallic: false))
+            units.append(VoxelUnit(position: Vector3(Float(0.0), Float(0.0), Float(i) * u), mesh: .cube, color: charcoal, isMetallic: false, orientation: .identity))
         }
 
         // Tower body — vertical stack, offset to one side (5 bricks, indigo)
         for i in 0...4 {
-            units.append(VoxelUnit(position: [-2 * u, Float(i) * u, 0], mesh: .cube, color: indigo, isMetallic: false))
+            units.append(VoxelUnit(position: Vector3(Float(-2.0) * u, Float(i) * u, Float(0.0)), mesh: .cube, color: indigo, isMetallic: false, orientation: .identity))
         }
 
         // RGB glow strip up the tower's edge (4 bricks, crimson — reads
         // better as flat color here than metallic under this lighting rig)
         for i in 0...3 {
-            units.append(VoxelUnit(position: [-2.6 * u, Float(i) * u + u * 0.3, 0], mesh: .cube, color: crimson, isMetallic: false))
+            units.append(VoxelUnit(position: Vector3(Float(-2.6) * u, Float(i) * u + u * Float(0.3), Float(0.0)), mesh: .cube, color: crimson, isMetallic: false, orientation: .identity))
         }
 
         // Monitor: stand + two-piece screen (3 bricks)
-        units.append(VoxelUnit(position: [1 * u, u * 0.5, -1 * u], mesh: .cylinder, color: charcoal, isMetallic: false,
-                                orientation: simd_quatf(angle: .pi / 2, axis: [1, 0, 0])))
-        units.append(VoxelUnit(position: [1 * u, u * 1.6, -1 * u], mesh: .flatSlab, color: ivory, isMetallic: false))
-        units.append(VoxelUnit(position: [1 * u, u * 2.1, -1 * u], mesh: .flatSlab, color: ivory, isMetallic: false))
+        units.append(VoxelUnit(position: Vector3(Float(1.0) * u, u * Float(0.5), Float(-1.0) * u), mesh: .cylinder, color: charcoal, isMetallic: false,
+                                orientation: VoxelOrientation(angle: Float.pi / Float(2.0), axis: Vector3(Float(1.0), Float(0.0), Float(0.0)))))
+        units.append(VoxelUnit(position: Vector3(Float(1.0) * u, u * Float(1.6), Float(-1.0) * u), mesh: .flatSlab, color: ivory, isMetallic: false, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(Float(1.0) * u, u * Float(2.1), Float(-1.0) * u), mesh: .flatSlab, color: ivory, isMetallic: false, orientation: .identity))
 
         // Keyboard (1 brick, low flat slab)
-        units.append(VoxelUnit(position: [1 * u, u * 0.15, 1 * u], mesh: .flatSlab, color: charcoal, isMetallic: false))
+        units.append(VoxelUnit(position: Vector3(Float(1.0) * u, u * Float(0.15), Float(1.0) * u), mesh: .flatSlab, color: charcoal, isMetallic: false, orientation: .identity))
 
         // Tower top vents (2 bricks, charcoal)
-        units.append(VoxelUnit(position: [-2 * u, 5 * u, -0.5 * u], mesh: .cube, color: charcoal, isMetallic: false))
-        units.append(VoxelUnit(position: [-2 * u, 5 * u, 0.5 * u], mesh: .cube, color: charcoal, isMetallic: false))
+        units.append(VoxelUnit(position: Vector3(Float(-2.0) * u, Float(5.0) * u, Float(-0.5) * u), mesh: .cube, color: charcoal, isMetallic: false, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(Float(-2.0) * u, Float(5.0) * u, Float(0.5) * u), mesh: .cube, color: charcoal, isMetallic: false, orientation: .identity))
 
         // Power button — final reveal piece, glowing gold on top of the tower
-        units.append(VoxelUnit(position: [-2 * u, 5.6 * u, 0], mesh: .cube, color: trimColor, isMetallic: true))
+        units.append(VoxelUnit(position: Vector3(Float(-2.0) * u, Float(5.6) * u, Float(0.0)), mesh: .cube, color: trimColor, isMetallic: true, orientation: .identity))
 
         return units
     }
@@ -306,11 +371,11 @@ struct GoalBuildLibrary {
     // MARK: - Emergency Fund: ~18 bricks, base -> shield body -> trim -> lock -> point reveal
     private static func emergencyFundVoxels(trimColor: UIColor) -> [VoxelUnit] {
         var units: [VoxelUnit] = []
-        let u: Float = 0.09
+        let u = Float(0.09)
 
         // Base pedestal (4 bricks, charcoal)
         for i in -1...2 {
-            units.append(VoxelUnit(position: [0, 0, Float(i) * u], mesh: .cube, color: charcoal, isMetallic: false))
+            units.append(VoxelUnit(position: Vector3(Float(0.0), Float(0.0), Float(i) * u), mesh: .cube, color: charcoal, isMetallic: false, orientation: .identity))
         }
 
         // Shield body — widest at the shoulders, narrowing toward the
@@ -319,22 +384,22 @@ struct GoalBuildLibrary {
         for row in shieldRows {
             let half = row.width - 1
             for x in -half...half {
-                units.append(VoxelUnit(position: [Float(x) * u, Float(row.y) * u, 0], mesh: .cube, color: indigo, isMetallic: false))
+                units.append(VoxelUnit(position: Vector3(Float(x) * u, Float(row.y) * u, Float(0.0)), mesh: .cube, color: indigo, isMetallic: false, orientation: .identity))
             }
         }
 
         // Ivory trim along the shield's top edge (2 bricks)
-        units.append(VoxelUnit(position: [-1 * u, 1 * u, 0.6 * u], mesh: .cube, color: ivory, isMetallic: false))
-        units.append(VoxelUnit(position: [1 * u, 1 * u, 0.6 * u], mesh: .cube, color: ivory, isMetallic: false))
+        units.append(VoxelUnit(position: Vector3(Float(-1.0) * u, Float(1.0) * u, Float(0.6) * u), mesh: .cube, color: ivory, isMetallic: false, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(Float(1.0) * u, Float(1.0) * u, Float(0.6) * u), mesh: .cube, color: ivory, isMetallic: false, orientation: .identity))
 
         // Lock body + shackle, center-front (2 bricks)
-        units.append(VoxelUnit(position: [0, 2 * u, 0.7 * u], mesh: .cube, color: charcoal, isMetallic: false))
-        units.append(VoxelUnit(position: [0, 2.7 * u, 0.7 * u], mesh: .cylinder, color: trimColor, isMetallic: true,
-                                orientation: simd_quatf(angle: .pi / 2, axis: [1, 0, 0])))
+        units.append(VoxelUnit(position: Vector3(Float(0.0), Float(2.0) * u, Float(0.7) * u), mesh: .cube, color: charcoal, isMetallic: false, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(Float(0.0), Float(2.7) * u, Float(0.7) * u), mesh: .cylinder, color: trimColor, isMetallic: true,
+                                orientation: VoxelOrientation(angle: Float.pi / Float(2.0), axis: Vector3(Float(1.0), Float(0.0), Float(0.0)))))
 
         // Final reveal — gold point at the shield's tip
-        units.append(VoxelUnit(position: [0, 4 * u, 0], mesh: .cone, color: trimColor, isMetallic: true,
-                                orientation: simd_quatf(angle: .pi, axis: [1, 0, 0])))
+        units.append(VoxelUnit(position: Vector3(Float(0.0), Float(4.0) * u, Float(0.0)), mesh: .cone, color: trimColor, isMetallic: true,
+                                orientation: VoxelOrientation(angle: Float.pi, axis: Vector3(Float(1.0), Float(0.0), Float(0.0)))))
 
         return units
     }
@@ -343,33 +408,33 @@ struct GoalBuildLibrary {
     // For furniture/home-goods goals — a table, chair, desk, sofa, etc.
     private static func furnitureVoxels(trimColor: UIColor) -> [VoxelUnit] {
         var units: [VoxelUnit] = []
-        let u: Float = 0.09
+        let u = Float(0.09)
 
         // Base pedestal (4 bricks, charcoal)
         for i in -1...2 {
-            units.append(VoxelUnit(position: [0, 0, Float(i) * u], mesh: .cube, color: charcoal, isMetallic: false))
+            units.append(VoxelUnit(position: Vector3(Float(0.0), Float(0.0), Float(i) * u), mesh: .cube, color: charcoal, isMetallic: false, orientation: .identity))
         }
 
         // Four legs — upright cylinders at the corners (indigo)
-        for x in [-1.3, 1.3] as [Float] {
-            for z in [-1.3, 1.3] as [Float] {
-                units.append(VoxelUnit(position: [x * u, u * 0.9, z * u], mesh: .cylinder, color: indigo, isMetallic: false))
+        for x in [Float(-1.3), Float(1.3)] {
+            for z in [Float(-1.3), Float(1.3)] {
+                units.append(VoxelUnit(position: Vector3(x * u, u * Float(0.9), z * u), mesh: .cylinder, color: indigo, isMetallic: false, orientation: .identity))
             }
         }
 
         // Tabletop — wide flat slab spanning the legs, 3x3 (9 bricks, ivory)
         for x in -1...1 {
             for z in -1...1 {
-                units.append(VoxelUnit(position: [Float(x) * u, u * 2, Float(z) * u], mesh: .flatSlab, color: ivory, isMetallic: false))
+                units.append(VoxelUnit(position: Vector3(Float(x) * u, u * Float(2.0), Float(z) * u), mesh: .flatSlab, color: ivory, isMetallic: false, orientation: .identity))
             }
         }
 
         // Edge trim along two sides (2 bricks, gold, metallic)
-        units.append(VoxelUnit(position: [-1 * u, u * 2.05, 0], mesh: .flatSlab, color: trimColor, isMetallic: true))
-        units.append(VoxelUnit(position: [1 * u, u * 2.05, 0], mesh: .flatSlab, color: trimColor, isMetallic: true))
+        units.append(VoxelUnit(position: Vector3(Float(-1.0) * u, u * Float(2.05), Float(0.0)), mesh: .flatSlab, color: trimColor, isMetallic: true, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(Float(1.0) * u, u * Float(2.05), Float(0.0)), mesh: .flatSlab, color: trimColor, isMetallic: true, orientation: .identity))
 
         // Centerpiece — final reveal piece, gold, set on top
-        units.append(VoxelUnit(position: [0, u * 2.35, 0], mesh: .cone, color: trimColor, isMetallic: true))
+        units.append(VoxelUnit(position: Vector3(Float(0.0), u * Float(2.35), Float(0.0)), mesh: .cone, color: trimColor, isMetallic: true, orientation: .identity))
 
         return units
     }
@@ -378,35 +443,35 @@ struct GoalBuildLibrary {
     // For home down payments, house, or apartment goals.
     private static func houseVoxels(trimColor: UIColor) -> [VoxelUnit] {
         var units: [VoxelUnit] = []
-        let u: Float = 0.09
+        let u = Float(0.09)
 
         // Base pedestal (4 bricks, charcoal)
         for i in -1...2 {
-            units.append(VoxelUnit(position: [0, 0, Float(i) * u], mesh: .cube, color: charcoal, isMetallic: false))
+            units.append(VoxelUnit(position: Vector3(Float(0.0), Float(0.0), Float(i) * u), mesh: .cube, color: charcoal, isMetallic: false, orientation: .identity))
         }
 
         // Walls — 3x3 footprint, 2 layers tall (9 bricks, ivory)
         for x in -1...1 {
             for z in -1...1 {
-                units.append(VoxelUnit(position: [Float(x) * u, u, Float(z) * u], mesh: .cube, color: ivory, isMetallic: false))
+                units.append(VoxelUnit(position: Vector3(Float(x) * u, u, Float(z) * u), mesh: .cube, color: ivory, isMetallic: false, orientation: .identity))
             }
         }
 
         // Roof — three cones narrowing toward the peak (crimson)
-        units.append(VoxelUnit(position: [0, u * 2.6, 0], mesh: .cone, color: crimson, isMetallic: false))
-        units.append(VoxelUnit(position: [-0.7 * u, u * 2.3, 0], mesh: .cone, color: crimson, isMetallic: false))
-        units.append(VoxelUnit(position: [0.7 * u, u * 2.3, 0], mesh: .cone, color: crimson, isMetallic: false))
+        units.append(VoxelUnit(position: Vector3(Float(0.0), u * Float(2.6), Float(0.0)), mesh: .cone, color: crimson, isMetallic: false, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(Float(-0.7) * u, u * Float(2.3), Float(0.0)), mesh: .cone, color: crimson, isMetallic: false, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(Float(0.7) * u, u * Float(2.3), Float(0.0)), mesh: .cone, color: crimson, isMetallic: false, orientation: .identity))
 
         // Door (charcoal) + windows (indigo)
-        units.append(VoxelUnit(position: [0, u * 0.6, 1.05 * u], mesh: .flatSlab, color: charcoal, isMetallic: false))
-        units.append(VoxelUnit(position: [-1.05 * u, u * 1.5, 0], mesh: .flatSlab, color: indigo, isMetallic: false))
-        units.append(VoxelUnit(position: [1.05 * u, u * 1.5, 0], mesh: .flatSlab, color: indigo, isMetallic: false))
+        units.append(VoxelUnit(position: Vector3(Float(0.0), u * Float(0.6), Float(1.05) * u), mesh: .flatSlab, color: charcoal, isMetallic: false, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(Float(-1.05) * u, u * Float(1.5), Float(0.0)), mesh: .flatSlab, color: indigo, isMetallic: false, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(Float(1.05) * u, u * Float(1.5), Float(0.0)), mesh: .flatSlab, color: indigo, isMetallic: false, orientation: .identity))
 
         // Chimney (charcoal)
-        units.append(VoxelUnit(position: [0.9 * u, u * 2.2, -0.9 * u], mesh: .cube, color: charcoal, isMetallic: false))
+        units.append(VoxelUnit(position: Vector3(Float(0.9) * u, u * Float(2.2), Float(-0.9) * u), mesh: .cube, color: charcoal, isMetallic: false, orientation: .identity))
 
         // Weathervane — final reveal piece, gold, at the roof peak
-        units.append(VoxelUnit(position: [0, u * 3, 0], mesh: .cone, color: trimColor, isMetallic: true))
+        units.append(VoxelUnit(position: Vector3(Float(0.0), u * Float(3.0), Float(0.0)), mesh: .cone, color: trimColor, isMetallic: true, orientation: .identity))
 
         return units
     }
@@ -415,28 +480,43 @@ struct GoalBuildLibrary {
     // For a ring, wedding/engagement fund, watch, or other jewelry.
     private static func jewelryVoxels(trimColor: UIColor) -> [VoxelUnit] {
         var units: [VoxelUnit] = []
-        let u: Float = 0.09
+        let u = Float(0.09)
 
         // Base pedestal (4 bricks, charcoal)
         for i in -1...2 {
-            units.append(VoxelUnit(position: [0, 0, Float(i) * u], mesh: .cube, color: charcoal, isMetallic: false))
+            units.append(VoxelUnit(position: Vector3(Float(0.0), Float(0.0), Float(i) * u), mesh: .cube, color: charcoal, isMetallic: false, orientation: .identity))
         }
 
-        // Ring band — cubes arranged in a circle (gold, metallic)
-        let bandRadius: Float = 1.4
-        let bandPoints = 10
-        for i in 0..<bandPoints {
-            let angle = Float(i) / Float(bandPoints) * 2 * Float.pi
-            let x = cos(angle) * bandRadius * u
-            let z = sin(angle) * bandRadius * u
-            units.append(VoxelUnit(position: [x, u * 1.4, z], mesh: .cube, color: trimColor, isMetallic: true))
+        // Ring band — cubes arranged in a circle (gold, metallic).
+        // Precomputed (cos, sin) pairs for 10 points evenly spaced around
+        // the circle (36° apart), rather than calling cos()/sin() at
+        // runtime: Skip's transpiler still can't disambiguate those calls
+        // even when fed an explicit Double (see the cascade this caused
+        // across the whole file), so the values are just baked in here.
+        let bandRadius = Float(1.4)
+        let bandOffsets: [(cos: Float, sin: Float)] = [
+            (Float(1.0), Float(0.0)),
+            (Float(0.809017), Float(0.587785)),
+            (Float(0.309017), Float(0.951057)),
+            (Float(-0.309017), Float(0.951057)),
+            (Float(-0.809017), Float(0.587785)),
+            (Float(-1.0), Float(0.0)),
+            (Float(-0.809017), Float(-0.587785)),
+            (Float(-0.309017), Float(-0.951057)),
+            (Float(0.309017), Float(-0.951057)),
+            (Float(0.809017), Float(-0.587785))
+        ]
+        for offset in bandOffsets {
+            let x = offset.cos * bandRadius * u
+            let z = offset.sin * bandRadius * u
+            units.append(VoxelUnit(position: Vector3(x, u * Float(1.4), z), mesh: .cube, color: trimColor, isMetallic: true, orientation: .identity))
         }
 
         // Prong setting (ivory)
-        units.append(VoxelUnit(position: [0, u * 1.9, 0], mesh: .cube, color: ivory, isMetallic: false))
+        units.append(VoxelUnit(position: Vector3(Float(0.0), u * Float(1.9), Float(0.0)), mesh: .cube, color: ivory, isMetallic: false, orientation: .identity))
 
         // Gem — final reveal piece, frosted glass, catching the light
-        units.append(VoxelUnit(position: [0, u * 2.3, 0], mesh: .cone, color: frostedGlass, isMetallic: false))
+        units.append(VoxelUnit(position: Vector3(Float(0.0), u * Float(2.3), Float(0.0)), mesh: .cone, color: frostedGlass, isMetallic: false, orientation: .identity))
 
         return units
     }
@@ -447,32 +527,32 @@ struct GoalBuildLibrary {
     // implying a specific item.
     private static func giftVoxels(trimColor: UIColor) -> [VoxelUnit] {
         var units: [VoxelUnit] = []
-        let u: Float = 0.09
+        let u = Float(0.09)
 
         // Base pedestal (4 bricks, charcoal)
         for i in -1...2 {
-            units.append(VoxelUnit(position: [0, 0, Float(i) * u], mesh: .cube, color: charcoal, isMetallic: false))
+            units.append(VoxelUnit(position: Vector3(Float(0.0), Float(0.0), Float(i) * u), mesh: .cube, color: charcoal, isMetallic: false, orientation: .identity))
         }
 
         // Box body — 3x2 footprint, 2 layers tall (12 bricks, crimson)
         for x in -1...1 {
             for z in -1...0 {
-                units.append(VoxelUnit(position: [Float(x) * u, u, Float(z) * u], mesh: .cube, color: crimson, isMetallic: false))
-                units.append(VoxelUnit(position: [Float(x) * u, 2 * u, Float(z) * u], mesh: .cube, color: crimson, isMetallic: false))
+                units.append(VoxelUnit(position: Vector3(Float(x) * u, u, Float(z) * u), mesh: .cube, color: crimson, isMetallic: false, orientation: .identity))
+                units.append(VoxelUnit(position: Vector3(Float(x) * u, Float(2.0) * u, Float(z) * u), mesh: .cube, color: crimson, isMetallic: false, orientation: .identity))
             }
         }
 
         // Ribbon — gold cross-strap over the top and down both sides (4 bricks)
-        units.append(VoxelUnit(position: [0, 2 * u, -1 * u], mesh: .flatSlab, color: trimColor, isMetallic: true))
-        units.append(VoxelUnit(position: [0, 2 * u, 0], mesh: .flatSlab, color: trimColor, isMetallic: true))
-        units.append(VoxelUnit(position: [-1 * u, 1.5 * u, -0.5 * u], mesh: .cube, color: trimColor, isMetallic: true))
-        units.append(VoxelUnit(position: [1 * u, 1.5 * u, -0.5 * u], mesh: .cube, color: trimColor, isMetallic: true))
+        units.append(VoxelUnit(position: Vector3(Float(0.0), Float(2.0) * u, Float(-1.0) * u), mesh: .flatSlab, color: trimColor, isMetallic: true, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(Float(0.0), Float(2.0) * u, Float(0.0)), mesh: .flatSlab, color: trimColor, isMetallic: true, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(Float(-1.0) * u, Float(1.5) * u, Float(-0.5) * u), mesh: .cube, color: trimColor, isMetallic: true, orientation: .identity))
+        units.append(VoxelUnit(position: Vector3(Float(1.0) * u, Float(1.5) * u, Float(-0.5) * u), mesh: .cube, color: trimColor, isMetallic: true, orientation: .identity))
 
         // Bow — two angled cones on top, final reveal piece (2 bricks)
-        units.append(VoxelUnit(position: [-0.4 * u, 2.6 * u, -0.5 * u], mesh: .cone, color: trimColor, isMetallic: true,
-                                orientation: simd_quatf(angle: .pi * 0.15, axis: [0, 0, 1])))
-        units.append(VoxelUnit(position: [0.4 * u, 2.6 * u, -0.5 * u], mesh: .cone, color: trimColor, isMetallic: true,
-                                orientation: simd_quatf(angle: -.pi * 0.15, axis: [0, 0, 1])))
+        units.append(VoxelUnit(position: Vector3(Float(-0.4) * u, Float(2.6) * u, Float(-0.5) * u), mesh: .cone, color: trimColor, isMetallic: true,
+                                orientation: VoxelOrientation(angle: Float.pi * Float(0.15), axis: Vector3(Float(0.0), Float(0.0), Float(1.0)))))
+        units.append(VoxelUnit(position: Vector3(Float(0.4) * u, Float(2.6) * u, Float(-0.5) * u), mesh: .cone, color: trimColor, isMetallic: true,
+                                orientation: VoxelOrientation(angle: -Float.pi * Float(0.15), axis: Vector3(Float(0.0), Float(0.0), Float(1.0)))))
 
         return units
     }

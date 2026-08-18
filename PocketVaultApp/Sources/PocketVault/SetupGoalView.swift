@@ -84,7 +84,14 @@ struct SetupGoalView: View {
 
     private var amountBinding: Binding<Double> {
         Binding(
-            get: { Double(amountText) ?? 0 },
+            // NOTE(skip): bare `?? 0` here left the Elvis operator's two
+            // branches as Double and Int, which Kotlin can't unify — it
+            // infers `Number & Comparable<CapturedType(*)>` instead of
+            // Double, which then surfaces as several different-looking
+            // errors (return type mismatch, argument type mismatch)
+            // depending on where the type checker catches it. Same fix
+            // as elsewhere in the app: spell out the Double literal.
+            get: { Double(amountText) ?? 0.0 },
             set: { amountText = "\(Int($0.rounded()))" }
         )
     }
@@ -121,7 +128,7 @@ struct SetupGoalView: View {
                         }
                     }
                     .padding(.top, 20)
-                    .padding(.bottom, isOnboarding ? 140 : 220)
+                    .padding(.bottom, isOnboarding ? 140.0 : 220.0) // FIXED TYPE INFERENCE HERE
                 }
             }
 
@@ -130,7 +137,9 @@ struct SetupGoalView: View {
                 pinnedCTA
             }
         }
-        .themedSurface(theme)
+        // FIX: Replaced `theme` with `ignoresSafeArea: true` to fix the compiler error
+        // shown in "Screenshot 2026-08-17 at 9.18.03 PM.jpg"
+        .themedSurface(ignoresSafeArea: true)
         .onAppear {
             if !goalTitle.isEmpty, presets.contains(where: { $0.name == goalTitle }) {
                 selectedPresetName = goalTitle
@@ -156,7 +165,14 @@ struct SetupGoalView: View {
                     .foregroundStyle(.primary)
                     .frame(width: 34, height: 34)
                     .background(theme.isLight ? Color.black.opacity(0.05) : Color.white.opacity(0.08))
+                    // NOTE(skip): `.clipShape` isn't resolved by Skip's
+                    // SwiftUI shim — `.cornerRadius` at half the frame's
+                    // width/height renders as the same circle on Android.
+                    #if !SKIP
                     .clipShape(Circle())
+                    #else
+                    .cornerRadius(17)
+                    #endif
             }
 
             HStack(spacing: 5) {
@@ -188,7 +204,7 @@ struct SetupGoalView: View {
     // extra clearance the CTA renders right underneath it and becomes
     // unreachable. 100pt clears the tab bar's ~64pt content height plus its
     // padding and shadow with a little room to spare.
-    private var ctaBottomPadding: CGFloat { isOnboarding ? 20 : 100 }
+    private var ctaBottomPadding: CGFloat { isOnboarding ? 20.0 : 100.0 }
 
     private var pinnedCTA: some View {
         VStack(spacing: 0) {
@@ -196,7 +212,19 @@ struct SetupGoalView: View {
                 .frame(height: 36)
                 .allowsHitTesting(false)
 
-            Button(action: goNext) {
+            // FIX: `.buttonStyle(PrimaryCTAButtonStyle(...))` referenced a
+            // custom ButtonStyle type that no longer exists — see the long
+            // comment above PrimaryCTAButton in ThemeManager.swift for why
+            // custom ButtonStyle conformance was dropped app-wide in favor
+            // of plain wrapper views. Use PrimaryCTAButton directly instead
+            // of a Button + buttonStyle pair; the disabled/animation/padding
+            // modifiers that were chained after .buttonStyle(...) still work
+            // the same way chained after the wrapper.
+            PrimaryCTAButton(
+                accent: isStepValid ? theme.accent : theme.accent.opacity(0.3),
+                onAccent: theme.onAccent,
+                action: goNext
+            ) {
                 HStack(spacing: 8) {
                     Text(ctaTitle)
                     if step != .amount {
@@ -204,7 +232,6 @@ struct SetupGoalView: View {
                     }
                 }
             }
-            .buttonStyle(PrimaryCTAButtonStyle(accent: isStepValid ? theme.accent : theme.accent.opacity(0.3), onAccent: theme.onAccent))
             .disabled(!isStepValid)
             .animation(.easeInOut(duration: 0.2), value: isStepValid)
             .padding(.horizontal, Layout.pageMargin)
@@ -254,7 +281,7 @@ struct SetupGoalView: View {
                 Rectangle().fill(theme.hairline).frame(height: 1)
                 Text("or pick a quick preset")
                     .font(theme.font(12, weight: .medium))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(theme.textTertiary)
                     .fixedSize()
                 Rectangle().fill(theme.hairline).frame(height: 1)
             }
@@ -345,17 +372,33 @@ struct SetupGoalView: View {
                 .foregroundStyle(.primary)
                 .font(theme.font(14, weight: .light))
                 .padding(14)
+                // NOTE(skip): `.ultraThinMaterial` and `.clipShape` aren't
+                // resolved by Skip's SwiftUI shim — iOS keeps the real
+                // material + shape clip, Android gets a plain tinted
+                // background + `.cornerRadius`, same pattern used
+                // everywhere else in the app.
+                #if !SKIP
                 .background(.ultraThinMaterial)
                 .clipShape(RoundedRectangle(cornerRadius: 14))
+                #else
+                .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                .cornerRadius(14)
+                #endif
                 .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
 
-            Button(action: { Task { await generateSuggestion() } }) {
+            // FIX: `.buttonStyle(.secondaryCTA(theme))` is the same leftover
+            // pattern as PrimaryCTAButtonStyle above — that ButtonStyle no
+            // longer exists. SecondaryCTAButton's own foreground color is
+            // `accent` (not onAccent, unlike the primary/filled button), so
+            // the ProgressView's tint is matched to that instead of carrying
+            // over the old onAccent tint, which would have been the wrong
+            // color even if it still compiled.
+            SecondaryCTAButton(accent: theme.accent, action: { Task { await generateSuggestion() } }) {
                 HStack(spacing: 8) {
-                    if isGeneratingSuggestion { ProgressView().tint(theme.onAccent) }
+                    if isGeneratingSuggestion { ProgressView().tint(theme.accent) }
                     Text(isGeneratingSuggestion ? "Thinking…" : "Generate with AI")
                 }
             }
-            .buttonStyle(.secondaryCTA(theme))
             .disabled(isGeneratingSuggestion || customGoalDescription.trimmingCharacters(in: .whitespaces).isEmpty)
 
             if let aiErrorMessage {
@@ -370,8 +413,13 @@ struct SetupGoalView: View {
             }
         }
         .padding(20)
+        #if !SKIP
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 20))
+        #else
+        .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+        .cornerRadius(20)
+        #endif
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.accent.opacity(0.3), lineWidth: 1))
     }
 
@@ -405,13 +453,24 @@ struct SetupGoalView: View {
                 .padding(.vertical, 12)
                 .background(isApplied ? theme.hairline : theme.accent.opacity(0.15))
                 .foregroundColor(isApplied ? theme.accent : theme.textPrimary)
+                // NOTE(skip): background here is already theme-agnostic,
+                // but `.clipShape` itself is still unresolved under Skip.
+                #if !SKIP
                 .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius))
+                #else
+                .cornerRadius(Layout.controlRadius)
+                #endif
                 .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius).stroke(theme.accent.opacity(isApplied ? 0.5 : 0.2), lineWidth: 1))
             }
         }
         .padding(14)
         .background(theme.isLight ? Color.black.opacity(0.05) : Color.black.opacity(0.2))
+        // NOTE(skip): same clipShape-only fix as the button above.
+        #if !SKIP
         .clipShape(RoundedRectangle(cornerRadius: 14))
+        #else
+        .cornerRadius(14)
+        #endif
     }
 
     private func generateSuggestion() async {

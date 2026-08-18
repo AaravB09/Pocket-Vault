@@ -1,5 +1,7 @@
 import SwiftUI
+#if !SKIP
 import Charts
+#endif
 
 /// Time window for the trend chart. Mirrors the range picker pattern from
 /// portfolio-tracking apps (1W/1M/3M/6M/ALL) — a fixed set of zoom levels
@@ -73,8 +75,14 @@ struct SavingsTrendChart: View {
 
     private var yBounds: (min: Double, max: Double) {
         let values = visiblePoints.map { $0.amount } + [targetAmount]
-        let lo = min(values.min() ?? 0, 0)
-        let hi = max(values.max() ?? targetAmount, targetAmount, 1)
+        // NOTE(skip): bare Int literals (`0`, `1`) mixed with Double
+        // values through `?? `/`min`/`max` don't unify the way they do in
+        // Swift — Skip's Kotlin codegen needs the Double literals spelled
+        // out explicitly. Also: Swift's `max(_:_:_:)` has a 3-argument
+        // overload; Kotlin's `max` only takes two, so the third argument
+        // needs nesting into a second `max` call.
+        let lo = min(values.min() ?? 0.0, 0.0)
+        let hi = max(max(values.max() ?? targetAmount, targetAmount), 1.0)
         let pad = (hi - lo) * 0.12
         return (max(lo - pad, 0), hi + pad)
     }
@@ -93,11 +101,26 @@ struct SavingsTrendChart: View {
             }
         }
         .padding(Layout.cardPadding)
+        // NOTE(skip): `.ultraThinMaterial` and `.clipShape` aren't
+        // resolved by Skip's SwiftUI shim — iOS keeps the real material +
+        // shape clip, Android gets a plain tinted background +
+        // `.cornerRadius`, same pattern used everywhere else in the app.
+        #if !SKIP
         .background(.ultraThinMaterial)
         .clipShape(RoundedRectangle(cornerRadius: Layout.cardRadius))
+        #else
+        .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+        .cornerRadius(Layout.cardRadius)
+        #endif
         .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1))
         .padding(.horizontal, Layout.pageMargin)
+        // NOTE(skip): `.blur` isn't implemented under Skip at all. The
+        // PrivacyRevealOverlay below already covers the content when
+        // masked, so Android just skips the blur and goes straight to
+        // the overlay.
+        #if !SKIP
         .blur(radius: privacy.shouldMask ? 14 : 0)
+        #endif
         .overlay {
             if privacy.shouldMask {
                 PrivacyRevealOverlay()
@@ -113,18 +136,20 @@ struct SavingsTrendChart: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Savings trend")
                     .font(theme.font(12, weight: .semibold))
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(theme.textTertiary)
 
                 Text("$\(Int(displayPoint?.amount ?? 0))")
                     .font(theme.font(26, weight: .light))
                     .foregroundStyle(.primary)
+                    #if !SKIP
                     .contentTransition(.numericText())
+                    #endif
                     .animation(.easeOut(duration: 0.15), value: displayPoint?.amount)
 
                 if let date = displayPoint?.date {
                     Text(scrubbedPoint == nil ? "Today" : formatted(date))
                         .font(theme.font(11, weight: .medium))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(theme.textTertiary)
                 }
             }
 
@@ -141,13 +166,20 @@ struct SavingsTrendChart: View {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 6)
                 .background((isPositive ? theme.success : theme.danger).opacity(0.14))
+                // NOTE(skip): same clipShape-only fix as the main card —
+                // background here is already theme-agnostic.
+                #if !SKIP
                 .clipShape(Capsule())
+                #else
+                .cornerRadius(100)
+                #endif
             }
         }
     }
 
     // MARK: - Chart
 
+    #if !SKIP
     private var chart: some View {
         Chart {
             ForEach(visiblePoints) { point in
@@ -186,12 +218,12 @@ struct SavingsTrendChart: View {
             }
 
             RuleMark(y: .value("Target", targetAmount))
-                .lineStyle(StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                .lineStyle(StrokeStyle(lineWidth: 1, dash: [4.0, 4.0]))
                 .foregroundStyle(theme.textTertiary.opacity(0.6))
                 .annotation(position: .top, alignment: .trailing) {
                     Text("Goal")
                         .font(theme.font(10, weight: .semibold))
-                        .foregroundStyle(.tertiary)
+                        .foregroundStyle(theme.textTertiary)
                 }
 
             // "Today" marker — a small filled dot pinned to the latest
@@ -266,6 +298,138 @@ struct SavingsTrendChart: View {
         }
         scrubbedPoint = nearest
     }
+    #else
+    // MARK: - Chart (Android fallback)
+    //
+    // Apple's Charts framework isn't available under Skip, so this draws
+    // the same gradient-filled line + target rule + scrub-to-inspect
+    // interaction with plain SwiftUI Path/Shape drawing, which Skip does
+    // support. Keeps the same visible behavior as the iOS Chart above:
+    // smooth-ish line through every point, a dashed "Goal" line, a dot on
+    // the latest value, and drag-to-scrub with a snap-to-nearest-point.
+    private var chart: some View {
+        GeometryReader { geo in
+            let size = geo.size
+            let points = visiblePoints
+            let bounds = yBounds
+
+            // NOTE(skip): these were previously local `func`s. Swift lets
+            // you reference a local function by name as a first-class
+            // closure value (as `xPos: xPos` below does), but Skip's
+            // transpiler doesn't — it tries to *call* the function where
+            // a `Function1<SavingsSnapshot, Double>` value was expected,
+            // producing "Argument type mismatch: actual type is 'Double'"
+            // and "Function invocation 'xPos(...)' expected". Declaring
+            // them as `let` closures instead makes them first-class
+            // values on both platforms.
+            let xPos: (SavingsSnapshot) -> CGFloat = { point in
+                guard let first = points.first, let last = points.last,
+                      last.date != first.date else { return size.width / 2 }
+                let total = last.date.timeIntervalSince(first.date)
+                let offset = point.date.timeIntervalSince(first.date)
+                return size.width * CGFloat(total > 0 ? offset / total : 0)
+            }
+
+            let yPos: (Double) -> CGFloat = { amount in
+                let range = bounds.max - bounds.min
+                guard range > 0 else { return size.height / 2 }
+                let ratio = (amount - bounds.min) / range
+                return size.height * (1 - CGFloat(ratio))
+            }
+
+            ZStack {
+                if points.count >= 2 {
+                    // Gradient area under the line
+                    Path { path in
+                        path.move(to: CGPoint(x: xPos(points[0]), y: size.height))
+                        for point in points {
+                            path.addLine(to: CGPoint(x: xPos(point), y: yPos(point.amount)))
+                        }
+                        path.addLine(to: CGPoint(x: xPos(points[points.count - 1]), y: size.height))
+                        path.closeSubpath()
+                    }
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                theme.accent.opacity(0.30),
+                                theme.accent.opacity(0.10),
+                                theme.accent.opacity(0.0)
+                            ],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                    )
+
+                    // Line through every point
+                    Path { path in
+                        path.move(to: CGPoint(x: xPos(points[0]), y: yPos(points[0].amount)))
+                        for point in points.dropFirst() {
+                            path.addLine(to: CGPoint(x: xPos(point), y: yPos(point.amount)))
+                        }
+                    }
+                    .stroke(theme.accent, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+
+                    // Target goal rule
+                    Path { path in
+                        let y = yPos(targetAmount)
+                        path.move(to: CGPoint(x: 0, y: y))
+                        path.addLine(to: CGPoint(x: size.width, y: y))
+                    }
+                    .stroke(theme.textTertiary.opacity(0.6), style: StrokeStyle(lineWidth: 1, dash: [4.0, 4.0]))
+
+                    Text("Goal")
+                        .font(theme.font(10, weight: .semibold))
+                        .foregroundStyle(theme.textTertiary)
+                        .position(x: size.width - 18, y: max(yPos(targetAmount) - 10, 10))
+
+                    // Today marker, unless actively scrubbing
+                    if scrubbedPoint == nil, let latest = points.last {
+                        let p = CGPoint(x: xPos(latest), y: yPos(latest.amount))
+                        Circle().fill(theme.accent).frame(width: 12, height: 12).position(p)
+                        Circle().fill(theme.onAccent).frame(width: 5, height: 5).position(p)
+                    }
+
+                    // Scrub marker
+                    if let scrubbed = scrubbedPoint {
+                        let x = xPos(scrubbed)
+                        Path { path in
+                            path.move(to: CGPoint(x: x, y: 0))
+                            path.addLine(to: CGPoint(x: x, y: size.height))
+                        }
+                        .stroke(theme.textTertiary.opacity(0.5), lineWidth: 1)
+
+                        Circle()
+                            .fill(theme.accent)
+                            .frame(width: 14, height: 14)
+                            .position(x: x, y: yPos(scrubbed.amount))
+                    }
+                }
+
+                Rectangle()
+                    .fill(Color.clear)
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { value in
+                                updateScrubAndroid(at: value.location, points: points, xPos: xPos)
+                            }
+                            .onEnded { _ in
+                                withAnimation(.easeOut(duration: 0.2)) { scrubbedPoint = nil }
+                            }
+                    )
+            }
+        }
+    }
+
+    private func updateScrubAndroid(at location: CGPoint, points: [SavingsSnapshot], xPos: (SavingsSnapshot) -> CGFloat) {
+        guard !points.isEmpty else { return }
+        let nearest = points.min { a, b in
+            abs(xPos(a) - location.x) < abs(xPos(b) - location.x)
+        }
+        if nearest != scrubbedPoint {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        }
+        scrubbedPoint = nearest
+    }
+    #endif
 
     // MARK: - Range picker
 
@@ -285,7 +449,14 @@ struct SavingsTrendChart: View {
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
                         .background(selectedRange == range ? theme.accent : Color.clear)
+                        // NOTE(skip): same clipShape-only fix as elsewhere
+                        // in this file — background is already
+                        // theme-agnostic.
+                        #if !SKIP
                         .clipShape(Capsule())
+                        #else
+                        .cornerRadius(100)
+                        #endif
                 }
             }
         }
@@ -297,10 +468,10 @@ struct SavingsTrendChart: View {
         VStack(spacing: 6) {
             Image(systemName: "chart.line.uptrend.xyaxis")
                 .font(theme.font(20))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(theme.textTertiary)
             Text("Make a couple deposits to see your trend take shape.")
                 .font(theme.font(11, weight: .medium))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(theme.textTertiary)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)

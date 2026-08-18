@@ -45,14 +45,21 @@ struct AtmosphericParticles: View {
                                 center: .center, startRadius: 1, endRadius: 15
                             )
                         )
-                        .frame(width: CGFloat.random(in: 8...24))
+                        // NOTE(skip): `.random(in:)` bounds below used bare
+                        // Int literals (and, for x/y, one bound that was
+                        // already a CGFloat from `geo.size`). Swift
+                        // auto-promotes Int literals to match a
+                        // ClosedRange<CGFloat>/<Double> from context; Skip's
+                        // Kotlin codegen doesn't, so it built an `IntRange`
+                        // instead — explicit `.0` on every bound fixes it.
+                        .frame(width: CGFloat.random(in: 8.0...24.0))
                         .position(
-                            x: CGFloat.random(in: 0...geo.size.width),
-                            y: animate ? CGFloat.random(in: 0...geo.size.height) : CGFloat.random(in: 0...geo.size.height)
+                            x: CGFloat.random(in: 0.0...geo.size.width),
+                            y: animate ? CGFloat.random(in: 0.0...geo.size.height) : CGFloat.random(in: 0.0...geo.size.height)
                         )
                         .blur(radius: 2)
                         .animation(
-                            Animation.easeInOut(duration: Double.random(in: 4...8))
+                            Animation.easeInOut(duration: Double.random(in: 4.0...8.0))
                                 .repeatForever(autoreverses: true),
                             value: animate
                         )

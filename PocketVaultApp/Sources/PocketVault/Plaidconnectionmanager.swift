@@ -1,6 +1,8 @@
 import Foundation
 import Combine
+#if !SKIP
 import LinkKit
+#endif
 
 /// Drives the "Connect Bank" flow in the Budget tab: fetches a Link
 /// token from your Supabase proxy, launches Plaid Link's own hosted UI
@@ -43,6 +45,14 @@ final class PlaidConnectionManager: ObservableObject {
 
     /// Step 1: get a Link token, then hand it to Plaid's LinkKit to
     /// present the hosted bank-picker UI. Call this from a button action.
+    ///
+    /// `LinkTokenConfiguration` comes from LinkKit, an iOS-only SDK (see
+    /// the guarded import above), so this whole method is iOS-only too —
+    /// BudgetBankSyncSection only ever calls it inside its own `#if
+    /// !SKIP` block, so nothing on Android needs it. Wiring up bank sync
+    /// on Android means adding Plaid's Android SDK/Skip package and a
+    /// matching Android-side connect flow here.
+    #if !SKIP
     func startConnection(accessToken: String?, presenting: (LinkTokenConfiguration) -> Void) async {
         guard let accessToken else {
             errorMessage = "Sign in to connect a bank."
@@ -89,6 +99,7 @@ final class PlaidConnectionManager: ObservableObject {
             errorMessage = "Couldn't start the bank connection. Try again."
         }
     }
+    #endif
 
     /// Step 2: exchange Plaid's short-lived public token for a permanent
     /// access token, stored server-side only (never sent to this device).

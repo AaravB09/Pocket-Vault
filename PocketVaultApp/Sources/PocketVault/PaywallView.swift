@@ -1,4 +1,5 @@
 import SwiftUI
+#if !SKIP
 import RevenueCat
 
 /// A fully custom paywall showing both plans side by side, each with a
@@ -210,14 +211,20 @@ struct CustomPaywallView: View {
         }
     }
 
+    // FIX: `.buttonStyle(.primaryCTA(theme))` referenced a custom
+    // ButtonStyle static member that no longer exists — same leftover
+    // migration gap as BuildStudioView/AccountRequiredGateView/
+    // SetupGoalView: custom ButtonStyle conformance isn't supported by
+    // Skip, so those styles were all replaced app-wide with plain
+    // wrapper views (see PrimaryCTAButton in ThemeManager.swift). Use
+    // the wrapper directly instead of a Button + buttonStyle pair.
     private var purchaseButton: some View {
-        Button(action: { Task { await purchase() } }) {
+        PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: { Task { await purchase() } }) {
             HStack {
                 if isPurchasing { ProgressView().tint(theme.onAccent) }
                 Text(isPurchasing ? "Processing…" : "Continue")
             }
         }
-        .buttonStyle(.primaryCTA(theme))
         .disabled(isPurchasing || currentPackage == nil)
         .padding(.horizontal, Layout.pageMargin)
     }
@@ -418,3 +425,39 @@ private struct PlanCard: View {
         }
     }
 }
+
+#else
+// MARK: - Android fallback (RevenueCat's SDK isn't linked here yet)
+struct CustomPaywallView: View {
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var theme: ThemeManager
+
+    let goalTitle: String
+    let targetGoal: Double
+    let currentSavings: Double
+    @Binding var chatMessages: [ChatMessage]
+    @Binding var selectedTab: Int
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(theme.font(34, weight: .bold))
+                .foregroundStyle(theme.accent)
+            Text("Pro isn't available on Android yet")
+                .font(theme.font(16, weight: .semibold))
+                .foregroundStyle(.primary)
+            Text("We're still wiring up purchases on this platform — check back soon")
+                .font(theme.font(13))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, Layout.pageMargin)
+            Button("Close") { dismiss() }
+                .font(theme.font(12, weight: .bold))
+                .foregroundStyle(theme.accent)
+                .padding(.top, 8)
+        }
+        .padding()
+        .themedSurface(ignoresSafeArea: true)
+    }
+}
+#endif

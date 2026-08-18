@@ -1,7 +1,10 @@
 import Foundation
+#if !SKIP
 import RevenueCat
+#endif
 import Combine
 
+#if !SKIP
 @MainActor
 final class EntitlementManager: NSObject, ObservableObject, PurchasesDelegate {
     @Published var isPro: Bool = false
@@ -54,3 +57,36 @@ final class EntitlementManager: NSObject, ObservableObject, PurchasesDelegate {
         #endif
     }
 }
+#else
+/// Android build: RevenueCat's SDK isn't linked here (it's an
+/// iOS-only import above), so Pro purchases aren't wired up on this
+/// platform yet. This keeps the same public API (`isPro`, `refresh()`,
+/// `resetTestAccount()`) every view already depends on, so nothing else
+/// has to know the difference — it just reports "not Pro" instead of
+/// crashing or silently pretending to be entitled.
+///
+/// To make Pro real on Android, add RevenueCat's Skip-compatible
+/// package (see github.com/skiptools/skip-revenue) and swap the calls
+/// above back in for the Android branch.
+@MainActor
+final class EntitlementManager: NSObject, ObservableObject {
+    @Published var isPro: Bool = false
+
+    override init() {
+        super.init()
+        Task { await refresh() }
+    }
+
+    func refresh() async {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["POCKET_VAULT_FORCE_PRO"] == "1" {
+            isPro = true
+        }
+        #endif
+    }
+
+    func resetTestAccount() async {
+        await refresh()
+    }
+}
+#endif

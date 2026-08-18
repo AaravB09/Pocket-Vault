@@ -7,16 +7,31 @@ let logger: Logger = Logger(subsystem: "com.sanjivanilabs.pocketvault", category
 
 /// The shared top-level view for the app, loaded from the platform-specific App delegates below.
 ///
-/// The default implementation merely loads the `ContentView` for the app and logs a message.
+/// Mirrors what `Pocket_VaultApp.swift`'s `WindowGroup` does on iOS — auth-gated between
+/// `LoginView` and `MainTabView` — rather than loading `ContentView` directly: `ContentView`
+/// is just one tab's content and requires bindings/a `GoalStore` that only `MainTabView` owns,
+/// so it can't be constructed with no arguments the way this view previously tried to.
 public struct PocketVaultRootView : View {
+    @StateObject private var authManager = AuthManager()
+    @StateObject private var themeManager = ThemeManager()
+
     public init() {
     }
 
     public var body: some View {
-        ContentView()
-            .task {
-                logger.info("Skip app logs are viewable in the Xcode console for iOS; Android logs can be viewed in Studio or using adb logcat")
+        Group {
+            if authManager.isAuthenticated || authManager.isGuest {
+                MainTabView(namespace: authManager.storageNamespace)
+                    .id(authManager.storageNamespace)
+            } else {
+                LoginView()
             }
+        }
+        .environmentObject(authManager)
+        .environmentObject(themeManager)
+        .task {
+            logger.info("Skip app logs are viewable in the Xcode console for iOS; Android logs can be viewed in Studio or using adb logcat")
+        }
     }
 }
 
