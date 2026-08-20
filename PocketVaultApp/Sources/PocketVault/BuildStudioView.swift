@@ -47,24 +47,32 @@ struct BuildStudioView: View {
         UIColor(red: components.r, green: components.g, blue: components.b, alpha: 1.0)
     }
 
-    // The 3D build's trim/accent pieces (gold bow ribbon, spoiler, lock
-    // shackle, etc.) now follow whichever accent color the user picked in
-    // Appearance instead of always rendering champagne gold — same accent
-    // driving every 2D screen also drives the trim color here.
-    private var voxels: [VoxelUnit] {
-        // NOTE(skip): GoalBuildLibrary's voxel builders take UIColor on
-        // both platforms — Skip provides a UIColor compatibility shim
-        // (used a few lines down for UIColor.white etc.), so there's no
-        // need to branch this. The previous #if SKIP branch was handing
-        // the SKIP build a raw Color where UIColor was expected, which is
-        // exactly the "actual type is 'Color', but 'UIColor' was
-        // expected" error at both call sites below.
-        let trimColor = trimUIColor(from: theme.accentRGB)
+    // FIX: `voxels` used to be a computed property, which meant every
+    // single read rebuilt the whole piece list from scratch — for a
+    // custom AI-generated goal that includes a full JSONDecoder pass
+    // every time. It's read from several places in this same view
+    // (unlockedCount, isComplete, the piece-count text, the Android 2D
+    // stand-in's ForEach), and unlockedCount itself reads voxels too, so
+    // inside voxelStandIn2D's ForEach the whole array was being rebuilt
+    // once PER PIECE, on every body re-render. Dragging to rotate the
+    // sculpture changes rotationY, which re-renders the body dozens of
+    // times a second — none of which actually changes the sculpture's
+    // shape — so this was redoing that full rebuild (JSON decode
+    // included) far more than needed, laggy on iOS and enough of a
+    // main-thread backlog to trip Android's ANR watchdog.
+    //
+    // Cache it instead: only recompute when something that actually
+    // changes the shape changes (goal kind, blueprint, or trim color),
+    // not on every re-render.
+    @State private var cachedVoxels: [VoxelUnit] = []
 
+    private func recomputeVoxels() {
+        let trimColor = trimUIColor(from: theme.accentRGB)
         if let blueprint = customVoxelBlueprint, !blueprint.isEmpty {
-            return GoalBuildLibrary.customVoxels(fromBlueprintJSON: blueprint, trimColor: trimColor)
+            cachedVoxels = GoalBuildLibrary.customVoxels(fromBlueprintJSON: blueprint, trimColor: trimColor)
+        } else {
+            cachedVoxels = GoalBuildLibrary.voxels(for: goalKind, trimColor: trimColor)
         }
-        return GoalBuildLibrary.voxels(for: goalKind, trimColor: trimColor)
     }
 
     // FIX: nested `min(max(...))` over Doubles is the same generic-
@@ -86,11 +94,11 @@ struct BuildStudioView: View {
     // Nothing here pretends any money has been saved; it's purely "you
     // started" momentum.
     private var unlockedCount: Int {
-        let earned = Int((progressRatio * Double(voxels.count)).rounded(.down))
-        return min(voxels.count, max(earned, 1))
+        let earned = Int((progressRatio * Double(cachedVoxels.count)).rounded(.down))
+        return min(cachedVoxels.count, max(earned, 1))
     }
 
-    private var isComplete: Bool { unlockedCount >= voxels.count }
+    private var isComplete: Bool { unlockedCount >= cachedVoxels.count }
 
     var body: some View {
         ZStack {
@@ -108,8 +116,8 @@ struct BuildStudioView: View {
                         .foregroundStyle(.primary.opacity(0.8))
 
                     Text(currentSavings > 0.0
-                        ? "\(unlockedCount) OF \(voxels.count) PIECES PLACED"
-                        : "1 OF \(voxels.count) PIECES PLACED · STARTER PIECE")
+                        ? "\(unlockedCount) OF \(cachedVoxels.count) PIECES PLACED"
+                        : "1 OF \(cachedVoxels.count) PIECES PLACED · STARTER PIECE")
                         .font(theme.font(9, weight: .semibold))
                         .tracking(2)
                         .foregroundStyle(.secondary) // was .tertiary — unsupported by Skip
@@ -125,7 +133,7 @@ struct BuildStudioView: View {
                 if isComplete {
                     VStack(spacing: 10) {
                         HStack(spacing: 8) {
-                            Image(systemName: "checkmark.seal.fill")
+                            Image.platformSymbol("checkmark.seal.fill", android: "checkmark.circle.fill")
                             Text("SCULPTURE COMPLETE")
                         }
                         .font(theme.font(10, weight: .bold))
@@ -158,7 +166,11 @@ struct BuildStudioView: View {
             }
             lastUnlockedCount = unlockedCount
         }
+        .onChange(of: goalKindRaw) { _ in recomputeVoxels() }
+        .onChange(of: customVoxelBlueprint) { _ in recomputeVoxels() }
+        .onChange(of: theme.accent) { _ in recomputeVoxels() }
         .onAppear {
+            recomputeVoxels()
             lastUnlockedCount = unlockedCount
         }
     }
@@ -211,7 +223,8 @@ struct BuildStudioView: View {
                 guard let baseEntity = content.entities.first(where: { $0.name == "assemblyBase" }) else { return }
                 baseEntity.orientation = simd_quatf(angle: rotationY, axis: [0, 1, 0])
 
-                for (index, unit) in voxels.enumerated() where index < unlockedCount {
+                let unlocked = unlockedCount
+                for (index, unit) in cachedVoxels.enumerated() where index < unlocked {
                     spawnVoxel(index: index, unit: unit, on: baseEntity)
                 }
             }
@@ -230,10 +243,78 @@ struct BuildStudioView: View {
             EmptyView()
         }
         #else
-        // Fallback for Android (Skip ignores RealityKit entirely)
-        EmptyView()
+        // Android fallback: RealityKit itself doesn't exist under Skip
+        // (this used to just be an EmptyView(), which is why Build
+        // Studio looked completely blank on Android). This renders a
+        // flat, isometric-style stand-in built from the exact same
+        // `voxels` data the iOS 3D view consumes — same piece count,
+        // same colors, same unlock progression, same drag-to-rotate
+        // feel — using only plain SwiftUI shapes, which is the closest
+        // Android can get without a 3D engine.
+        voxelStandIn2D
         #endif
     }
+
+    #if SKIP
+    /// Simple isometric-style projection of a voxel's 3D position onto
+    /// the 2D canvas: x and z both contribute to the horizontal axis (z
+    /// also nudges vertically for a sense of depth), y is height.
+    private func projectedVoxelPoint(_ p: Vector3, center: CGPoint) -> CGPoint {
+        let scale: CGFloat = 300.0
+        let x = CGFloat(p.x) * scale
+        let y = CGFloat(p.y) * scale
+        let z = CGFloat(p.z) * scale
+        return CGPoint(x: center.x + x + (z * 0.4), y: center.y - y - (z * 0.25))
+    }
+
+    @ViewBuilder
+    private func voxelChip(_ unit: VoxelUnit) -> some View {
+        let isRound = unit.mesh == .cylinder || unit.mesh == .cone
+        let size: CGFloat = unit.mesh == .flatSlab ? 26.0 : 16.0
+        let height: CGFloat = unit.mesh == .flatSlab ? 8.0 : size
+        Group {
+            if isRound {
+                Circle().fill(Color(unit.color))
+            } else {
+                RoundedRectangle(cornerRadius: 3.0).fill(Color(unit.color))
+            }
+        }
+        .frame(width: size, height: height)
+        .shadow(color: Color.black.opacity(0.3), radius: 2.0, y: 1.0)
+    }
+
+    private var voxelStandIn2D: some View {
+        let unlocked = unlockedCount
+        return GeometryReader { geo in
+            let center = CGPoint(x: geo.size.width / 2.0, y: geo.size.height * 0.62)
+            ZStack {
+                // Base platform, matching the iOS cylinder base.
+                Ellipse()
+                    .fill(Color(white: 0.16))
+                    .frame(width: 170.0, height: 46.0)
+                    .position(x: center.x, y: center.y + 34.0)
+
+                ForEach(Array(cachedVoxels.enumerated()), id: \.offset) { index, unit in
+                    if index < unlocked {
+                        voxelChip(unit)
+                            .position(projectedVoxelPoint(unit.position, center: center))
+                    }
+                }
+            }
+            .rotation3DEffect(.degrees(Double(rotationY) * 6.0), axis: (x: 0.0, y: 1.0, z: 0.0))
+        }
+        .frame(height: 260.0)
+        .gesture(
+            DragGesture()
+                .onChanged { value in
+                    let delta = Float(value.translation.width - lastDragTranslation) * Float(0.02)
+                    rotationY += delta
+                    lastDragTranslation = value.translation.width
+                }
+                .onEnded { _ in lastDragTranslation = 0 }
+        )
+    }
+    #endif
 
     // Keep the entire RealityKit function hidden from Android and gated by iOS 18
     #if !SKIP

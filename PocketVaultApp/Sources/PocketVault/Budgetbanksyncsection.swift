@@ -48,7 +48,7 @@ struct BudgetBankSyncSection: View {
     private var connectedState: some View {
         VStack(spacing: 12.0) {
             HStack(spacing: 12.0) {
-                Image(systemName: "building.columns.fill")
+                Image.platformSymbol("building.columns.fill", android: "house.fill")
                     .font(theme.font(15.0))
                     .foregroundStyle(theme.accent)
                 VStack(alignment: .leading, spacing: 2.0) {

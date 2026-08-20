@@ -72,7 +72,7 @@ struct CalendarView: View {
                         // Current Streak Card
                         VStack(spacing: 8) {
                             HStack(spacing: 6) {
-                                Image(systemName: "flame.fill")
+                                Image.platformSymbol("flame.fill", android: "heart.fill")
                                     .foregroundStyle(theme.accent)
                                 SectionLabel("Active streak")
                             }
@@ -92,7 +92,7 @@ struct CalendarView: View {
                         // Longest Streak Card
                         VStack(spacing: 8) {
                             HStack(spacing: 6) {
-                                Image(systemName: "trophy.fill")
+                                Image.platformSymbol("trophy.fill", android: "star.fill")
                                     .foregroundStyle(theme.accent)
                                 SectionLabel("Best streak")
                             }
@@ -205,7 +205,7 @@ struct CalendarView: View {
                                 if calendarSync.isSyncing {
                                     ProgressView().tint(theme.accent)
                                 } else {
-                                    Image(systemName: "calendar.badge.plus")
+                                    Image.platformSymbol("calendar.badge.plus", android: "calendar")
                                 }
                                 Text(calendarSync.isSyncing ? "Syncing…" : "Add to Apple Calendar")
                                     .font(theme.font(14, weight: .semibold))

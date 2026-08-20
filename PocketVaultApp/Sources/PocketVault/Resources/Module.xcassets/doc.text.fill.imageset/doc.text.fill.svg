@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+<path d="M6 2h9l5 5v15H6V2z" opacity="0.25"/>
+<path d="M15 2v5h5" opacity="0.5"/>
+<g stroke="currentColor" stroke-width="1.4">
+<line x1="8.5" y1="12" x2="15.5" y2="12"/>
+<line x1="8.5" y1="15" x2="15.5" y2="15"/>
+<line x1="8.5" y1="18" x2="13" y2="18"/>
+</g>
+</svg>

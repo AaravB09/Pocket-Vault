@@ -4,6 +4,10 @@ struct GoalPreset: Identifiable {
     let id = UUID()
     let name: String
     let icon: String
+    // Skip/Android has no equivalent for "cpu", "car.side", or "shield" —
+    // see PlatformSymbol.swift — so each preset carries its own Android
+    // stand-in rather than falling back to the warning-triangle glyph.
+    let androidIcon: String
     let defaultAmount: Double
     let defaultMonths: Int // smart default: typical timeframe for this kind of goal
 }
@@ -71,10 +75,10 @@ struct SetupGoalView: View {
     @State private var resolvedVoxelBlueprintJSON: String? = nil
 
     let presets: [GoalPreset] = [
-        GoalPreset(name: "Plane Ticket to Mexico", icon: "paperplane", defaultAmount: 1200, defaultMonths: 4),
-        GoalPreset(name: "Gaming Rig", icon: "cpu", defaultAmount: 1500, defaultMonths: 3),
-        GoalPreset(name: "New Car", icon: "car.side", defaultAmount: 8000, defaultMonths: 18),
-        GoalPreset(name: "Emergency Fund", icon: "shield", defaultAmount: 1000, defaultMonths: 6)
+        GoalPreset(name: "Plane Ticket to Mexico", icon: "paperplane", androidIcon: "paperplane", defaultAmount: 1200, defaultMonths: 4),
+        GoalPreset(name: "Gaming Rig", icon: "cpu", androidIcon: "gearshape.fill", defaultAmount: 1500, defaultMonths: 3),
+        GoalPreset(name: "New Car", icon: "car.side", androidIcon: "cart.fill", defaultAmount: 8000, defaultMonths: 18),
+        GoalPreset(name: "Emergency Fund", icon: "shield", androidIcon: "lock.fill", defaultAmount: 1000, defaultMonths: 6)
     ]
 
     private var isAmountValid: Bool {
@@ -228,7 +232,7 @@ struct SetupGoalView: View {
                 HStack(spacing: 8) {
                     Text(ctaTitle)
                     if step != .amount {
-                        Image(systemName: "arrow.right")
+                        Image(systemName: "arrow.forward")
                     }
                 }
             }
@@ -241,7 +245,16 @@ struct SetupGoalView: View {
     }
 
     private func goNext() {
+        // NOTE(skip): UIImpactFeedbackGenerator isn't safe to actually
+        // invoke on Android — it compiles under Skip but crashes at
+        // runtime when `impactOccurred()` is called. Same guard used
+        // everywhere else in the app (see AmountScrubPicker,
+        // BuildStudioView, MainTabView, etc.) — this one was missing,
+        // which is why the "Continue" button on the Goal step force-
+        // closed the app on Android.
+        #if !SKIP
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        #endif
         if let idx = SetupStep.allCases.firstIndex(of: step), idx < totalSteps - 1 {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                 step = SetupStep.allCases[idx + 1]
@@ -252,7 +265,9 @@ struct SetupGoalView: View {
     }
 
     private func goBack() {
+        #if !SKIP
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        #endif
         if let idx = SetupStep.allCases.firstIndex(of: step), idx > 0 {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                 step = SetupStep.allCases[idx - 1]
@@ -300,10 +315,12 @@ struct SetupGoalView: View {
                         // Smart default: seed a realistic target date for this
                         // kind of goal instead of leaving "today" selected.
                         targetDate = Calendar.current.date(byAdding: .month, value: preset.defaultMonths, to: Date()) ?? targetDate
+                        #if !SKIP
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        #endif
                     }) {
                         HStack(spacing: 14) {
-                            Image(systemName: preset.icon)
+                            Image.platformSymbol(preset.icon, android: preset.androidIcon)
                                 .font(theme.font(16, weight: .light))
                                 .foregroundStyle(isSelected ? theme.onAccent : theme.textTertiary)
 
@@ -356,7 +373,7 @@ struct SetupGoalView: View {
     private var aiGoalCard: some View {
         VStack(spacing: 14) {
             HStack(spacing: 8) {
-                Image(systemName: "sparkles")
+                Image.platformSymbol("sparkles", android: "star.fill")
                     .foregroundStyle(theme.accent)
                 Text("Describe your own goal")
                     .font(theme.font(14, weight: .semibold))
@@ -493,7 +510,9 @@ struct SetupGoalView: View {
         targetDate = Calendar.current.date(byAdding: .day, value: aiSuggestion.suggestedTimeframeDays, to: Date()) ?? targetDate
         resolvedGoalKind = aiSuggestion.goalKind
         resolvedVoxelBlueprintJSON = aiSuggestion.voxelBlueprintJSON
+        #if !SKIP
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        #endif
     }
 
     private func confirmGoal() {

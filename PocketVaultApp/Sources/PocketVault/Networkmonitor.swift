@@ -49,7 +49,7 @@ struct OfflineBanner: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Image(systemName: "wifi.slash")
+            Image.platformSymbol("wifi.slash", android: "exclamationmark.triangle.fill")
                 .font(theme.font(11, weight: .bold))
             Text("Offline — goals & budget still editable")
                 .font(theme.font(12, weight: .medium))

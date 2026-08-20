@@ -14,7 +14,9 @@ struct GoalPickerBar: View {
                     let isActive = goal.id == goalStore.activeGoal?.id
 
                     Button(action: {
+                        #if !SKIP
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        #endif
                         goalStore.setActive(goal.id)
                     }) {
                         HStack(spacing: 6) {
@@ -23,7 +25,7 @@ struct GoalPickerBar: View {
                             Text(goal.title)
                                 .font(theme.font(12, weight: .semibold))
                             if goal.sharedGoalID != nil {
-                                Image(systemName: "person.2.fill")
+                                Image.platformSymbol("person.2.fill", android: "person.fill")
                                     .font(theme.font(9, weight: .semibold))
                                     .opacity(0.8)
                             }

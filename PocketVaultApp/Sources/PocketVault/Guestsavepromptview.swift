@@ -18,7 +18,7 @@ struct GuestSavePromptView: View {
     var body: some View {
         ZStack {
             VStack(spacing: 22) {
-                Image(systemName: "exclamationmark.icloud.fill")
+                Image.platformSymbol("exclamationmark.icloud.fill", android: "exclamationmark.triangle.fill")
                     .font(theme.font(34, weight: .light))
                     .foregroundStyle(theme.accent)
                     .padding(.top, 50)

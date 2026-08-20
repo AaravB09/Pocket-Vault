@@ -7,19 +7,36 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		414B50DA302140E60099ECF5 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = 414B50D9302140E60099ECF5 /* RevenueCatUI */; };
-		4164FFE8302075EC0014D33B /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 4164FFE7302075EC0014D33B /* RevenueCat */; };
-		4199C29D30295E44002E8F0A /* LinkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 4199C29C30295E44002E8F0A /* LinkKit */; };
+		41232D533036DE71003D0518 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 41232D523036DE71003D0518 /* RevenueCat */; };
+		413B8A6230378E8D006C39AE /* LinkKit in Frameworks */ = {isa = PBXBuildFile; productRef = 413B8A6130378E8D006C39AE /* LinkKit */; };
+		413B8A6430378E8D006C39AE /* LinkKitObjC in Frameworks */ = {isa = PBXBuildFile; productRef = 413B8A6330378E8D006C39AE /* LinkKitObjC */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		4169F74F30366B7E00CE5B18 /* PocketVaultApp */ = {isa = PBXFileReference; lastKnownFileType = wrapper; path = PocketVaultApp; sourceTree = "<group>"; };
 		41BFA7EB3020430F00CF426A /* Pocket Vault.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Pocket Vault.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		416840443036798A000E4AFC /* Exceptions for "Pocket Vault" folder in "Pocket Vault" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				PocketVault/Pocketvault.xcworkspace,
+				PocketVault/Project.xcworkspace,
+				PocketVault/README.md,
+			);
+			target = 41BFA7EA3020430F00CF426A /* Pocket Vault */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		41BFA7ED3020430F00CF426A /* Pocket Vault */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "Pocket Vault";
+			exceptions = (
+				416840443036798A000E4AFC /* Exceptions for "Pocket Vault" folder in "Pocket Vault" target */,
+			);
+			name = "Pocket Vault";
+			path = PocketVaultApp/Sources;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -29,9 +46,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				4199C29D30295E44002E8F0A /* LinkKit in Frameworks */,
-				414B50DA302140E60099ECF5 /* RevenueCatUI in Frameworks */,
-				4164FFE8302075EC0014D33B /* RevenueCat in Frameworks */,
+				413B8A6430378E8D006C39AE /* LinkKitObjC in Frameworks */,
+				41232D533036DE71003D0518 /* RevenueCat in Frameworks */,
+				413B8A6230378E8D006C39AE /* LinkKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -48,6 +65,7 @@
 		41BFA7E23020430F00CF426A = {
 			isa = PBXGroup;
 			children = (
+				4169F74F30366B7E00CE5B18 /* PocketVaultApp */,
 				41BFA7ED3020430F00CF426A /* Pocket Vault */,
 				414B50D8302140E60099ECF5 /* Frameworks */,
 				41BFA7EC3020430F00CF426A /* Products */,
@@ -82,9 +100,9 @@
 			);
 			name = "Pocket Vault";
 			packageProductDependencies = (
-				4164FFE7302075EC0014D33B /* RevenueCat */,
-				414B50D9302140E60099ECF5 /* RevenueCatUI */,
-				4199C29C30295E44002E8F0A /* LinkKit */,
+				41232D523036DE71003D0518 /* RevenueCat */,
+				413B8A6130378E8D006C39AE /* LinkKit */,
+				413B8A6330378E8D006C39AE /* LinkKitObjC */,
 			);
 			productName = "Pocket Vault";
 			productReference = 41BFA7EB3020430F00CF426A /* Pocket Vault.app */;
@@ -115,8 +133,9 @@
 			mainGroup = 41BFA7E23020430F00CF426A;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				4164FFE4302075EC0014D33B /* XCRemoteSwiftPackageReference "purchases-ios" */,
-				4199C29B30295E44002E8F0A /* XCRemoteSwiftPackageReference "plaid-link-ios" */,
+				4168403E3036747A000E4AFC /* XCLocalSwiftPackageReference "PocketVaultApp" */,
+				41232D513036DE71003D0518 /* XCRemoteSwiftPackageReference "purchases-ios" */,
+				413B8A6030378E8D006C39AE /* XCRemoteSwiftPackageReference "plaid-link-ios-spm" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 41BFA7EC3020430F00CF426A /* Products */;
@@ -359,18 +378,25 @@
 		};
 /* End XCConfigurationList section */
 
+/* Begin XCLocalSwiftPackageReference section */
+		4168403E3036747A000E4AFC /* XCLocalSwiftPackageReference "PocketVaultApp" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = PocketVaultApp;
+		};
+/* End XCLocalSwiftPackageReference section */
+
 /* Begin XCRemoteSwiftPackageReference section */
-		4164FFE4302075EC0014D33B /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+		41232D513036DE71003D0518 /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/RevenueCat/purchases-ios.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 5.83.0;
+				minimumVersion = 5.85.0;
 			};
 		};
-		4199C29B30295E44002E8F0A /* XCRemoteSwiftPackageReference "plaid-link-ios" */ = {
+		413B8A6030378E8D006C39AE /* XCRemoteSwiftPackageReference "plaid-link-ios-spm" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/plaid/plaid-link-ios";
+			repositoryURL = "https://github.com/plaid/plaid-link-ios-spm.git";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 7.1.0;
@@ -379,20 +405,20 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		414B50D9302140E60099ECF5 /* RevenueCatUI */ = {
+		41232D523036DE71003D0518 /* RevenueCat */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 4164FFE4302075EC0014D33B /* XCRemoteSwiftPackageReference "purchases-ios" */;
-			productName = RevenueCatUI;
-		};
-		4164FFE7302075EC0014D33B /* RevenueCat */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 4164FFE4302075EC0014D33B /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			package = 41232D513036DE71003D0518 /* XCRemoteSwiftPackageReference "purchases-ios" */;
 			productName = RevenueCat;
 		};
-		4199C29C30295E44002E8F0A /* LinkKit */ = {
+		413B8A6130378E8D006C39AE /* LinkKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 4199C29B30295E44002E8F0A /* XCRemoteSwiftPackageReference "plaid-link-ios" */;
+			package = 413B8A6030378E8D006C39AE /* XCRemoteSwiftPackageReference "plaid-link-ios-spm" */;
 			productName = LinkKit;
+		};
+		413B8A6330378E8D006C39AE /* LinkKitObjC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 413B8A6030378E8D006C39AE /* XCRemoteSwiftPackageReference "plaid-link-ios-spm" */;
+			productName = LinkKitObjC;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

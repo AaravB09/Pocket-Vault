@@ -35,7 +35,7 @@ struct FeedbackView: View {
                 HStack {
                     Spacer()
                     Button(action: { dismiss() }) {
-                        Image(systemName: "xmark.circle.fill")
+                        Image.platformSymbol("xmark.circle.fill", android: "xmark")
                             .font(theme.font(22, weight: .bold))
                             .foregroundStyle(theme.textTertiary)
                     }
@@ -125,7 +125,7 @@ struct FeedbackView: View {
 
     private var confirmationState: some View {
         VStack(spacing: 20) {
-            Image(systemName: "checkmark.seal.fill")
+            Image.platformSymbol("checkmark.seal.fill", android: "checkmark.circle.fill")
                 .font(theme.font(40, weight: .light))
                 .foregroundStyle(theme.accent)
 

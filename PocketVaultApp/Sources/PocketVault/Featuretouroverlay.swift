@@ -163,7 +163,7 @@ struct FeatureTourOverlay: View {
                         // left for the Ask AI arrow) so the tip points at
                         // the icon instead of overlapping it.
                         if step.tabIndex == askAITabIndex {
-                            Image(systemName: "arrowtriangle.right.fill")
+                            Image.platformSymbol("arrowtriangle.right.fill", android: "chevron.right")
                                 .font(theme.font(12))
                                 .foregroundStyle(theme.accent)
                                 .position(x: targetX - 28, y: targetY)

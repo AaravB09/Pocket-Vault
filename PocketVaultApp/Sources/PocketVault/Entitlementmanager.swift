@@ -13,6 +13,15 @@ final class EntitlementManager: NSObject, ObservableObject, PurchasesDelegate {
 
     override init() {
         super.init()
+        // Purchases.configure() now runs in AppDelegate.didFinishLaunching
+        // (see Pocket_VaultApp.swift) specifically so this is always safe
+        // by the time EntitlementManager exists. This guard is just a
+        // safety net against a future call-site ordering regression —
+        // it fails soft (isPro stays false) instead of crashing.
+        guard Purchases.isConfigured else {
+            assertionFailure("EntitlementManager created before Purchases.configure() ran")
+            return
+        }
         Purchases.shared.delegate = self
         Task { await refresh() }
     }

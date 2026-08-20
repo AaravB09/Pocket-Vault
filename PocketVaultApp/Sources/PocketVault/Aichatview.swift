@@ -124,7 +124,7 @@ struct AIChatView: View {
     private var chatContent: some View {
         VStack(spacing: 0) {
             HStack(spacing: 6) {
-                Image(systemName: "sparkles").foregroundStyle(theme.accent)
+                Image.platformSymbol("sparkles", android: "star.fill").foregroundStyle(theme.accent)
                 Text("ASK AI").font(theme.font(10, weight: .bold)).tracking(3).foregroundStyle(theme.accent)
             }
             .padding(.top, 90) // Increased top padding to push content lower
@@ -189,7 +189,7 @@ struct AIChatView: View {
                     .disabled(!networkMonitor.isOnline)
 
                 Button(action: { Task { await send() } }) {
-                    Image(systemName: "arrow.up.circle.fill")
+                    Image.platformSymbol("arrow.up.circle.fill", android: "paperplane.fill")
                         .font(theme.font(30))
                         // Image doesn't participate in the .primary/.secondary/
                         // .tertiary "free default" the way Text does, so this

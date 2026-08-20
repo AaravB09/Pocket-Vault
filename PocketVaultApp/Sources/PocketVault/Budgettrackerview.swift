@@ -389,7 +389,7 @@ private struct TransactionRow: View {
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                     if item.isAutoImported {
-                        Image(systemName: "building.columns.fill")
+                        Image.platformSymbol("building.columns.fill", android: "house.fill")
                             .font(theme.font(9))
                             .foregroundStyle(theme.accent.opacity(0.7))
                     }
@@ -442,7 +442,7 @@ private struct AddPaymentSheet: View {
                     HStack {
                         Spacer()
                         Button(action: { dismiss() }) {
-                            Image(systemName: "xmark.circle.fill")
+                            Image.platformSymbol("xmark.circle.fill", android: "xmark")
                                 .font(theme.font(22, weight: .bold))
                                 .foregroundStyle(.secondary) // was .tertiary
                         }
@@ -551,7 +551,7 @@ private struct LimitEditorSheet: View {
                 HStack {
                     Spacer()
                     Button(action: { dismiss() }) {
-                        Image(systemName: "xmark.circle.fill")
+                        Image.platformSymbol("xmark.circle.fill", android: "xmark")
                             .font(theme.font(22, weight: .bold))
                             .foregroundStyle(.secondary) // was .tertiary
                     }

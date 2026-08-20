@@ -424,9 +424,10 @@ struct SavingsTrendChart: View {
         let nearest = points.min { a, b in
             abs(xPos(a) - location.x) < abs(xPos(b) - location.x)
         }
-        if nearest != scrubbedPoint {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-        }
+        // NOTE(skip): this is the Android-only scrub path (see the #else
+        // above) — UIImpactFeedbackGenerator crashes at runtime under
+        // Skip, so unlike the iOS version above it's simply skipped here
+        // rather than called.
         scrubbedPoint = nearest
     }
     #endif
@@ -437,7 +438,9 @@ struct SavingsTrendChart: View {
         HStack(spacing: 6) {
             ForEach(TrendRange.allCases) { range in
                 Button(action: {
+                    #if !SKIP
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    #endif
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                         selectedRange = range
                     }
@@ -466,7 +469,7 @@ struct SavingsTrendChart: View {
 
     private var emptyState: some View {
         VStack(spacing: 6) {
-            Image(systemName: "chart.line.uptrend.xyaxis")
+            Image.platformSymbol("chart.line.uptrend.xyaxis", android: "arrow.forward")
                 .font(theme.font(20))
                 .foregroundStyle(theme.textTertiary)
             Text("Make a couple deposits to see your trend take shape.")

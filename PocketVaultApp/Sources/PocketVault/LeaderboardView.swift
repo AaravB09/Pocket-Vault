@@ -32,7 +32,7 @@ struct LeaderboardView: View {
                     HStack {
                         Spacer()
                         Button(action: { dismiss() }) {
-                            Image(systemName: "xmark.circle.fill")
+                            Image.platformSymbol("xmark.circle.fill", android: "xmark")
                                 .font(theme.font(22, weight: .bold))
                                 .foregroundStyle(theme.textTertiary)
                         }
@@ -63,7 +63,7 @@ struct LeaderboardView: View {
                                 showCopiedToast = true
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { showCopiedToast = false }
                             }) {
-                                Image(systemName: "doc.on.doc")
+                                Image.platformSymbol("doc.on.doc", android: "square.and.arrow.up")
                                     .foregroundStyle(theme.accent)
                             }
                         }
@@ -94,7 +94,7 @@ struct LeaderboardView: View {
                         HStack(spacing: 14) {
                             ZStack {
                                 Circle().fill(theme.accent.opacity(0.15)).frame(width: 40, height: 40)
-                                Image(systemName: "person.2.fill")
+                                Image.platformSymbol("person.2.fill", android: "person.fill")
                                     .font(theme.font(15))
                                     .foregroundStyle(theme.accent)
                             }
@@ -235,7 +235,7 @@ struct LeaderboardView: View {
             Spacer()
 
             HStack(spacing: 4) {
-                Image(systemName: "flame.fill").font(theme.font(11)).foregroundStyle(theme.accent)
+                Image.platformSymbol("flame.fill", android: "heart.fill").font(theme.font(11)).foregroundStyle(theme.accent)
                 Text("\(entry.current_streak)")
                     .font(theme.font(13, weight: .semibold))
                     .foregroundStyle(theme.textPrimary)

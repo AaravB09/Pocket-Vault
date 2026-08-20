@@ -47,7 +47,7 @@ struct SharedBudgetView: View {
                         HStack {
                             Spacer()
                             Button(action: { dismiss() }) {
-                                Image(systemName: "xmark.circle.fill")
+                                Image.platformSymbol("xmark.circle.fill", android: "xmark")
                                     .font(theme.font(22, weight: .bold))
                                     .foregroundStyle(theme.textTertiary)
                             }
@@ -108,7 +108,7 @@ struct SharedBudgetView: View {
     // MARK: - Active goal isn't shared yet
     private func shareThisGoalCard(goal: Goal) -> some View {
         VStack(spacing: 14) {
-            Image(systemName: "person.2.fill")
+            Image.platformSymbol("person.2.fill", android: "person.fill")
                 .font(theme.font(26, weight: .light))
                 .foregroundStyle(theme.accent)
 
@@ -163,7 +163,7 @@ struct SharedBudgetView: View {
         return VStack(spacing: 26) {
             HStack(spacing: 0) {
                 contributorAvatar(initial: "Y", label: "You", amount: mine)
-                Image(systemName: "arrow.left.arrow.right")
+                Image.platformSymbol("arrow.left.arrow.right", android: "arrow.clockwise.circle")
                     .font(theme.font(12))
                     .foregroundStyle(theme.accent.opacity(0.6))
                     .padding(.horizontal, 6)
@@ -210,7 +210,7 @@ struct SharedBudgetView: View {
                             showCopiedToast = true
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { showCopiedToast = false }
                         }) {
-                            Image(systemName: "doc.on.doc").foregroundStyle(theme.accent)
+                            Image.platformSymbol("doc.on.doc", android: "square.and.arrow.up").foregroundStyle(theme.accent)
                         }
                     }
                     Text(showCopiedToast ? "Copied" : "Send this to your partner")

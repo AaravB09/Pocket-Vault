@@ -337,7 +337,9 @@ struct ContentView: View {
     private func depositSavings(amount: Double) {
         currentSavings += amount
         streakManager.recordDeposit()
+        #if !SKIP
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        #endif
         showBurst = true
 
         // If the active goal is shared, this is the ONLY place a deposit

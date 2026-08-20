@@ -546,7 +546,9 @@ struct ThemePickerSection: View {
                 HStack(spacing: 14.0) {
                     ForEach(AppColorTheme.allCases) { option in
                         Button(action: {
+                            #if !SKIP
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            #endif
                             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                 theme.colorTheme = option
                             }
@@ -576,7 +578,9 @@ struct ThemePickerSection: View {
                 VStack(spacing: 8.0) {
                     ForEach(AppAppearanceMode.allCases) { mode in
                         Button(action: {
+                            #if !SKIP
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            #endif
                             theme.appearanceMode = mode
                         }) {
                             HStack {

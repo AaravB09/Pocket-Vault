@@ -117,7 +117,7 @@ struct LoginView: View {
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
 
                             Button(action: { isPasswordVisible.toggle() }) {
-                                Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
+                                Image.platformSymbol(isPasswordVisible ? "eye.slash.fill" : "eye.fill", android: isPasswordVisible ? "lock.fill" : "checkmark.circle")
                                     .font(theme.font(14))
                                     .foregroundStyle(theme.textTertiary)
                             }
@@ -163,7 +163,7 @@ struct LoginView: View {
 
                     if awaitingEmailConfirmation {
                         VStack(spacing: 10) {
-                            Image(systemName: "envelope.badge.fill")
+                            Image.platformSymbol("envelope.badge.fill", android: "envelope.fill")
                                 .font(theme.font(20, weight: .semibold))
                                 .foregroundStyle(theme.accent)
                             Text("Check your email")
@@ -242,7 +242,9 @@ struct LoginView: View {
 
                     if !hideGuestOption {
                         Button(action: {
+                            #if !SKIP
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                            #endif
                             authManager.continueAsGuest()
                         }) {
                             Text("Continue as Guest — try it free")
@@ -289,7 +291,7 @@ private struct ForgotPasswordSheet: View {
                 HStack {
                     Spacer()
                     Button(action: { dismiss() }) {
-                        Image(systemName: "xmark.circle.fill")
+                        Image.platformSymbol("xmark.circle.fill", android: "xmark")
                             .font(theme.font(22, weight: .bold))
                             .foregroundStyle(theme.textTertiary)
                     }

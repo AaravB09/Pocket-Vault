@@ -28,7 +28,9 @@ final class PrivacyManager: ObservableObject {
     var shouldMask: Bool { isPrivacyModeOn && !isRevealed }
 
     func reveal() {
+        #if !SKIP
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        #endif
         isRevealed = true
     }
 
@@ -55,7 +57,7 @@ struct PrivacyRevealOverlay: View {
     var body: some View {
         Button(action: { privacy.reveal() }) {
             VStack(spacing: 6) {
-                Image(systemName: "eye.slash.fill")
+                Image.platformSymbol("eye.slash.fill", android: "lock.fill")
                     .font(theme.font(16, weight: .semibold))
                 Text("Tap to reveal")
                     .font(theme.font(11, weight: .semibold))
@@ -89,14 +91,16 @@ struct PrivacyQuickToggleButton: View {
     var body: some View {
         if privacy.isPrivacyModeOn {
             Button(action: {
+                #if !SKIP
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                #endif
                 if privacy.isRevealed {
                     privacy.isRevealed = false
                 } else {
                     privacy.reveal()
                 }
             }) {
-                Image(systemName: privacy.shouldMask ? "eye.slash.fill" : "eye.fill")
+                Image.platformSymbol(privacy.shouldMask ? "eye.slash.fill" : "eye.fill", android: privacy.shouldMask ? "lock.fill" : "checkmark.circle")
                     .font(theme.font(14, weight: .medium))
                     .foregroundStyle(.secondary)
                     .frame(width: 36, height: 36)

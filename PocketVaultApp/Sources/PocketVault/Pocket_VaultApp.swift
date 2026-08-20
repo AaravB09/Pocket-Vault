@@ -8,6 +8,35 @@ import SwiftUI
 import RevenueCat
 
 final class AppDelegate: NSObject, UIApplicationDelegate {
+    // FIX: Purchases.configure() used to live in PocketVaultApp.init()
+    // below. That ran too late: Swift evaluates a struct's stored-property
+    // *default values* — including `@StateObject private var authManager =
+    // AuthManager()` — before the body of a custom init() executes, and
+    // SwiftUI doesn't build the Scene/WindowGroup content (and therefore
+    // MainTabView's `@StateObject private var entitlementManager =
+    // EntitlementManager()`, whose init touches `Purchases.shared`) until
+    // after PocketVaultApp is fully initialized. In practice the two race,
+    // and EntitlementManager sometimes won, hitting `Purchases.shared`
+    // before configure() had run — "Fatal error: Purchases has not been
+    // configured."
+    //
+    // applicationDidFinishLaunching is called directly by UIKit, before it
+    // connects any scene, so it isn't subject to that struct-init-ordering
+    // race at all — configure() here is guaranteed to finish before any
+    // SwiftUI view (and its @StateObjects) gets built.
+    func application(
+        _ application: UIApplication,
+        didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+    ) -> Bool {
+        #if DEBUG
+        Purchases.logLevel = .debug
+        #else
+        Purchases.logLevel = .error
+        #endif
+        Purchases.configure(withAPIKey: "test_yMItdpRXbuqTbRusbGjdppPXrPJ")
+        return true
+    }
+
     func application(
         _ application: UIApplication,
         supportedInterfaceOrientationsFor window: UIWindow?
@@ -27,15 +56,6 @@ struct PocketVaultApp: App {
     // what updates live if appearanceMode == .system and the user
     // flips iOS Settings > Display while the app is open).
     @Environment(\.colorScheme) private var systemColorScheme
-
-    init() {
-        #if DEBUG
-        Purchases.logLevel = .debug
-        #else
-        Purchases.logLevel = .error
-        #endif
-        Purchases.configure(withAPIKey: "test_yMItdpRXbuqTbRusbGjdppPXrPJ")
-    }
 
     var body: some Scene {
         WindowGroup {

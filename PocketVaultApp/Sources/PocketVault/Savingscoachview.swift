@@ -101,7 +101,7 @@ struct SavingsCoachView: View {
                     HStack {
                         Spacer()
                         Button(action: { dismiss() }) {
-                            Image(systemName: "xmark.circle.fill")
+                            Image.platformSymbol("xmark.circle.fill", android: "xmark")
                                 .font(theme.font(22, weight: .bold))
                                 .foregroundStyle(theme.textTertiary)
                         }
@@ -193,7 +193,7 @@ struct SavingsCoachView: View {
     private var planCard: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(spacing: 8) {
-                Image(systemName: "sparkles")
+                Image.platformSymbol("sparkles", android: "star.fill")
                     .foregroundStyle(theme.accent)
                 Text("YOUR TAILORED PLAN")
                     .font(theme.font(10, weight: .bold))

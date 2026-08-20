@@ -42,7 +42,7 @@ struct ProfileView: View {
                     HStack {
                         ShareLink(item: "Join me on Pocket Vault and let's save together! Add me with friend code \(leaderboardManager.myFriendCode).") {
                             HStack(spacing: 6) {
-                                Image(systemName: "person.badge.plus")
+                                Image.platformSymbol("person.badge.plus", android: "plus.circle.fill")
                                     .font(theme.font(12, weight: .semibold))
                                 Text("Invite friends")
                                     .font(theme.font(13, weight: .semibold))
@@ -67,7 +67,7 @@ struct ProfileView: View {
                         }
 
                         Button(action: { showLeaderboard = true }) {
-                            Image(systemName: "trophy.fill")
+                            Image.platformSymbol("trophy.fill", android: "star.fill")
                                 .font(theme.font(13, weight: .semibold))
                                 .foregroundStyle(theme.accent)
                                 .frame(width: 38, height: 38)
@@ -79,7 +79,7 @@ struct ProfileView: View {
                         Spacer()
 
                         Button(action: { dismiss() }) {
-                            Image(systemName: "xmark.circle.fill")
+                            Image.platformSymbol("xmark.circle.fill", android: "xmark")
                                 .font(theme.font(22, weight: .bold))
                                 .foregroundStyle(theme.textTertiary)
                         }
@@ -240,7 +240,7 @@ struct ProfileView: View {
                 .frame(width: 80, height: 80)
 
             #if !SKIP
-            Image(systemName: "camera.fill")
+            Image.platformSymbol("camera.fill", android: "pencil")
                 .font(theme.font(10, weight: .bold))
                 .foregroundStyle(theme.onAccent)
                 .padding(6)
