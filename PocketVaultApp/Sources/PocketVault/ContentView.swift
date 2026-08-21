@@ -40,6 +40,12 @@ struct ContentView: View {
     @State private var newGoalDate: Date = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
     @State private var newGoalVoxelBlueprintJSON: String? = nil
 
+    // Because the background ignores the safe area (see .themedSurface
+    // below), the header VStack needs its own top padding to clear the
+    // status bar/notch/Dynamic Island. Read the real inset here instead
+    // of hardcoding a number, so this adapts per device automatically.
+    @State private var topSafeAreaInset: CGFloat = 0
+
     private var goalKind: GoalKind { GoalKind(rawValue: goalKindRaw) ?? .flight }
 
     // Same identity resolution as SharedBudgetView/LeaderboardView — real
@@ -81,6 +87,19 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             // Soft Studio Ambient Lighting Accent
+            // FIX: every other tab's root view fills the space the
+            // outer `.safeAreaInset` tab bar measures against (see
+            // MainTabView's `mainTabContent`, which forces
+            // `.frame(maxWidth: .infinity, maxHeight: .infinity)` on
+            // the switch as a whole — but that only guarantees the
+            // *switch container* fills the screen, not that each
+            // individual case's own root view does). This ZStack was
+            // the one case sizing itself to its content instead of
+            // being told to fill, which changed what `safeAreaInset`
+            // had to lay the tab bar out against specifically on this
+            // tab, and pushed the bar down. Explicit fill here matches
+            // every sibling tab view and keeps the bar's position
+            // identical across tabs.
             RadialGradient(
                 colors: [theme.textPrimary.opacity(0.1), .clear],
                 center: .center, startRadius: 10, endRadius: 280
@@ -167,7 +186,10 @@ struct ContentView: View {
                     }
                     .padding(.horizontal, Layout.pageMargin)
                 }
-                .padding(.top, 54)
+                // Small extra buffer (8pt) on top of the real safe-area
+                // inset — tight to the notch/Dynamic Island without
+                // touching it. Change this 8 to taste.
+                .padding(.top, topSafeAreaInset + 25)
 
                 // Goal Picker
                 GoalPickerBar(goalStore: goalStore) {
@@ -276,9 +298,16 @@ struct ContentView: View {
                     Text("Deposit funds")
                 }
                 .padding(.horizontal, Layout.pageMargin)
-                .padding(.bottom, 78)
+                .padding(.bottom, 24)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear { topSafeAreaInset = proxy.safeAreaInsets.top }
+            }
+        )
         .onAppear { loadProfileImage() }
         .sheet(isPresented: $showDepositSheet) {
             AestheticDepositModalView(currentSavings: $currentSavings) { amount in

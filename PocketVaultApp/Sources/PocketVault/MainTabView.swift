@@ -45,52 +45,33 @@ struct MainTabView: View {
     @State private var showFeatureTour: Bool = false
     @State private var selectedTab: Int = 0
 
-    // Captured once, from the very first layout pass, and never updated
-    // again. BuildStudioView's RealityView (case 1) mounts a RealityKit
-    // scene into this same view hierarchy, and RealityKit is known to
-    // briefly report a different `safeAreaInsets.bottom` for the whole
-    // screen while it's mounted vs. unmounted — which, if the tab bar's
-    // position were computed from the *live* safe area, would make the
-    // floating bottom bar visibly jump every time you switch to/from the
-    // Build tab. Freezing the inset here at launch (before any tab but
-    // Vault has ever been shown) means the bar's position no longer reacts
-    // to that fluctuation at all, on any tab.
+    // Used on Android only now (see the `#if SKIP` background capture
+    // further down) — RealityView doesn't exist there, so there's
+    // nothing perturbing this value on that platform.
     @State private var fixedBottomSafeInset: CGFloat = 0
 
-    // Ground-truth version of the above, captured directly from UIKit's
-    // `safeAreaInsetsDidChange()` via `SafeAreaProbe` rather than
-    // SwiftUI's `GeometryReader` propagation. Debug logging confirmed
-    // RealityView drives the real inset to 0 while BuildStudioView is
-    // mounted and restores it on unmount — this is the value the tab
-    // bar and Ask AI bubble now anchor to instead of relying on
-    // `.ignoresSafeArea`, which re-resolves against that live 0/normal
-    // swing on every layout pass regardless of what we freeze elsewhere.
-    @State private var uikitFrozenBottomInset: CGFloat? = nil
-
-    // Updated on every real UIKit safe-area change (not frozen) — used
-    // only to compute how far the bar/bubble need to be nudged back to
-    // cancel out RealityView's live perturbation, via
-    // `bottomInsetCompensation` below.
-    @State private var uikitLiveBottomInset: CGFloat = 0
-
-    // How far to push the tab bar / Ask AI bubble back toward their
-    // correct resting position. `.ignoresSafeArea(.container, edges:
-    // .bottom)` re-adds however much bottom inset is CURRENTLY being
-    // reserved — that's live by construction, which is why freezing the
-    // padding input alone (fixedBottomSafeInset) never fixed the jump.
-    // This compensates by offsetting in the opposite direction whenever
-    // the live value drifts from the frozen resting value.
+    // ROOT CAUSE (found after four failed attempts, all of which tried
+    // to fix or freeze the *value* the bar's position was computed
+    // from): the bug was never in what `safeAreaInsets.bottom` reports.
+    // It's that the tab bar was being placed with `.position()`, driven
+    // by hand-rolled math against `UIScreen.main.bounds` — a value that
+    // lives OUTSIDE SwiftUI's layout system entirely. `.position()`
+    // places a view relative to its *parent's own laid-out frame*, not
+    // the physical screen, so that math is only ever correct by
+    // coincidence, for whatever frame the parent ZStack happens to have
+    // at that moment. BuildStudioView's RealityView measurably changes
+    // that frame while mounted (RealityKit's rendering surface resizes
+    // the enclosing layout pass, not just what it reports), so the
+    // coincidence broke specifically on that tab.
     //
-    // 2x, not 1x: `.ignoresSafeArea` re-adds the live inset gap in BOTH
-    // the `.padding(.bottom, ...)` layer's resolved position AND the
-    // clipping/placement pass that follows it, so a single (frozen -
-    // live) delta only ever cancels half the drift. CONFIRMED via
-    // [TAB-DEBUG]: raw uncompensated jump measured at ~30.67pt, 1x
-    // compensation only clawed back ~15.33pt, leaving the bar resting
-    // 15.33pt short. Doubling lands it back on the true resting position.
-    private var bottomInsetCompensation: CGFloat {
-        ((uikitFrozenBottomInset ?? fixedBottomSafeInset) - uikitLiveBottomInset) * 2
-    }
+    // The actual fix is to stop computing a position by hand at all.
+    // `.safeAreaInset(edge: .bottom)` (below, on the switched content)
+    // hands bottom placement back to SwiftUI's own layout engine — the
+    // same mechanism system tab bars use — so the bar's position is
+    // always derived from whatever the real current layout is, on
+    // whichever tab, with no absolute coordinates or device sniffing
+    // involved.
+
 
     // Real, measured frames of the tab-bar buttons / Ask AI bubble, keyed
     // by the same tabIndex values FeatureTourOverlay's steps use (and
@@ -204,24 +185,8 @@ struct MainTabView: View {
         )
     }
 
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            #if !SKIP
-            SafeAreaProbe { liveInset in
-                uikitLiveBottomInset = liveInset
-                // Guard against two things: (1) only ever freeze this
-                // once, like the old fixedBottomSafeInset capture did,
-                // and (2) don't let a RealityView-driven 0 be the value
-                // we freeze — 0 is the known-bad transient this whole
-                // probe exists to detect, never the correct resting
-                // inset.
-                if uikitFrozenBottomInset == nil && liveInset > 0 {
-                    uikitFrozenBottomInset = liveInset
-                }
-            }
-            .frame(width: 0, height: 0)
-            .allowsHitTesting(false)
-            #endif
+    @ViewBuilder
+    private var mainTabContent: some View {
             Group {
                 switch selectedTab {
                 case 0:
@@ -300,47 +265,23 @@ struct MainTabView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(
-                // Reads the screen's true, ambient bottom safe-area inset
-                // exactly once, from this (non-safe-area-ignoring) layer —
-                // always while the Vault tab (selectedTab's initial value)
-                // is showing, i.e. before BuildStudioView's RealityView has
-                // ever mounted. See `fixedBottomSafeInset`.
-                GeometryReader { g in
-                    Color.clear
-                        .onAppear {
-                            // FIX: bare Int literal `0` compared against a
-                            // CGFloat doesn't transpile cleanly through Skip's
-                            // Kotlin codegen (Skip treats it as `Int`, not
-                            // `Double`, producing "Operator '==' cannot be
-                            // applied to 'Double' and 'Int'"). Swift infers the
-                            // right type from context; Skip needs it spelled
-                            // out.
-                            if fixedBottomSafeInset == 0.0 {
-                                fixedBottomSafeInset = g.safeAreaInsets.bottom
-                            }
-                        }
-                        // TEMP DEBUG — this GeometryReader keeps re-evaluating
-                        // on every layout pass regardless of the onAppear
-                        // guard above. Logging the RAW live value here (not
-                        // the frozen one) on every change tells us exactly
-                        // what RealityView is doing to the ambient safe area
-                        // in real time, independent of our own state.
-                        .onChange(of: g.safeAreaInsets.bottom) { liveValue in
-                            print("[TAB-DEBUG] LIVE g.safeAreaInsets.bottom -> \(liveValue) (frozen=\(fixedBottomSafeInset), selectedTab=\(selectedTab))")
-                        }
-                }
-            )
+    }
 
-            // MARK: - Floating Bottom Bar
-            // Trimmed to the destinations people actually reach for
-            // constantly (Vault, Build, Goals, Budget [+ Shared, only
-            // while it's actually active]). Pro and Calendar move to
-            // Profile / the Vault header — a permanent dock slot should
-            // be reserved for things used every session, not an upsell
-            // or a once-in-a-while lookup. Labels now only appear under
-            // the selected icon, so the resting state is quiet icons —
-            // not six all-caps words fighting for attention at once.
+    // MARK: - Floating Bottom Bar
+    // Trimmed to the destinations people actually reach for constantly
+    // (Vault, Build, Goals, Budget [+ Shared, only while it's actually
+    // active]). Pro and Calendar move to Profile / the Vault header — a
+    // permanent dock slot should be reserved for things used every
+    // session, not an upsell or a once-in-a-while lookup. Labels now
+    // only appear under the selected icon, so the resting state is
+    // quiet icons — not six all-caps words fighting for attention at
+    // once.
+    //
+    // Positioned via `.safeAreaInset(edge: .bottom)` on iOS (applied in
+    // `body`) instead of any manual coordinate math — see the note by
+    // `fixedBottomSafeInset` above for why. Android keeps its original,
+    // never-buggy placement.
+    private var tabBarView: some View {
             HStack(spacing: 4) {
                 LiquidTabButton(icon: "cube.fill", androidIcon: "house.fill", label: "Vault", isSelected: selectedTab == 0) {
                     selectedTab = 0
@@ -380,39 +321,60 @@ struct MainTabView: View {
             )
             .shadow(color: Color.black.opacity(0.25), radius: 16, x: 0, y: 8)
             .padding(.horizontal, Layout.pageMargin)
-            // NOTE(skip): bare `+ 2` mixed CGFloat with an Int literal,
-            // which Kotlin's codegen doesn't unify implicitly the way
-            // Swift does. Explicit `.0` fixes it.
-            .padding(.bottom, fixedBottomSafeInset + 2.0)
-            .ignoresSafeArea(.container, edges: .bottom)
-            // Cancels the live swing `.ignoresSafeArea` re-introduces
-            // whenever RealityView perturbs the real UIKit inset — see
-            // `bottomInsetCompensation`. Positive when the live inset has
-            // dropped below the frozen resting value (RealityView
-            // mounted), pushing the bar back down by exactly that much;
-            // zero once the live and frozen values match again (Vault).
-            //
-            // REVERTED from a `.position()`-based pinning attempt — that
-            // approach caused an infinite update loop (a `GeometryReader`
-            // `.onChange` writing to the same state it was measuring,
-            // which re-triggers itself on every sub-pixel float
-            // difference) and produced a white screen. Confirmed-working
-            // version below; still has the residual "hop" on Build-tab
-            // switches, smoothed by the `.animation` line beneath it.
-            .offset(y: bottomInsetCompensation)
-            .animation(.easeOut(duration: 0.2), value: uikitLiveBottomInset)
+    }
 
-            // Only float here on tabs other than Vault — Vault already
-            // has its own inline AskAIButton docked under the savings
-            // chart (see ContentView), so showing this floating bubble
-            // there too stacked two "Ask AI" buttons on top of each
-            // other and made the whole bottom area look wrong.
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            #if !SKIP
+            // The tab bar is handed to `.safeAreaInset` rather than kept
+            // as a `.position()`-ed sibling — SwiftUI computes its
+            // placement from the CURRENT real layout on every pass, on
+            // every tab, so there's nothing left for RealityView's
+            // mount/unmount to desync. The Ask AI bubble rides along as
+            // an overlay on the content BEHIND that inset, aligned to
+            // its bottom-trailing corner, so it naturally sits right
+            // above wherever the bar actually is instead of at another
+            // independently-computed absolute point.
+            mainTabContent
+                .overlay(alignment: .bottomTrailing) {
+                    // Only float here on tabs other than Vault — Vault
+                    // already has its own inline AskAIButton docked
+                    // under the savings chart (see ContentView), so
+                    // showing this floating bubble there too stacked
+                    // two "Ask AI" buttons on top of each other and
+                    // made the whole bottom area look wrong.
+                    if selectedTab != 0 {
+                        AskAIBubble(selectedTab: $selectedTab, isPro: entitlementManager.isPro)
+                    }
+                }
+                .safeAreaInset(edge: .bottom) {
+                    tabBarView
+                }
+            #else
+            // RealityView (and therefore this whole class of bug) is
+            // iOS-only — see `BuildStudioView`, gated `#if !SKIP`.
+            // Android never saw this jump, so its original, simpler
+            // positioning is untouched.
+            mainTabContent
+                .background(
+                    GeometryReader { g in
+                        Color.clear
+                            .onAppear {
+                                if fixedBottomSafeInset == 0.0 {
+                                    fixedBottomSafeInset = g.safeAreaInsets.bottom
+                                }
+                            }
+                    }
+                )
+
+            tabBarView
+                .padding(.bottom, fixedBottomSafeInset + 2.0)
+                .ignoresSafeArea(.container, edges: .bottom)
+
             if selectedTab != 0 {
                 AskAIBubble(selectedTab: $selectedTab, isPro: entitlementManager.isPro, extraBottomInset: fixedBottomSafeInset)
-                    .ignoresSafeArea(.container, edges: .bottom)
-                    .offset(y: bottomInsetCompensation)
-                    .animation(.easeOut(duration: 0.2), value: uikitLiveBottomInset)
             }
+            #endif
 
             if showFeatureTour {
                 FeatureTourOverlay(
@@ -436,34 +398,8 @@ struct MainTabView: View {
         #if !SKIP
         .coordinateSpace(.named("tourOverlay"))
         #endif
-        .onChange(of: uikitLiveBottomInset) { newValue in
-            print("[TAB-DEBUG] uikitLiveBottomInset -> \(newValue), frozen=\(String(describing: uikitFrozenBottomInset)), compensation=\(bottomInsetCompensation) (selectedTab=\(selectedTab))")
-        }
         .onPreferenceChange(TourAnchorPreferenceKey.self) { newFrames in
-            // TEMP DEBUG — remove once the tab-bar shift is isolated.
-            // Now logs BOTH changes and first-ever appearances (e.g. key 4,
-            // the Ask AI bubble, which only exists in the tree once
-            // selectedTab != 0 — its first reading was previously
-            // swallowed because there was no old value to diff against).
-            for (key, newRect) in newFrames {
-                if let oldRect = tourFrames[key] {
-                    if oldRect != newRect {
-                        print("[TAB-DEBUG] key \(key) frame CHANGED: \(oldRect) -> \(newRect) (selectedTab=\(selectedTab))")
-                    }
-                } else {
-                    print("[TAB-DEBUG] key \(key) frame FIRST SEEN: \(newRect) (selectedTab=\(selectedTab))")
-                }
-            }
             tourFrames = newFrames
-        }
-        // TEMP DEBUG — confirms whether fixedBottomSafeInset genuinely
-        // stays frozen after its first capture, or is silently changing
-        // on tab switch despite the `== 0.0` guard.
-        .onChange(of: fixedBottomSafeInset) { newValue in
-            print("[TAB-DEBUG] fixedBottomSafeInset changed -> \(newValue) (selectedTab=\(selectedTab))")
-        }
-        .onChange(of: selectedTab) { newValue in
-            print("[TAB-DEBUG] selectedTab -> \(newValue), fixedBottomSafeInset=\(fixedBottomSafeInset), hasActiveSharedBudget=\(hasActiveSharedBudget)")
         }
         .environmentObject(streakManager)
         .environmentObject(entitlementManager)
@@ -483,6 +419,9 @@ struct MainTabView: View {
         }
         .animation(.spring(response: 0.35, dampingFraction: 0.8), value: networkMonitor.isOnline)
         .onAppear {
+            // `fixedBottomSafeInset` no longer needs seeding here on iOS
+            // — `.safeAreaInset` (see `body`) reads the real layout
+            // directly, nothing left to freeze.
             showOnboarding = needsOnboarding
             Task {
                 await leaderboardManager.syncMyStreak(
@@ -557,14 +496,30 @@ struct MainTabView: View {
 struct AskAIBubble: View {
     @Binding var selectedTab: Int
     let isPro: Bool
-    // Fixed, one-time-captured bottom safe-area inset from MainTabView —
-    // see `MainTabView.fixedBottomSafeInset`. Added on top of this view's
-    // own ignoresSafeArea() so the bubble's height above the tab bar stays
-    // put regardless of which tab (and whatever safe-area quirks its
-    // content might briefly introduce) is currently showing.
+    // Only consulted on Android now — see `body`'s `#else` branch below
+    // and the note by `MainTabView.fixedBottomSafeInset`.
     var extraBottomInset: CGFloat = 0
 
     var body: some View {
+        #if !SKIP
+        // Placed via `.overlay(alignment: .bottomTrailing)` by the
+        // caller (`MainTabView.body`), so it just needs its own margin
+        // from that corner — no absolute screen math or frozen-size
+        // capture needed anymore.
+        AskAIButton(selectedTab: $selectedTab, isPro: isPro)
+            .background(
+                GeometryReader { g in
+                    Color.clear
+                        .preference(key: TourAnchorPreferenceKey.self, value: [4: g.frame(in: .named("tourOverlay"))])
+                }
+            )
+            .padding(.trailing, Layout.pageMargin)
+            .padding(.bottom, 12)
+            .allowsHitTesting(true)
+        #else
+        // RealityView (and therefore this whole class of bug) is
+        // iOS-only. Android never saw this jump, so its original,
+        // simpler positioning is untouched.
         VStack {
             Spacer()
             HStack {
@@ -573,20 +528,16 @@ struct AskAIBubble: View {
                     .background(
                         GeometryReader { g in
                             Color.clear
-                                #if !SKIP
-                                .preference(key: TourAnchorPreferenceKey.self, value: [4: g.frame(in: .named("tourOverlay"))])
-                                #else
                                 .preference(key: TourAnchorPreferenceKey.self, value: [4: g.frame(in: .global)])
-                                #endif
                         }
                     )
                     .padding(.trailing, Layout.pageMargin)
-                    // NOTE(skip): same bare-Int-plus-CGFloat issue as the
-                    // tab bar's bottom padding above.
                     .padding(.bottom, 142.0 + extraBottomInset)
             }
         }
+        .ignoresSafeArea(.container, edges: .bottom)
         .allowsHitTesting(true)
+        #endif
     }
 }
 
@@ -700,40 +651,6 @@ struct LiquidTabButton: View {
         .frame(maxWidth: .infinity)
     }
 }
-
-#if !SKIP
-// Reports the real, UIKit-level bottom safe-area inset directly from
-// `safeAreaInsetsDidChange()` — ground truth, unaffected by whatever
-// RealityView does to SwiftUI's own (indirect) safe-area propagation.
-// CONFIRMED via [TAB-DEBUG] logging: RealityView genuinely drives this
-// value to 0 while BuildStudioView is mounted, and restores it (~15.3pt
-// on this device) when it unmounts — that live swing, not a SwiftUI
-// artifact, is what was moving the tab bar. `onInsetChange` fires on
-// every real change; callers should capture the FIRST reported value
-// once and ignore later ones, so the frozen number reflects the
-// correct resting inset rather than RealityView's transient 0.
-final class SafeAreaProbeUIView: UIView {
-    var onInsetChange: ((CGFloat) -> Void)?
-    override func safeAreaInsetsDidChange() {
-        super.safeAreaInsetsDidChange()
-        onInsetChange?(safeAreaInsets.bottom)
-    }
-}
-
-struct SafeAreaProbe: UIViewRepresentable {
-    var onInsetChange: (CGFloat) -> Void
-    func makeUIView(context: Context) -> SafeAreaProbeUIView {
-        let v = SafeAreaProbeUIView()
-        v.backgroundColor = .clear
-        v.isUserInteractionEnabled = false
-        v.onInsetChange = onInsetChange
-        return v
-    }
-    func updateUIView(_ uiView: SafeAreaProbeUIView, context: Context) {
-        uiView.onInsetChange = onInsetChange
-    }
-}
-#endif
 
 // MARK: - Blur View Helper
 //
