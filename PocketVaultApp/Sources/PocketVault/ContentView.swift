@@ -186,10 +186,20 @@ struct ContentView: View {
                     }
                     .padding(.horizontal, Layout.pageMargin)
                 }
-                // Small extra buffer (8pt) on top of the real safe-area
-                // inset — tight to the notch/Dynamic Island without
-                // touching it. Change this 8 to taste.
+                // Small extra buffer on top of the real safe-area inset —
+                // tight to the notch/Dynamic Island without touching it.
+                //
+                // Android-only: the +25 buffer (on top of the real,
+                // measured safe-area inset) read as noticeably more empty
+                // space above the greeting than the equivalent gap on iOS.
+                // Shrinking just this extra buffer for Android — not the
+                // measured inset itself — tightens the header without
+                // touching iOS's spacing at all.
+                #if !SKIP
                 .padding(.top, topSafeAreaInset + 25)
+                #else
+                .padding(.top, topSafeAreaInset + 6)
+                #endif
 
                 // Goal Picker
                 GoalPickerBar(goalStore: goalStore) {

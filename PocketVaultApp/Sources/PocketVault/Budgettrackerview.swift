@@ -67,7 +67,15 @@ struct BudgetTrackerView: View {
         ScreenHeader("Budget") {
             EmptyView()
         }
+        // Android-only: see the matching note in CalenderView.swift — this
+        // 40pt gap sits on top of ScreenHeader's own padding plus the real
+        // safe-area inset, and read as too much empty space specifically on
+        // Android. iOS keeps the original 40.
+        #if !SKIP
         .padding(.top, 40)
+        #else
+        .padding(.top, 12)
+        #endif
     }
 
     // MARK: - Alert banner

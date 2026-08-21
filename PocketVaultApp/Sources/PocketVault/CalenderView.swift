@@ -65,7 +65,16 @@ struct CalendarView: View {
                     ScreenHeader("Calendar", subtitle: "Deposit streaks & forecast") {
                         EmptyView()
                     }
+                    // Android-only: 40pt on top of the safe-area inset (plus
+                    // ScreenHeader's own 8pt) left a noticeably bigger gap
+                    // above the title than on iOS. Tightening this just for
+                    // Android instead of touching the shared 40 value keeps
+                    // iOS's spacing exactly as it was.
+                    #if !SKIP
                     .padding(.top, 40)
+                    #else
+                    .padding(.top, 12)
+                    #endif
 
                     // MARK: - Streak Stats Grid
                     HStack(spacing: 12) {
@@ -138,8 +147,19 @@ struct CalendarView: View {
                         }
 
                         // Month Grid Days
+                        //
+                        // FIX(Android crash): keying `ForEach` by the Date?
+                        // value itself (`id: \.self`) meant every leading
+                        // blank cell — there can be several, since most
+                        // months don't start on a Sunday — shared the same
+                        // `nil` key. SwiftUI/iOS tolerates duplicate
+                        // identifiers, but Compose does not: LazyVerticalGrid
+                        // throws "Key ... was already used" and the app
+                        // crashes the moment this screen renders. Keying by
+                        // the array's own index instead guarantees every
+                        // cell has a unique id on both platforms.
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 10) {
-                            ForEach(daysInCurrentMonth(), id: \.self) { date in
+                            ForEach(Array(daysInCurrentMonth().enumerated()), id: \.offset) { _, date in
                                 if let date = date {
                                     DayCell(date: date, isDepositDay: isDepositMadeOn(date: date))
                                 } else {

@@ -123,7 +123,15 @@ struct BuildStudioView: View {
                         .foregroundStyle(.secondary) // was .tertiary — unsupported by Skip
                         .padding(.top, 2)
                 }
+                // Android-only: see the matching note in CalenderView.swift
+                // / ContentView.swift — this fixed 60pt sat on top of the
+                // real safe-area inset and read as more empty space above
+                // the "BUILD STUDIO" label on Android than on iOS.
+                #if !SKIP
                 .padding(.top, 60)
+                #else
+                .padding(.top, 24)
+                #endif
 
                 Spacer()
 
@@ -267,24 +275,123 @@ struct BuildStudioView: View {
         return CGPoint(x: center.x + x + (z * 0.4), y: center.y - y - (z * 0.25))
     }
 
+    // Voxel model-space z sits roughly in [-0.5, 0.5] (see the `u` pitch
+    // constants in GoalBuildLibrary — z multipliers there rarely exceed
+    // ±5 units of ~0.09-0.096). Used to turn raw z into a 0...1 "how close
+    // to the camera" fraction for both perspective scale and shading.
+    private func depthFraction(_ z: Float) -> CGFloat {
+        let minZ = Float(-0.5)
+        let maxZ = Float(0.5)
+        let clamped: Float = z < minZ ? minZ : (z > maxZ ? maxZ : z)
+        return CGFloat((clamped + 0.5) / 1.0) // 0 = farthest, 1 = nearest
+    }
+
+    // Bigger the closer to camera, smaller the farther away — the single
+    // biggest cue that was missing: every voxel was the exact same size
+    // regardless of depth, which is what made the whole thing read as a
+    // flat 2D sticker sheet instead of a 3D object.
+    private func perspectiveScale(_ depthT: CGFloat) -> CGFloat {
+        0.8 + depthT * 0.4 // 0.8x at the back, 1.2x at the front
+    }
+
+    /// Faux-3D voxel: instead of a single flat fill, each piece is drawn
+    /// as 2-3 stacked, offset faces (a lit top plane, a shadowed side
+    /// plane, a base plane) the way isometric pixel/voxel art fakes depth
+    /// with no real 3D engine. `depthT` (0 = farthest, 1 = nearest) drives
+    /// both size (perspectiveScale) and shading, so pieces further from
+    /// the camera are smaller AND slightly darker/hazier — both depth
+    /// cues SwiftUI can render with only flat shapes.
     @ViewBuilder
-    private func voxelChip(_ unit: VoxelUnit) -> some View {
-        let isRound = unit.mesh == .cylinder || unit.mesh == .cone
-        let size: CGFloat = unit.mesh == .flatSlab ? 26.0 : 16.0
-        let height: CGFloat = unit.mesh == .flatSlab ? 8.0 : size
-        Group {
-            if isRound {
-                Circle().fill(Color(unit.color))
-            } else {
-                RoundedRectangle(cornerRadius: 3.0).fill(Color(unit.color))
+    private func voxelChip(_ unit: VoxelUnit, depthT: CGFloat) -> some View {
+        let baseColor = Color(unit.color)
+        let scale = perspectiveScale(depthT)
+        // Farther pieces get a touch of haze (lighter + lower contrast),
+        // matching how the RealityKit key/fill lights already fall off
+        // with distance on iOS.
+        let haze = (1.0 - depthT) * 0.22
+
+        switch unit.mesh {
+        case .cylinder, .cone:
+            let size: CGFloat = 16.0 * scale
+            ZStack {
+                Circle().fill(baseColor)
+                // Lit dome highlight, upper-left (matches the iOS key
+                // light's direction) — gives the circle a rounded, not
+                // flat-disc, look.
+                Circle()
+                    .fill(Color.white.opacity(0.32 - haze))
+                    .frame(width: size * 0.5, height: size * 0.36)
+                    .offset(x: -size * 0.16, y: -size * 0.22)
+                // Contact shadow along the lower edge for volume.
+                Circle()
+                    .trim(from: 0.55, to: 0.95)
+                    .stroke(Color.black.opacity(0.28 + haze * 0.4), lineWidth: size * 0.12)
             }
+            .frame(width: size, height: size)
+            .opacity(1.0 - haze * 0.5)
+            .shadow(color: .black.opacity(0.35), radius: 3.0 * scale, x: 2.0 * scale, y: 3.0 * scale)
+
+        case .flatSlab:
+            let width: CGFloat = 26.0 * scale
+            let height: CGFloat = 8.0 * scale
+            ZStack {
+                RoundedRectangle(cornerRadius: 3.0).fill(baseColor)
+                // Top edge highlight so the slab reads as a thin block,
+                // not a flat painted rectangle.
+                RoundedRectangle(cornerRadius: 2.0)
+                    .fill(Color.white.opacity(0.24 - haze))
+                    .frame(height: height * 0.4)
+                    .offset(y: -height * 0.26)
+                RoundedRectangle(cornerRadius: 2.0)
+                    .fill(Color.black.opacity(0.22 + haze * 0.4))
+                    .frame(height: height * 0.32)
+                    .offset(y: height * 0.3)
+            }
+            .frame(width: width, height: height)
+            .opacity(1.0 - haze * 0.5)
+            .shadow(color: .black.opacity(0.3), radius: 2.0 * scale, x: 1.0 * scale, y: 2.0 * scale)
+
+        case .cube:
+            let s: CGFloat = 16.0 * scale
+            ZStack {
+                // Front/left face — base tone.
+                RoundedRectangle(cornerRadius: 2.5).fill(baseColor)
+                    .frame(width: s, height: s)
+
+                // Right face — darkened and squeezed thin, offset to the
+                // right, reading as the cube's receding side plane.
+                RoundedRectangle(cornerRadius: 2.0)
+                    .fill(Color.black.opacity(0.3 + haze * 0.4))
+                    .frame(width: s * 0.4, height: s)
+                    .offset(x: s * 0.34)
+
+                // Top face — lightened, squashed flat and rotated
+                // slightly, reading as the lit plane catching the key
+                // light from above (matches iOS's DirectionalLightComponent).
+                RoundedRectangle(cornerRadius: 2.0)
+                    .fill(Color.white.opacity(0.3 - haze))
+                    .frame(width: s * 1.02, height: s * 0.4)
+                    .rotationEffect(.degrees(-8))
+                    .offset(y: -s * 0.34)
+            }
+            .frame(width: s, height: s)
+            .opacity(1.0 - haze * 0.5)
+            .shadow(color: .black.opacity(0.35), radius: 3.0 * scale, x: 2.0 * scale, y: 3.0 * scale)
         }
-        .frame(width: size, height: height)
-        .shadow(color: Color.black.opacity(0.3), radius: 2.0, y: 1.0)
     }
 
     private var voxelStandIn2D: some View {
         let unlocked = unlockedCount
+        // Painter's algorithm: draw farthest pieces first so nearer ones
+        // correctly overlap them. `ForEach(cachedVoxels.enumerated())` in
+        // original build order had no such ordering, so pieces that
+        // should have been hidden behind others were instead drawing on
+        // top of them — the wrong-order overlaps were a big part of why
+        // the sculpture read as a flat jumble instead of a solid shape.
+        let depthOrdered = cachedVoxels.enumerated()
+            .filter { $0.offset < unlocked }
+            .sorted { $0.element.position.z < $1.element.position.z }
+
         return GeometryReader { geo in
             let center = CGPoint(x: geo.size.width / 2.0, y: geo.size.height * 0.62)
             ZStack {
@@ -294,11 +401,9 @@ struct BuildStudioView: View {
                     .frame(width: 170.0, height: 46.0)
                     .position(x: center.x, y: center.y + 34.0)
 
-                ForEach(Array(cachedVoxels.enumerated()), id: \.offset) { index, unit in
-                    if index < unlocked {
-                        voxelChip(unit)
-                            .position(projectedVoxelPoint(unit.position, center: center))
-                    }
+                ForEach(depthOrdered, id: \.offset) { _, unit in
+                    voxelChip(unit, depthT: depthFraction(unit.position.z))
+                        .position(projectedVoxelPoint(unit.position, center: center))
                 }
             }
             .rotation3DEffect(.degrees(Double(rotationY) * 6.0), axis: (x: 0.0, y: 1.0, z: 0.0))
