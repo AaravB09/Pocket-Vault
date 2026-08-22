@@ -99,6 +99,17 @@ struct AIChatView: View {
                 chatContent
             }
         }
+        // FIX (Android "white bars above/below the locked card"): this ZStack
+        // only hugs the size of whichever branch is showing — on iOS that's
+        // moot because the enclosing tab/navigation context already stretches
+        // it full-screen, but Skip doesn't do that implicitly on Android, so
+        // `.themedSurface(ignoresSafeArea:)` below was only painting
+        // `theme.background` behind the card's own (much smaller) bounds.
+        // Whatever's behind that — the system window background — showed
+        // through as plain white above and below it. Forcing this to fill
+        // all available space first means the theme background (and the
+        // card centered within it) now covers the entire screen, matching iOS.
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         // FIX: Replaced `theme` with the required boolean argument label
         .themedSurface(ignoresSafeArea: true)
         .sheet(isPresented: $showPaywall) {
@@ -113,33 +124,104 @@ struct AIChatView: View {
     }
 
     private var lockedState: some View {
-        VStack(spacing: 18) {
-            Image(systemName: "lock.fill").font(theme.font(34, weight: .bold)).foregroundStyle(theme.accent)
-            // No foregroundStyle set — defaults to .primary, resolved to
-            // theme.textPrimary by themedSurface(_:) above.
-            Text("ASK AI IS A PRO FEATURE")
-                .font(theme.font(12, weight: .bold))
-                .tracking(2.2)
-            Text("Chat with your savings assistant anytime — ask about pacing, trade-offs, or ways to hit your goal faster.")
-                .font(theme.font(13, weight: .regular))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 30)
-
-            Button(action: { showPaywall = true }) {
-                Text("VIEW PRO PLANS")
+        ZStack(alignment: .topTrailing) {
+            VStack(spacing: 18) {
+                // FIX (Android "weird, landscape-looking" locked screen):
+                // this was a raw `Image(systemName: "lock.fill")`, not routed
+                // through `platformSymbol` like every other icon on this
+                // screen. "lock.fill" isn't in Skip's fallback-symbol table
+                // (only the unfilled "lock" is documented as supported), so
+                // Skip was silently substituting its generic "symbol not
+                // found" warning-triangle glyph in its place — see the note
+                // on `Image.platformSymbol` in Platformsymbol.swift.
+                Image.platformSymbol("lock.fill", android: "lock")
+                    .font(theme.font(34, weight: .bold))
+                    .foregroundStyle(theme.accent)
+                // No foregroundStyle set — defaults to .primary, resolved to
+                // theme.textPrimary by themedSurface(_:) above.
+                Text("ASK AI IS A PRO FEATURE")
                     .font(theme.font(12, weight: .bold))
-                    .tracking(2.4)
-                    .padding(.horizontal, 26)
-                    .padding(.vertical, 15)
-                    .background(theme.accent)
-                    .foregroundColor(theme.onAccent)
-                    .clipShape(Capsule())
-                    .shadow(color: theme.accent.opacity(0.4), radius: 14, y: 6)
+                    .tracking(2.2)
+                // FIX (Android "description line missing from the locked
+                // card"): `.foregroundStyle(.secondary)` relies on the
+                // screen's `.themedSurface(ignoresSafeArea:)` ancestor to
+                // resolve it, the way real SwiftUI's hierarchical
+                // foregroundStyle would on iOS. Skip only implements the
+                // single-argument form of that call (see the note in
+                // ThemedSurfaceModifier), which only covers the default/
+                // primary text color on Android — so this Text fell back to
+                // a raw platform default instead of the theme, invisible
+                // against this card's dark background. Referencing the
+                // theme token directly fixes it, matching the title Text
+                // right above (which is visible because it uses the
+                // covered default/primary color).
+                Text("Chat with your savings assistant anytime — ask about pacing, trade-offs, or ways to hit your goal faster.")
+                    .font(theme.font(13, weight: .regular))
+                    .foregroundStyle(theme.textSecondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 30)
+
+                Button(action: { showPaywall = true }) {
+                    Text("VIEW PRO PLANS")
+                        .font(theme.font(12, weight: .bold))
+                        .tracking(2.4)
+                        .padding(.horizontal, 26)
+                        .padding(.vertical, 15)
+                        .background(theme.accent)
+                        .foregroundColor(theme.onAccent)
+                        .clipShape(Capsule())
+                        .shadow(color: theme.accent.opacity(0.4), radius: 14, y: 6)
+                }
+                .padding(.top, 8)
             }
-            .padding(.top, 8)
+            .padding(20)
+            // FIX (matches the video of the real iOS build): this whole
+            // VStack had no card treatment at all — just plain content
+            // sitting on the screen's flat background — which is what was
+            // actually reading as "weird/landscape" on Android next to a
+            // screen that, everywhere else in the app, wraps this kind of
+            // content in a bounded card. The card look itself (dark
+            // elevated surface, rounded corners, hairline stroke) isn't
+            // new to this screen — it's the exact same pattern already
+            // used for the tailored-plan card in Savingscoachview.swift
+            // and the feature-list card in PaywallView.swift, just never
+            // applied here. Reusing it verbatim (including the existing
+            // iOS-blur / Android-flat-overlay split those two already use)
+            // is what makes this render identically to the rest of the
+            // app on both platforms, not just visually similar.
+            #if !SKIP
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 20))
+            #else
+            .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+            .cornerRadius(20)
+            #endif
+            .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
+            .padding(.horizontal, 24)
+
+            // FIX: this locked state is shown directly as tab content (case 4
+            // in MainTabView's switch), not presented as a sheet, so there
+            // was previously no way to leave it besides tapping a different
+            // bottom-bar icon. Adding an explicit close button that hops back
+            // to the Vault tab, same on both platforms.
+            // FIX (Android "close button is a caution triangle"): this
+            // mapped `android:` to the same unsupported "xmark.circle.fill"
+            // name that was causing the fallback in the first place — Skip's
+            // fallback table doesn't include it (see Platformsymbol.swift),
+            // so it rendered as the "symbol not found" warning triangle
+            // instead of a close icon. Every other close button in the app
+            // (Profileview, Loginview, Sharedbudgetview, LeaderboardView,
+            // Budgettrackerview, Savingscoachview, Feedbackview) already
+            // substitutes the supported "xmark" glyph on Android — matching
+            // that here fixes it.
+            Button(action: { selectedTab = 0 }) {
+                Image.platformSymbol("xmark.circle.fill", android: "xmark")
+                    .font(theme.font(22, weight: .semibold))
+                    .foregroundStyle(theme.textTertiary)
+            }
+            .padding(.top, 16)
+            .padding(.trailing, 40)
         }
-        .padding()
     }
 
     private var chatContent: some View {

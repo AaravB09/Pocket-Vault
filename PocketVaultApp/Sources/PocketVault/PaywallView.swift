@@ -507,6 +507,23 @@ struct CustomPaywallView: View {
                 paywallContent
             }
         }
+        // FIX (Android "View Pro Plans shows nothing but a caution
+        // triangle"): the iOS CustomPaywallView above sets
+        // `.foregroundStyle(theme.textPrimary, theme.textSecondary,
+        // theme.textTertiary)` at its root so every unstyled `.primary` /
+        // `.secondary` Text on this whole screen resolves to the app's
+        // theme colors. This Android copy never had the equivalent line —
+        // it was just missing — so every one of those Texts (the
+        // "Pro plans aren't set up yet" title, the explanatory paragraph,
+        // etc. in notConfiguredState below, plus everything unstyled in
+        // paywallContent) was falling back to raw platform defaults
+        // instead of the theme, rather than actually being invisible by
+        // design. Only `exclamationmark.triangle.fill` above has an
+        // explicit `theme.accent` color, which is why that was the only
+        // thing reliably showing up. Adding the single-argument Android
+        // fallback here, matching the same pattern ThemedSurfaceModifier
+        // already uses in ThemedSurface.swift.
+        .foregroundStyle(theme.textPrimary)
         .task { await loadOfferings() }
         .fullScreenCover(isPresented: $showCoach) {
             SavingsCoachView(
@@ -535,7 +552,7 @@ struct CustomPaywallView: View {
                     .foregroundStyle(theme.accent)
                 Text("Unlock Pro")
                     .font(theme.font(26, weight: .light))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(theme.textPrimary) // was .primary — same Android fallback gap as notConfiguredState above
             }
             .padding(.top, 28)
 
@@ -658,12 +675,24 @@ struct CustomPaywallView: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(theme.font(34, weight: .bold))
                 .foregroundStyle(theme.accent)
+            // FIX (Android "just a triangle and Close, title/body invisible"):
+            // `.foregroundStyle(.primary)` / `.secondary` here were relying on
+            // the ancestor's `.foregroundStyle(theme.textPrimary)` (line ~526)
+            // to resolve them, the way real SwiftUI's hierarchical
+            // foregroundStyle would on iOS. But Skip only implements the
+            // single-argument form (see the note in ThemedSurfaceModifier),
+            // so on Android these two Texts fell back to raw platform
+            // default colors instead of the theme — invisible against this
+            // screen's near-black background, leaving only the
+            // already-explicit accent triangle and accent "Close" visible.
+            // Referencing the theme tokens directly, same as every other
+            // Android-safe Text in this file, fixes it.
             Text("Pro plans aren't set up yet")
                 .font(theme.font(16, weight: .semibold))
-                .foregroundStyle(.primary)
+                .foregroundStyle(theme.textPrimary)
             Text("This screen renders live from your RevenueCat Offering. Add an Offering with Packages in the RevenueCat dashboard (and matching products in the Google Play Console), then this screen will populate automatically.")
                 .font(theme.font(13))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(theme.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, Layout.pageMargin)
             Button("Close") { dismiss() }
