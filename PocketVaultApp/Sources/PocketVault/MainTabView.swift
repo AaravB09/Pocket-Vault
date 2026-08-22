@@ -265,6 +265,20 @@ struct MainTabView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // FIX (Android "butter smooth" ask): each tab is still a
+            // completely separate view under this `switch` — that's not
+            // changing in this pass, since rewriting the whole tab system
+            // to preserve view identity across tabs is a much bigger,
+            // riskier change (this app already has a long list of
+            // Skip-transpiler-specific workarounds elsewhere, so a
+            // structural rewrite like that needs its own careful pass,
+            // not a drive-by edit). What's cheap and safe here is
+            // softening the hard cut between tabs into a real crossfade,
+            // so the swap itself doesn't read as an abrupt jump-cut even
+            // though the underlying view is still being rebuilt.
+            .id(selectedTab)
+            .transition(.opacity)
+            .animation(.easeInOut(duration: 0.18), value: selectedTab)
     }
 
     // MARK: - Floating Bottom Bar

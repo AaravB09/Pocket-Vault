@@ -35,6 +35,36 @@ enum GoalKind: String, CaseIterable {
         case .custom: return "sparkles"
         }
     }
+
+    // FIX: `displayIcon` was being handed straight to `Image(systemName:)`
+    // at its call sites (ContentView's goal picker button, Goalpickerbar) —
+    // not routed through `Image.platformSymbol(_:android:)` like every
+    // other icon in the app. Per Platformsymbol.swift, "car.side", "cpu",
+    // "shield", and "sparkles" specifically are outside Skip's Android
+    // fallback table, so those 4 of the 8 GoalKind cases were rendering as
+    // the "symbol not found" warning triangle instead of the actual goal
+    // icon — i.e. exactly the cases that make a running goal (a car, a
+    // gaming rig, an emergency fund, a custom/gift goal) identifiable at a
+    // glance. Reusing the same Android stand-ins SetupGoalView's
+    // GoalPreset already established for these identical icon names
+    // (cpu -> gearshape.fill, car.side -> cart.fill, shield -> lock.fill)
+    // plus the sparkles -> star.fill substitution used everywhere else in
+    // the app. `.flight`/`.furniture`/`.house`/`.jewelry` aren't in the
+    // documented unsupported list (and shippingbox.fill/diamond.fill are
+    // already used unwrapped elsewhere, e.g. ParticleBurst.swift), so
+    // those four just pass the same name through unchanged.
+    var androidDisplayIcon: String {
+        switch self {
+        case .flight: return "paperplane"
+        case .car: return "cart.fill"
+        case .gamingRig: return "gearshape.fill"
+        case .emergencyFund: return "lock.fill"
+        case .furniture: return "shippingbox.fill"
+        case .house: return "house.fill"
+        case .jewelry: return "diamond.fill"
+        case .custom: return "star.fill"
+        }
+    }
 }
 
 enum VoxelMeshKind {

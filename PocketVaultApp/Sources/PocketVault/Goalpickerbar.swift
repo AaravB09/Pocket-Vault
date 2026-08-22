@@ -20,7 +20,16 @@ struct GoalPickerBar: View {
                         goalStore.setActive(goal.id)
                     }) {
                         HStack(spacing: 6) {
-                            Image(systemName: (GoalKind(rawValue: goal.kindRaw) ?? .custom).displayIcon)
+                            // FIX: was `Image(systemName: ....displayIcon)`
+                            // directly — see the note on
+                            // GoalKind.androidDisplayIcon in
+                            // Goalbuildmodels.swift. Bypassing
+                            // platformSymbol() here meant a car, gaming
+                            // rig, emergency fund, or custom goal chip
+                            // rendered the "symbol not found" warning
+                            // triangle on Android instead of its icon.
+                            let kind = GoalKind(rawValue: goal.kindRaw) ?? .custom
+                            Image.platformSymbol(kind.displayIcon, android: kind.androidDisplayIcon)
                                 .font(theme.font(11, weight: .light))
                             Text(goal.title)
                                 .font(theme.font(12, weight: .semibold))

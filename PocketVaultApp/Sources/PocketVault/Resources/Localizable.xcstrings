@@ -161,6 +161,7 @@
     },
     "Appearance" : {
       "comment" : "Settings select label for the interface style of the controls (light, dark, or default)",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -318,6 +319,7 @@
     },
     "Dark" : {
       "comment" : "Menu item indicating that the appearance should be in dark mode",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {
@@ -559,6 +561,7 @@
     },
     "Light" : {
       "comment" : "Menu item indicating that the appearance should be in light mode",
+      "extractionState" : "stale",
       "localizations" : {
         "es" : {
           "stringUnit" : {

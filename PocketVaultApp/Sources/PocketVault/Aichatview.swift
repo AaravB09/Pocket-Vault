@@ -78,6 +78,18 @@ struct AIChatView: View {
     @State private var draft: String = ""
     @State private var isSending: Bool = false
     @State private var errorMessage: String?
+    // FIX ("really weird" tapping VIEW PRO PLANS with no Pro plan): this
+    // button used to do `selectedTab = 5`, which swapped CustomPaywallView
+    // straight into the tab `switch` in MainTabView — not presented as a
+    // sheet. CustomPaywallView's "Close" button calls `@Environment(\.dismiss)`,
+    // which only does anything inside an actual presentation (a `.sheet`/
+    // `.fullScreenCover`); swapped in as bare tab content, there was no
+    // presentation to dismiss, so Close silently did nothing and the only
+    // way out was tapping a bottom-bar icon — reading as a stuck, broken
+    // screen. Every other Pro upsell in the app (ContentView's Pro badge)
+    // already presents this exact same view as a real `.sheet`, which
+    // Close correctly dismisses — matching that convention here fixes it.
+    @State private var showPaywall: Bool = false
 
     var body: some View {
         ZStack {
@@ -89,6 +101,15 @@ struct AIChatView: View {
         }
         // FIX: Replaced `theme` with the required boolean argument label
         .themedSurface(ignoresSafeArea: true)
+        .sheet(isPresented: $showPaywall) {
+            CustomPaywallView(
+                goalTitle: goalTitle,
+                targetGoal: targetGoal,
+                currentSavings: currentSavings,
+                chatMessages: $messages,
+                selectedTab: $selectedTab
+            )
+        }
     }
 
     private var lockedState: some View {
@@ -105,7 +126,7 @@ struct AIChatView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 30)
 
-            Button(action: { selectedTab = 5 }) {
+            Button(action: { showPaywall = true }) {
                 Text("VIEW PRO PLANS")
                     .font(theme.font(12, weight: .bold))
                     .tracking(2.4)

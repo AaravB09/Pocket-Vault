@@ -1,6 +1,9 @@
 import Foundation
 import OSLog
 import SwiftUI
+#if SKIP
+import SkipRevenue
+#endif
 
 /// A logger for the PocketVault module.
 let logger: Logger = Logger(subsystem: "com.sanjivanilabs.pocketvault", category: "PocketVault")
@@ -46,6 +49,20 @@ public final class PocketVaultAppDelegate : Sendable {
 
     public func onInit() {
         logger.debug("onInit")
+        // Android equivalent of Pocket_VaultApp.swift's
+        // `AppDelegate.applicationDidFinishLaunching`, which is where
+        // `Purchases.configure()` runs on iOS. `onInit()` fires once at
+        // Android app startup, before any SwiftUI view (and therefore
+        // before EntitlementManager's own `init` calls `refresh()`) —
+        // same "configure before anything touches .shared" requirement,
+        // just on Android's own hook instead of UIKit's.
+        //
+        // TODO: replace with your actual RevenueCat Play Store API key
+        // (starts with "goog_") from the RevenueCat dashboard — this is
+        // NOT the same key as the iOS one in Pocket_VaultApp.swift.
+        #if SKIP
+        RevenueCatFuse.shared.configure(apiKey: "goog_RWJTYoQPXJfwsirdwKNCXArEiQn")
+        #endif
     }
 
     public func onLaunch() {

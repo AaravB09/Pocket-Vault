@@ -11,6 +11,17 @@ struct TourStep: Identifiable {
     let title: String
     let message: String
     let icon: String
+    // FIX: `icon` used to be handed straight to `Image(systemName:)` at
+    // the call site below — not routed through `Image.platformSymbol`.
+    // "cube.fill", "hammer.fill", "target", and "chart.pie.fill" are the
+    // exact 4 icons MainTabView.swift already documents as outside
+    // Skip's Android fallback table (see its LiquidTabButton call sites,
+    // which substitute house.fill/wrench.fill/mappin.circle.fill/
+    // list.bullet for these same 4 tabs) — so 4 of these 7 tour steps
+    // were showing the "symbol not found" warning triangle instead of
+    // the actual tab icon during a new user's first-run tour on Android.
+    // Reusing MainTabView's exact substitutes for consistency.
+    let androidIcon: String
 }
 
 /// A lightweight coach-mark tour: dims the screen, shows a card pointing at
@@ -53,43 +64,50 @@ struct FeatureTourOverlay: View {
             tabIndex: 0,
             title: "Your Vault",
             message: "Track progress toward your goal and drop in deposits. Tap the icon top-left anytime to edit your profile.",
-            icon: "cube.fill"
+            icon: "cube.fill",
+            androidIcon: "house.fill"
         ),
         TourStep(
             tabIndex: 1,
             title: "Build Studio",
             message: "Watch a 3D model of your goal assemble itself, piece by piece, as you save. Drag to spin it around.",
-            icon: "hammer.fill"
+            icon: "hammer.fill",
+            androidIcon: "wrench.fill"
         ),
         TourStep(
             tabIndex: 3,
             title: "Goals",
             message: "Change what you're saving for, your target amount, or your target date anytime.",
-            icon: "target"
+            icon: "target",
+            androidIcon: "mappin.circle.fill"
         ),
         TourStep(
             tabIndex: 7,
             title: "Budget",
             message: "Track monthly spending by category and see when you're getting close to your limit.",
-            icon: "chart.pie.fill"
+            icon: "chart.pie.fill",
+            androidIcon: "list.bullet"
         ),
         TourStep(
             tabIndex: 2,
             title: "Calendar",
             message: "See your deposit streak, your best streak ever, and a forecasted completion date.",
-            icon: "calendar"
+            icon: "calendar",
+            androidIcon: "calendar"
         ),
         TourStep(
             tabIndex: 5,
             title: "Go Pro",
             message: "Unlock your AI savings coach and more — upgrade anytime.",
-            icon: "crown.fill"
+            icon: "crown.fill",
+            androidIcon: "crown.fill"
         ),
         TourStep(
             tabIndex: 4,
             title: "Ask AI",
             message: "Tap the sparkle bubble anytime to chat with your AI savings coach about pacing, trade-offs, or ways to hit your goal faster.",
-            icon: "sparkles"
+            icon: "sparkles",
+            androidIcon: "star.fill"
         )
     ]
 
@@ -120,7 +138,7 @@ struct FeatureTourOverlay: View {
 
                     ZStack {
                         VStack(spacing: 10) {
-                            Image(systemName: step.icon).font(theme.font(22, weight: .bold)).foregroundStyle(theme.accent)
+                            Image.platformSymbol(step.icon, android: step.androidIcon).font(theme.font(22, weight: .bold)).foregroundStyle(theme.accent)
                             Text(step.title)
                                 .font(theme.font(15, weight: .semibold))
                                 .foregroundStyle(.primary)
@@ -168,7 +186,13 @@ struct FeatureTourOverlay: View {
                                 .foregroundStyle(theme.accent)
                                 .position(x: targetX - 28, y: targetY)
                         } else {
-                            Image(systemName: "arrowtriangle.down.fill")
+                            // FIX: was `Image(systemName: "arrowtriangle.down.fill")`
+                            // directly — the sibling `arrowtriangle.right.fill`
+                            // arrow just above is already routed through
+                            // platformSymbol (-> "chevron.right"), implying
+                            // arrowtriangle.*.fill isn't in Skip's Android
+                            // fallback table either; this one was just missed.
+                            Image.platformSymbol("arrowtriangle.down.fill", android: "chevron.down")
                                 .font(theme.font(12))
                                 .foregroundStyle(theme.accent)
                                 .position(x: targetX, y: targetY - 14)

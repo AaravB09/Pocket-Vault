@@ -40,12 +40,6 @@ struct ContentView: View {
     @State private var newGoalDate: Date = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
     @State private var newGoalVoxelBlueprintJSON: String? = nil
 
-    // Because the background ignores the safe area (see .themedSurface
-    // below), the header VStack needs its own top padding to clear the
-    // status bar/notch/Dynamic Island. Read the real inset here instead
-    // of hardcoding a number, so this adapts per device automatically.
-    @State private var topSafeAreaInset: CGFloat = 0
-
     private var goalKind: GoalKind { GoalKind(rawValue: goalKindRaw) ?? .flight }
 
     // Same identity resolution as SharedBudgetView/LeaderboardView — real
@@ -85,31 +79,52 @@ struct ContentView: View {
     }
 
     var body: some View {
-        ZStack {
-            // Soft Studio Ambient Lighting Accent
-            // FIX: every other tab's root view fills the space the
-            // outer `.safeAreaInset` tab bar measures against (see
-            // MainTabView's `mainTabContent`, which forces
-            // `.frame(maxWidth: .infinity, maxHeight: .infinity)` on
-            // the switch as a whole — but that only guarantees the
-            // *switch container* fills the screen, not that each
-            // individual case's own root view does). This ZStack was
-            // the one case sizing itself to its content instead of
-            // being told to fill, which changed what `safeAreaInset`
-            // had to lay the tab bar out against specifically on this
-            // tab, and pushed the bar down. Explicit fill here matches
-            // every sibling tab view and keeps the bar's position
-            // identical across tabs.
-            RadialGradient(
-                colors: [theme.textPrimary.opacity(0.1), .clear],
-                center: .center, startRadius: 10, endRadius: 280
-            )
-            .offset(y: -40)
-            .allowsHitTesting(false)
+        // FIX (tab-switch glitch, Build -> Vault): the top inset used to
+        // live in `@State private var topSafeAreaInset: CGFloat = 0`,
+        // only ever set via `.onAppear` on a `GeometryReader` stuck in
+        // this view's `.background`. That means the very first frame
+        // this view ever draws — including every time MainTabView's
+        // tab `switch` tears it down and rebuilds it fresh, which is
+        // exactly what happens switching away from and back to this
+        // tab — painted the header with `topSafeAreaInset` still 0, then
+        // snapped to the real inset a frame later once `.onAppear` ran.
+        // That one-frame jump is the "glitch" switching Build -> Vault:
+        // BuildStudioView doesn't remeasure anything on appear, so it
+        // never showed this; this view rebuilds from scratch every time
+        // it's switched back to, so it did, every single time.
+        //
+        // Reading `GeometryProxy.safeAreaInsets.top` inline here instead
+        // gives the correct value on the very first layout pass, with no
+        // state and no `.onAppear` delay — nothing left to snap into
+        // place after the fact.
+        GeometryReader { rootGeo in
+            let topInset = rootGeo.safeAreaInsets.top
 
-            // Editorial UI Overlay
-            VStack(spacing: 0) {
-                // MARK: - Top Header Block
+            ZStack {
+                // Soft Studio Ambient Lighting Accent
+                // FIX: every other tab's root view fills the space the
+                // outer `.safeAreaInset` tab bar measures against (see
+                // MainTabView's `mainTabContent`, which forces
+                // `.frame(maxWidth: .infinity, maxHeight: .infinity)` on
+                // the switch as a whole — but that only guarantees the
+                // *switch container* fills the screen, not that each
+                // individual case's own root view does). This ZStack was
+                // the one case sizing itself to its content instead of
+                // being told to fill, which changed what `safeAreaInset`
+                // had to lay the tab bar out against specifically on this
+                // tab, and pushed the bar down. Explicit fill here matches
+                // every sibling tab view and keeps the bar's position
+                // identical across tabs.
+                RadialGradient(
+                    colors: [theme.textPrimary.opacity(0.1), .clear],
+                    center: .center, startRadius: 10, endRadius: 280
+                )
+                .offset(y: -40)
+                .allowsHitTesting(false)
+
+                // Editorial UI Overlay
+                VStack(spacing: 0) {
+                    // MARK: - Top Header Block
                 VStack(spacing: 16) {
                     // 1. Row 1: Profile & Greeting / Pro Status Only
                     HStack {
@@ -163,7 +178,15 @@ struct ContentView: View {
                     HStack {
                         Button(action: { showSetupGoalSheet = true }) {
                             HStack(spacing: 8) {
-                                Image(systemName: goalKind.displayIcon)
+                                // FIX: was `Image(systemName: goalKind.displayIcon)`
+                                // directly — see the note on
+                                // GoalKind.androidDisplayIcon in
+                                // Goalbuildmodels.swift. This is the journey
+                                // selector at the top of the Vault tab, so a
+                                // car/gaming-rig/emergency-fund/custom goal
+                                // showed the "symbol not found" warning
+                                // triangle here on every single screen visit.
+                                Image.platformSymbol(goalKind.displayIcon, android: goalKind.androidDisplayIcon)
                                     .font(theme.font(13, weight: .medium))
                                     .foregroundStyle(theme.accent)
 
@@ -189,16 +212,13 @@ struct ContentView: View {
                 // Small extra buffer on top of the real safe-area inset —
                 // tight to the notch/Dynamic Island without touching it.
                 //
-                // Android-only: the +25 buffer (on top of the real,
-                // measured safe-area inset) read as noticeably more empty
-                // space above the greeting than the equivalent gap on iOS.
-                // Shrinking just this extra buffer for Android — not the
-                // measured inset itself — tightens the header without
-                // touching iOS's spacing at all.
+                // Android-only: shrunk further (6pt -> 0) after the first
+                // pass at this still read as extra empty space above the
+                // greeting on Android. iOS's buffer is untouched.
                 #if !SKIP
-                .padding(.top, topSafeAreaInset + 25)
+                .padding(.top, topInset + 25)
                 #else
-                .padding(.top, topSafeAreaInset + 6)
+                .padding(.top, topInset)
                 #endif
 
                 // Goal Picker
@@ -309,15 +329,10 @@ struct ContentView: View {
                 }
                 .padding(.horizontal, Layout.pageMargin)
                 .padding(.bottom, 24)
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            GeometryReader { proxy in
-                Color.clear
-                    .onAppear { topSafeAreaInset = proxy.safeAreaInsets.top }
-            }
-        )
         .onAppear { loadProfileImage() }
         .sheet(isPresented: $showDepositSheet) {
             AestheticDepositModalView(currentSavings: $currentSavings) { amount in

@@ -126,11 +126,13 @@ struct BuildStudioView: View {
                 // Android-only: see the matching note in CalenderView.swift
                 // / ContentView.swift — this fixed 60pt sat on top of the
                 // real safe-area inset and read as more empty space above
-                // the "BUILD STUDIO" label on Android than on iOS.
+                // the "BUILD STUDIO" label on Android than on iOS. Shrunk
+                // further (24pt -> 10pt) since that first pass still read
+                // as too much header space here.
                 #if !SKIP
                 .padding(.top, 60)
                 #else
-                .padding(.top, 24)
+                .padding(.top, 10)
                 #endif
 
                 Spacer()
@@ -275,23 +277,203 @@ struct BuildStudioView: View {
         return CGPoint(x: center.x + x + (z * 0.4), y: center.y - y - (z * 0.25))
     }
 
+    // FIX(looked flat): `rotationY` used to only drive a
+    // `.rotation3DEffect` on the *container* of an already-flattened
+    // picture — every voxel's projected x/y and its depth-sort position
+    // were computed once from the raw, un-rotated model coordinates and
+    // never touched again. Dragging therefore just tilted a static
+    // flat image; pieces never actually swapped which-is-in-front-of-
+    // which, and the near/far size difference never shifted, both of
+    // which are exactly the cues a real rotation would give — hence
+    // "looks flat" even after the lighting-direction fix.
+    //
+    // This rotates each voxel's actual (x, z) position around the
+    // vertical axis by `angle` radians — the same axis/convention as
+    // iOS's real `simd_quatf(angle: rotationY, axis: [0,1,0])` in
+    // sculptureView above — before it's ever projected or depth-sorted.
+    // voxelStandIn2D now calls this once per voxel per render, so as
+    // rotationY changes, pieces genuinely swap depth order and their
+    // projected size/position shifts — real parallax instead of a
+    // tilted sticker.
+    private func rotatedPosition(_ p: Vector3, angle: Float) -> Vector3 {
+        let c = Float(cos(Double(angle)))
+        let s = Float(sin(Double(angle)))
+        let rotatedX = p.x * c + p.z * s
+        let rotatedZ = -p.x * s + p.z * c
+        return Vector3(rotatedX, p.y, rotatedZ)
+    }
+
     // Voxel model-space z sits roughly in [-0.5, 0.5] (see the `u` pitch
     // constants in GoalBuildLibrary — z multipliers there rarely exceed
     // ±5 units of ~0.09-0.096). Used to turn raw z into a 0...1 "how close
     // to the camera" fraction for both perspective scale and shading.
     private func depthFraction(_ z: Float) -> CGFloat {
-        let minZ = Float(-0.5)
-        let maxZ = Float(0.5)
-        let clamped: Float = z < minZ ? minZ : (z > maxZ ? maxZ : z)
+        // FIX: same generic min/max overload-resolution problem as every
+        // other clamp in this file/project (Skip's Kotlin codegen can't
+        // resolve `max(Double, min(Double, Float))`) — clamp with plain
+        // comparisons instead.
+        let clamped: Float = z < Float(-0.5) ? Float(-0.5) : (z > Float(0.5) ? Float(0.5) : z)
         return CGFloat((clamped + 0.5) / 1.0) // 0 = farthest, 1 = nearest
     }
 
-    // Bigger the closer to camera, smaller the farther away — the single
-    // biggest cue that was missing: every voxel was the exact same size
-    // regardless of depth, which is what made the whole thing read as a
-    // flat 2D sticker sheet instead of a 3D object.
+    // FIX(looked flat): widened from 0.8x...1.2x. That range was so
+    // narrow the size difference between the front and back of the
+    // sculpture barely registered — combined with the rotation bug
+    // above (no actual parallax), size was nearly the only depth cue
+    // available and it was too subtle to read. Real perspective on a
+    // sculpture this size falls off faster than 1.5x front-to-back.
     private func perspectiveScale(_ depthT: CGFloat) -> CGFloat {
-        0.8 + depthT * 0.4 // 0.8x at the back, 1.2x at the front
+        0.62 + depthT * 0.68 // 0.62x at the back, 1.3x at the front
+    }
+
+    // FIX (weird-looking Build model on Android): this is where the
+    // "weird" complaint actually came from. `unit.orientation` (the
+    // `VoxelOrientation` angle/axis each piece carries — see
+    // Goalbuildmodels.swift, e.g. car wheels and plane
+    // turbines/nose-cone are built with a 90° rotation) was never read
+    // anywhere in this 2D stand-in. Every piece drew as a plain upright
+    // circle/cube regardless of how it's actually oriented in the build,
+    // so wheels that should sit tipped toward the camera, and turbines/
+    // nose cones that should lie on their side, all rendered standing
+    // straight up instead — the RealityKit path on iOS was never wrong,
+    // only this Android fallback was ignoring the data it already had.
+    //
+    // Exact 3D-accurate rotation isn't possible with flat SwiftUI shapes
+    // (same reasoning as depthFraction/perspectiveScale above), so this
+    // approximates the two rotations that actually show up in
+    // GoalBuildLibrary:
+    //  - a roll around the depth axis (`axis.z`) is a genuine in-plane
+    //    2D rotation — maps 1:1 onto `.rotationEffect`.
+    //  - a pitch around the horizontal axis (`axis.x`) tips the piece's
+    //    long axis from standing (vertical) toward facing the camera —
+    //    approximated by squashing it, the same "flatten toward the
+    //    viewer" idea the cube's top face above already uses.
+    private func chipTilt(for orientation: VoxelOrientation) -> (rollDegrees: Double, squash: CGFloat) {
+            let angleDegrees = Double(orientation.angle) * 180.0 / Double.pi
+            
+            // Unfold abs() into plain comparisons to bypass Kotlin's generic resolution failures
+            if orientation.axis.z > 0.5 || orientation.axis.z < -0.5 {
+                return (angleDegrees * (orientation.axis.z < 0 ? -1.0 : 1.0), 1.0)
+            }
+            
+            if orientation.axis.x > 0.5 || orientation.axis.x < -0.5 {
+                // Unfold both abs() and min() here to be safe
+                let absoluteAngle = angleDegrees > 0 ? angleDegrees : -angleDegrees
+                let rawT = absoluteAngle / 90.0
+                let t = rawT < 1.0 ? rawT : 1.0
+                
+                return (0.0, 1.0 - CGFloat(t) * 0.65)
+            }
+            
+            return (0.0, 1.0)
+        }
+
+    // FIX (Build Studio "trashy" on Android): the actual gap between iOS
+    // and Android wasn't the orientation tilt above (real, but a smaller
+    // slice of it) — it was that `.cylinder` and `.cone` rendered as the
+    // exact same flat dot regardless of mesh, with no taper, no visible
+    // body, nothing to distinguish a bottle-shaped piece from a nose
+    // cone. Every real RealityKit mesh on iOS has actual volume and a
+    // silhouette; this stand-in was giving every rounded piece in the
+    // sculpture the identical circle. Split into two real silhouettes
+    // below (voxelCylinder / voxelCone), each with its own body, taper,
+    // and lit/shadow faces, using the same upper-right key light + lower-
+    // left fill light convention as the cube case already establishes.
+    private struct ConeSilhouette: Shape {
+        func path(in rect: CGRect) -> Path {
+            var path = Path()
+            path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+            path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+            path.closeSubpath()
+            return path
+        }
+    }
+
+    @ViewBuilder
+    private func voxelCylinder(baseColor: Color, scale: CGFloat, haze: Double) -> some View {
+        // Roughly matches GoalBuildLibrary's real proportions (height
+        // 0.08 vs radius 0.038 -> a little taller than it is wide),
+        // instead of the perfectly round dot every cylinder/cone piece
+        // used to share.
+        let width: CGFloat = 15.0 * scale
+        let height: CGFloat = 19.0 * scale
+        let capHeight: CGFloat = width * 0.42
+
+        ZStack {
+            // Cylindrical body.
+            RoundedRectangle(cornerRadius: width * 0.22)
+                .fill(baseColor)
+                .frame(width: width, height: height - capHeight * 0.5)
+                .offset(y: capHeight * 0.25)
+
+            // Shadowed left face — weaker fill light only (x=-0.5), same
+            // convention as the cube case below.
+            RoundedRectangle(cornerRadius: width * 0.18)
+                .fill(Color.black.opacity(0.26 + haze * 0.4))
+                .frame(width: width * 0.36, height: height - capHeight * 0.5)
+                .offset(x: -width * 0.32, y: capHeight * 0.25)
+
+            // Top cap — the lit, camera-facing plane, catching the key
+            // light from above just like the cube's top face.
+            Ellipse()
+                .fill(Color.white.opacity(0.28 - haze))
+                .frame(width: width, height: capHeight)
+                .offset(y: -height / 2.0 + capHeight * 0.5)
+            Ellipse()
+                .stroke(Color.black.opacity(0.16 + haze * 0.2), lineWidth: 0.75)
+                .frame(width: width, height: capHeight)
+                .offset(y: -height / 2.0 + capHeight * 0.5)
+
+            // Contact shadow along the base for volume.
+            Ellipse()
+                .fill(Color.black.opacity(0.22 + haze * 0.3))
+                .frame(width: width * 0.9, height: capHeight * 0.6)
+                .offset(y: height / 2.0 - capHeight * 0.3)
+        }
+        .frame(width: width, height: height)
+        .opacity(1.0 - haze * 0.5)
+        .shadow(color: .black.opacity(0.35), radius: 3.0 * scale, x: 2.0 * scale, y: 3.0 * scale)
+    }
+
+    @ViewBuilder
+    private func voxelCone(baseColor: Color, scale: CGFloat, haze: Double) -> some View {
+        // Real proportions (height 0.17 vs radius 0.07) make this the
+        // tallest, most tapered piece in the build — the nose cone and
+        // turbine housings depend on that taper actually reading as a
+        // point, not a circle, to look like their real-world shape.
+        let width: CGFloat = 17.0 * scale
+        let height: CGFloat = 22.0 * scale
+        let baseCapHeight: CGFloat = width * 0.36
+
+        ZStack {
+            ConeSilhouette()
+                .fill(
+                    LinearGradient(
+                        colors: [baseColor, baseColor.opacity(0.72)],
+                        startPoint: UnitPoint(x: 0.15, y: 0), endPoint: UnitPoint(x: 0.85, y: 1)
+                    )
+                )
+                .frame(width: width, height: height - baseCapHeight * 0.5)
+                .offset(y: baseCapHeight * 0.25)
+
+            // Lit streak down the right side of the cone (key light at
+            // x=+0.6), narrowing toward the apex the same way a real
+            // cone's highlight would.
+            ConeSilhouette()
+                .fill(Color.white.opacity(0.22 - haze))
+                .frame(width: width * 0.22, height: (height - baseCapHeight * 0.5) * 0.85)
+                .offset(x: width * 0.22, y: baseCapHeight * 0.25 + (height - baseCapHeight * 0.5) * 0.06)
+
+            // Base ellipse the cone tapers up from.
+            Ellipse()
+                .fill(Color.black.opacity(0.24 + haze * 0.3))
+                .frame(width: width, height: baseCapHeight)
+                .offset(y: height / 2.0 - baseCapHeight * 0.4)
+        }
+        .frame(width: width, height: height)
+        .opacity(1.0 - haze * 0.5)
+        .shadow(color: .black.opacity(0.35), radius: 3.0 * scale, x: 2.0 * scale, y: 3.0 * scale)
     }
 
     /// Faux-3D voxel: instead of a single flat fill, each piece is drawn
@@ -303,6 +485,14 @@ struct BuildStudioView: View {
     /// cues SwiftUI can render with only flat shapes.
     @ViewBuilder
     private func voxelChip(_ unit: VoxelUnit, depthT: CGFloat) -> some View {
+        let tilt = chipTilt(for: unit.orientation)
+        voxelChipFace(unit, depthT: depthT)
+            .scaleEffect(x: 1.0, y: tilt.squash, anchor: .center)
+            .rotationEffect(.degrees(tilt.rollDegrees))
+    }
+
+    @ViewBuilder
+    private func voxelChipFace(_ unit: VoxelUnit, depthT: CGFloat) -> some View {
         let baseColor = Color(unit.color)
         let scale = perspectiveScale(depthT)
         // Farther pieces get a touch of haze (lighter + lower contrast),
@@ -311,25 +501,11 @@ struct BuildStudioView: View {
         let haze = (1.0 - depthT) * 0.22
 
         switch unit.mesh {
-        case .cylinder, .cone:
-            let size: CGFloat = 16.0 * scale
-            ZStack {
-                Circle().fill(baseColor)
-                // Lit dome highlight, upper-left (matches the iOS key
-                // light's direction) — gives the circle a rounded, not
-                // flat-disc, look.
-                Circle()
-                    .fill(Color.white.opacity(0.32 - haze))
-                    .frame(width: size * 0.5, height: size * 0.36)
-                    .offset(x: -size * 0.16, y: -size * 0.22)
-                // Contact shadow along the lower edge for volume.
-                Circle()
-                    .trim(from: 0.55, to: 0.95)
-                    .stroke(Color.black.opacity(0.28 + haze * 0.4), lineWidth: size * 0.12)
-            }
-            .frame(width: size, height: size)
-            .opacity(1.0 - haze * 0.5)
-            .shadow(color: .black.opacity(0.35), radius: 3.0 * scale, x: 2.0 * scale, y: 3.0 * scale)
+        case .cylinder:
+            voxelCylinder(baseColor: baseColor, scale: scale, haze: haze)
+
+        case .cone:
+            voxelCone(baseColor: baseColor, scale: scale, haze: haze)
 
         case .flatSlab:
             let width: CGFloat = 26.0 * scale
@@ -354,24 +530,37 @@ struct BuildStudioView: View {
         case .cube:
             let s: CGFloat = 16.0 * scale
             ZStack {
-                // Front/left face — base tone.
+                // Front/right face — base tone. This is the face angled
+                // toward the key light (see the cylinder/cone fix above:
+                // key light is at x=+0.6, camera's right), so it stays at
+                // full base color rather than being darkened.
                 RoundedRectangle(cornerRadius: 2.5).fill(baseColor)
                     .frame(width: s, height: s)
 
-                // Right face — darkened and squeezed thin, offset to the
-                // right, reading as the cube's receding side plane.
+                // Left face — darkened and squeezed thin, offset to the
+                // left, reading as the cube's receding side plane.
+                //
+                // FIX: this used to be the RIGHT face that got darkened
+                // (offset +s*0.34), on the same mirrored-lighting
+                // assumption as the cylinder/cone highlight above. Since
+                // the real key light sits at x=+0.6, the right side of
+                // every voxel is the lit side on iOS, not the shadowed
+                // one — the shadow plane belongs on the left, where only
+                // the weaker fill light (x=-0.5) reaches.
                 RoundedRectangle(cornerRadius: 2.0)
                     .fill(Color.black.opacity(0.3 + haze * 0.4))
                     .frame(width: s * 0.4, height: s)
-                    .offset(x: s * 0.34)
+                    .offset(x: -s * 0.34)
 
                 // Top face — lightened, squashed flat and rotated
                 // slightly, reading as the lit plane catching the key
                 // light from above (matches iOS's DirectionalLightComponent).
+                // Rotation direction flipped to +8° to lean toward the
+                // same right-side key light as the faces above.
                 RoundedRectangle(cornerRadius: 2.0)
                     .fill(Color.white.opacity(0.3 - haze))
                     .frame(width: s * 1.02, height: s * 0.4)
-                    .rotationEffect(.degrees(-8))
+                    .rotationEffect(.degrees(8))
                     .offset(y: -s * 0.34)
             }
             .frame(width: s, height: s)
@@ -380,39 +569,91 @@ struct BuildStudioView: View {
         }
     }
 
+    /// One voxel's rotated-this-frame position, paired with its stable
+    /// `offset` (for `ForEach` identity) and original `unit` data. Kept
+    /// as a real struct rather than an anonymous/named tuple since
+    /// Skip's transpiler is unreliable with tuple labels captured across
+    /// closures (see the `Vector3`/`VoxelOrientation` notes in
+    /// Goalbuildmodels.swift for the same reasoning).
+    private struct ProjectedVoxel {
+        let offset: Int
+        let unit: VoxelUnit
+        let rotatedPosition: Vector3
+    }
+
     private var voxelStandIn2D: some View {
         let unlocked = unlockedCount
-        // Painter's algorithm: draw farthest pieces first so nearer ones
-        // correctly overlap them. `ForEach(cachedVoxels.enumerated())` in
-        // original build order had no such ordering, so pieces that
-        // should have been hidden behind others were instead drawing on
-        // top of them — the wrong-order overlaps were a big part of why
-        // the sculpture read as a flat jumble instead of a solid shape.
-        let depthOrdered = cachedVoxels.enumerated()
+        // rotationY is a true angle in radians here (see rotatedPosition
+        // above) — the same value and convention as iOS's real
+        // simd_quatf rotation, just applied to 2D-projected geometry
+        // instead of an actual 3D engine.
+        let angle = rotationY
+
+        let projected: [ProjectedVoxel] = cachedVoxels.enumerated()
             .filter { $0.offset < unlocked }
-            .sorted { $0.element.position.z < $1.element.position.z }
+            .map { ProjectedVoxel(offset: $0.offset, unit: $0.element, rotatedPosition: rotatedPosition($0.element.position, angle: angle)) }
+
+        // Painter's algorithm: draw farthest pieces first so nearer ones
+        // correctly overlap them. Now sorted by each voxel's ROTATED z,
+        // recomputed every render as the user drags — so which piece is
+        // "in front" genuinely changes as the sculpture turns, instead
+        // of a fixed build-order z that never updated.
+        let depthOrdered = projected.sorted { $0.rotatedPosition.z < $1.rotatedPosition.z }
 
         return GeometryReader { geo in
             let center = CGPoint(x: geo.size.width / 2.0, y: geo.size.height * 0.62)
             ZStack {
+                // Soft ambient shadow beneath the platform — iOS gets this
+                // for free from RealityKit's own shadow-casting; this
+                // blurred, oversized dark ellipse is the flat-shape
+                // equivalent, so the whole assembly reads as sitting on
+                // something instead of floating over a hard-edged disc.
+                Ellipse()
+                    .fill(Color.black.opacity(0.35))
+                    .frame(width: 190.0, height: 40.0)
+                    .blur(radius: 10)
+                    .position(x: center.x, y: center.y + 40.0)
+
                 // Base platform, matching the iOS cylinder base.
                 Ellipse()
-                    .fill(Color(white: 0.16))
+                    .fill(
+                        LinearGradient(
+                            colors: [Color(white: 0.22), Color(white: 0.12)],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                    )
+                    .frame(width: 170.0, height: 46.0)
+                    .position(x: center.x, y: center.y + 34.0)
+                // Thin rim catching the key light, same upper-right
+                // convention as every voxel face above.
+                Ellipse()
+                    .trim(from: 0.05, to: 0.45)
+                    .stroke(Color.white.opacity(0.14), lineWidth: 1.5)
                     .frame(width: 170.0, height: 46.0)
                     .position(x: center.x, y: center.y + 34.0)
 
-                ForEach(depthOrdered, id: \.offset) { _, unit in
-                    voxelChip(unit, depthT: depthFraction(unit.position.z))
-                        .position(projectedVoxelPoint(unit.position, center: center))
+                ForEach(depthOrdered, id: \.offset) { item in
+                    voxelChip(item.unit, depthT: depthFraction(item.rotatedPosition.z))
+                        .position(projectedVoxelPoint(item.rotatedPosition, center: center))
                 }
             }
-            .rotation3DEffect(.degrees(Double(rotationY) * 6.0), axis: (x: 0.0, y: 1.0, z: 0.0))
         }
         .frame(height: 260.0)
         .gesture(
             DragGesture()
                 .onChanged { value in
-                    let delta = Float(value.translation.width - lastDragTranslation) * Float(0.02)
+                    // FIX(looked flat): was `* Float(0.02)` feeding a
+                    // flat `.rotation3DEffect` skew — see the notes on
+                    // rotatedPosition(_:angle:) and perspectiveScale
+                    // above for why that read as flat regardless of
+                    // sensitivity. Now that rotationY drives real
+                    // per-voxel rotation, its sensitivity is set to
+                    // roughly match iOS's real drag-to-rotate feel
+                    // (iOS uses 0.006 rad/pt on its 3D gesture; this
+                    // stand-in's screen-space projection is coarser, so
+                    // a touch higher keeps the drag feeling equally
+                    // responsive).
+                    let delta = Float(value.translation.width - lastDragTranslation) * Float(0.01)
                     rotationY += delta
                     lastDragTranslation = value.translation.width
                 }

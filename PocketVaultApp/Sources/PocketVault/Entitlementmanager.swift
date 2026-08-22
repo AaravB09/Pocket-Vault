@@ -67,22 +67,27 @@ final class EntitlementManager: NSObject, ObservableObject, PurchasesDelegate {
     }
 }
 #else
-/// Android build: RevenueCat's SDK isn't linked here (it's an
-/// iOS-only import above), so Pro purchases aren't wired up on this
-/// platform yet. This keeps the same public API (`isPro`, `refresh()`,
-/// `resetTestAccount()`) every view already depends on, so nothing else
-/// has to know the difference — it just reports "not Pro" instead of
-/// crashing or silently pretending to be entitled.
-///
-/// To make Pro real on Android, add RevenueCat's Skip-compatible
-/// package (see github.com/skiptools/skip-revenue) and swap the calls
-/// above back in for the Android branch.
+import SkipRevenue
+
+/// Android build: RevenueCat's native SDK isn't linked here (it's an
+/// iOS-only import above), but SkipRevenue is — see Package.swift — so
+/// Pro is real here too now, via `RevenueCatFuse` instead of `Purchases`.
+/// Same public API (`isPro`, `refresh()`, `resetTestAccount()`) every
+/// view already depends on, so nothing else needed to change.
 @MainActor
 final class EntitlementManager: NSObject, ObservableObject {
     @Published var isPro: Bool = false
 
+    private let proEntitlementID = "pro"
+
     override init() {
         super.init()
+        // RevenueCatFuse.shared.configure(apiKey:) runs once at app
+        // startup — see PocketVaultAppDelegate.onInit() in
+        // PocketVaultApp.swift — same "configure before anything touches
+        // .shared" ordering requirement as iOS's Purchases.configure(),
+        // just on Android's own startup hook instead of
+        // applicationDidFinishLaunching.
         Task { await refresh() }
     }
 
@@ -90,11 +95,20 @@ final class EntitlementManager: NSObject, ObservableObject {
         #if DEBUG
         if ProcessInfo.processInfo.environment["POCKET_VAULT_FORCE_PRO"] == "1" {
             isPro = true
+            return
         }
         #endif
+
+        do {
+            let info = try await RevenueCatFuse.shared.getCustomerInfo()
+            isPro = info.isEntitlementActive(proEntitlementID)
+        } catch {
+            // Leave isPro at its last known value rather than assuming false.
+        }
     }
 
     func resetTestAccount() async {
+        _ = try? await RevenueCatFuse.shared.logoutUser()
         await refresh()
     }
 }

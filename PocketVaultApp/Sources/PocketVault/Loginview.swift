@@ -63,21 +63,51 @@ struct LoginView: View {
                             .foregroundStyle(theme.accent)
                         Text(isSignUpMode ? "Create Your Vault" : "Welcome Back")
                             .font(theme.font(26, weight: .light))
+                            #if !SKIP
                             .foregroundStyle(.primary)
+                            #else
+                            // Android-only: SkipUI doesn't resolve the environment-based
+                            // .primary ShapeStyle the way real SwiftUI does here, so this was
+                            // rendering as plain black text instead of following the theme.
+                            .foregroundStyle(theme.textPrimary)
+                            #endif
                         if hideGuestOption {
                             Text("Create a free account to continue")
                                 .font(theme.font(12, weight: .light))
+                                #if !SKIP
                                 .foregroundStyle(.secondary)
+                                #else
+                                // Android-only: SkipUI doesn't resolve the environment-based
+                                // .secondary ShapeStyle the way real SwiftUI does here, so this was
+                                // rendering as plain black text instead of following the theme.
+                                .foregroundStyle(theme.textSecondary)
+                                #endif
                         }
                     }
+                    // Android-only: see the matching notes in CalenderView.swift
+                    // / ContentView.swift / Budgettrackerview.swift / BuildStudioView.swift
+                    // — this fixed 110pt read as more empty space above the
+                    // "Welcome Back" title on Android than the equivalent gap
+                    // on iOS.
+                    #if !SKIP
                     .padding(.top, 110)
+                    #else
+                    .padding(.top, 40)
+                    #endif
 
                     VStack(spacing: 16) {
                         TextField("", text: $email, prompt: Text("Email").foregroundColor(theme.textTertiary))
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                             .keyboardType(.emailAddress)
+                            #if !SKIP
                             .foregroundStyle(.primary)
+                            #else
+                            // Android-only: SkipUI doesn't resolve the environment-based
+                            // .primary ShapeStyle the way real SwiftUI does here, so this was
+                            // rendering as plain black text instead of following the theme.
+                            .foregroundStyle(theme.textPrimary)
+                            #endif
                             .tint(theme.accent)
                             .padding(16)
                             // NOTE(skip): `.ultraThinMaterial` and `.clipShape`
@@ -103,7 +133,14 @@ struct LoginView: View {
                                     SecureField("", text: $password, prompt: Text("Password (6+ characters)").foregroundColor(theme.textTertiary))
                                 }
                             }
+                            #if !SKIP
                             .foregroundStyle(.primary)
+                            #else
+                            // Android-only: SkipUI doesn't resolve the environment-based
+                            // .primary ShapeStyle the way real SwiftUI does here, so this was
+                            // rendering as plain black text instead of following the theme.
+                            .foregroundStyle(theme.textPrimary)
+                            #endif
                             .tint(theme.accent)
                             .padding(16)
                             .padding(.trailing, 40)
@@ -168,10 +205,24 @@ struct LoginView: View {
                                 .foregroundStyle(theme.accent)
                             Text("Check your email")
                                 .font(theme.font(13, weight: .semibold))
+                                #if !SKIP
                                 .foregroundStyle(.primary)
+                                #else
+                                // Android-only: SkipUI doesn't resolve the environment-based
+                                // .primary ShapeStyle the way real SwiftUI does here, so this was
+                                // rendering as plain black text instead of following the theme.
+                                .foregroundStyle(theme.textPrimary)
+                                #endif
                             Text("We sent a confirmation link to \(email). Tap it, then come back and sign in.")
                                 .font(theme.font(12, weight: .light))
+                                #if !SKIP
                                 .foregroundStyle(.secondary)
+                                #else
+                                // Android-only: SkipUI doesn't resolve the environment-based
+                                // .secondary ShapeStyle the way real SwiftUI does here, so this was
+                                // rendering as plain black text instead of following the theme.
+                                .foregroundStyle(theme.textSecondary)
+                                #endif
                                 .multilineTextAlignment(.center)
                         }
                         .padding(16)
@@ -236,7 +287,14 @@ struct LoginView: View {
                     }) {
                         Text(isSignUpMode ? "Already have an account? Sign in" : "New here? Create an account")
                             .font(theme.font(12, weight: .light))
+                            #if !SKIP
                             .foregroundStyle(.secondary)
+                            #else
+                            // Android-only: SkipUI doesn't resolve the environment-based
+                            // .secondary ShapeStyle the way real SwiftUI does here, so this was
+                            // rendering as plain black text instead of following the theme.
+                            .foregroundStyle(theme.textSecondary)
+                            #endif
                     }
                     .padding(.top, 4)
 
@@ -306,12 +364,26 @@ private struct ForgotPasswordSheet: View {
                         .foregroundStyle(theme.accent)
                     Text("Reset Password")
                         .font(theme.font(22, weight: .light))
+                        #if !SKIP
                         .foregroundStyle(.primary)
+                        #else
+                        // Android-only: SkipUI doesn't resolve the environment-based
+                        // .primary ShapeStyle the way real SwiftUI does here, so this was
+                        // rendering as plain black text instead of following the theme.
+                        .foregroundStyle(theme.textPrimary)
+                        #endif
                 }
 
                 Text("Enter your account email and we'll send you a link to reset your password.")
                     .font(theme.font(13, weight: .light))
+                    #if !SKIP
                     .foregroundStyle(.secondary)
+                    #else
+                    // Android-only: SkipUI doesn't resolve the environment-based
+                    // .secondary ShapeStyle the way real SwiftUI does here, so this was
+                    // rendering as plain black text instead of following the theme.
+                    .foregroundStyle(theme.textSecondary)
+                    #endif
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, Layout.pageMargin)
 
@@ -319,7 +391,14 @@ private struct ForgotPasswordSheet: View {
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .keyboardType(.emailAddress)
+                    #if !SKIP
                     .foregroundStyle(.primary)
+                    #else
+                    // Android-only: SkipUI doesn't resolve the environment-based
+                    // .primary ShapeStyle the way real SwiftUI does here, so this was
+                    // rendering as plain black text instead of following the theme.
+                    .foregroundStyle(theme.textPrimary)
+                    #endif
                     .tint(theme.accent)
                     .padding(16)
                     #if !SKIP

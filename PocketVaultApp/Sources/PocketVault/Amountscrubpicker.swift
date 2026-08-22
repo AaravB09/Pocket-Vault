@@ -29,6 +29,11 @@ struct AmountScrubPicker: View {
     // and manually track the start of the drag in .onChanged and clear it in .onEnded.
     @State private var dragStartAmount: Double? = nil
 
+    // Android-only: tracks whether a raw scrub gesture is currently active,
+    // so the spring animation below (see `.animation(value: amount)`) can be
+    // suspended for the duration of the drag — see that modifier for why.
+    @State private var isDragging: Bool = false
+
     // Trail + pulse state — purely visual reinforcement of the same
     // "step" feedback the haptics give, since haptics never fire in the
     // Simulator (only on a real device) and are easy to miss even on
@@ -259,7 +264,27 @@ struct AmountScrubPicker: View {
             // drag (typing, tap-jump, end-of-drag settle) — short and
             // snappy so ticks still feel tightly tied to a real drag
             // rather than visibly lagging behind the finger.
+            //
+            // FIX(Android lag/oscillation): this comment describes the
+            // intent, but the modifier below was previously unconditional
+            // — it animated `amount` on EVERY change, including the raw
+            // per-frame updates from onChanged during an active drag. Real
+            // SwiftUI's interactive spring coalesces smoothly with an
+            // in-flight gesture on iOS, but SkipUI's Compose-backed
+            // animation doesn't retarget cleanly mid-flight: each rapid
+            // reassignment of `amount` mid-drag restarts a new spring
+            // toward the new target while the previous one is still
+            // settling, which is exactly the "1900 -> 1905 -> 1900" flicker
+            // — two overlapping springs chasing each other. Suspending the
+            // animation for the actual duration of the drag (only on
+            // Android; iOS's behavior here was already correct) removes
+            // the competing springs; the value still animates normally for
+            // typing, tap-to-jump, and the settle-on-release below.
+            #if !SKIP
             .animation(.interactiveSpring(response: 0.15, dampingFraction: 0.86, blendDuration: 0.1), value: amount)
+            #else
+            .animation(isDragging ? nil : .interactiveSpring(response: 0.15, dampingFraction: 0.86, blendDuration: 0.1), value: amount)
+            #endif
             #if !SKIP
             .contentShape(Rectangle())
             #endif
@@ -268,6 +293,7 @@ struct AmountScrubPicker: View {
                     .onChanged { value in
                         if dragStartAmount == nil {
                             dragStartAmount = amount
+                            isDragging = true
                         }
                         guard let start = dragStartAmount else { return }
 
@@ -319,6 +345,7 @@ struct AmountScrubPicker: View {
                     }
                     .onEnded { value in
                         dragStartAmount = nil
+                        isDragging = false
                         let moved = abs(value.translation.width) > 4.0 || abs(value.translation.height) > 4.0
                         lastDragTranslation = 0.0
                         withAnimation(.easeOut(duration: 0.35)) {
