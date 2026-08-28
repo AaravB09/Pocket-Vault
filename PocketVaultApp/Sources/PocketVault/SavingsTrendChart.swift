@@ -93,7 +93,18 @@ struct SavingsTrendChart: View {
 
             if visiblePoints.count >= 2 {
                 chart
+                    // FIX (Android: fits without scrolling) — see the
+                    // matching note in ContentView.swift on the Deposit
+                    // button ScrollView fix. Same chart on both
+                    // platforms, just less tall on Android to help this
+                    // whole screen fit in the shorter effective viewport
+                    // (before this, the inset bug alone was already
+                    // eating the height difference several times over).
+                    #if !SKIP
                     .frame(height: 150)
+                    #else
+                    .frame(height: 110)
+                    #endif
 
                 rangePicker
             } else {

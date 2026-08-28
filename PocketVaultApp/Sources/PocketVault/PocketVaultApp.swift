@@ -18,6 +18,25 @@ public struct PocketVaultRootView : View {
     @StateObject private var authManager = AuthManager()
     @StateObject private var themeManager = ThemeManager()
 
+    // FIX (Appearance mode / dark-light toggle doing nothing on Android):
+    // `ThemeManager.resolvedIsLight` — the flag every single color token
+    // (`background`, `textPrimary`, `accent`, etc.) actually reads — only
+    // ever got recomputed by the `.onAppear`/`.onChange` wiring inside
+    // `Pocket_VaultApp.swift`. That entire file is the iOS app entry
+    // point (`@main`, `WindowGroup`, ...), wrapped in `#if !SKIP` end to
+    // end — none of it exists on Android at all. Android's own entry
+    // point (this view, loaded from `PocketVaultAppDelegate`) never had
+    // any equivalent, so `resolvedIsLight` sat at its hardcoded `false`
+    // default for the lifetime of the app: tapping "Light" in Appearance
+    // updated `appearanceMode` (that part persists fine, same
+    // `ThemeManager` either platform), but nothing ever turned that into
+    // an updated `resolvedIsLight`, so every screen kept rendering dark
+    // regardless of the setting — the toggle looked completely dead.
+    // Mirrors the same three call sites iOS already has: resolve once up
+    // front, again whenever the system's own scheme changes, and again
+    // whenever the user picks a different appearance mode.
+    @Environment(\.colorScheme) private var systemColorScheme
+
     public init() {
     }
 
@@ -32,6 +51,26 @@ public struct PocketVaultRootView : View {
         }
         .environmentObject(authManager)
         .environmentObject(themeManager)
+        // nil (system mode) lets Android decide; .light/.dark force it —
+        // same convention as the iOS entry point.
+        .preferredColorScheme(themeManager.appearanceMode.colorScheme)
+        .onAppear {
+            if let forced = themeManager.appearanceMode.colorScheme {
+                themeManager.updateResolvedScheme(forced)
+            } else {
+                themeManager.updateResolvedScheme(systemColorScheme)
+            }
+        }
+        .onChange(of: systemColorScheme) { newValue in
+            themeManager.updateResolvedScheme(newValue)
+        }
+        .onChange(of: themeManager.appearanceMode) { mode in
+            if let forced = mode.colorScheme {
+                themeManager.updateResolvedScheme(forced)
+            } else {
+                themeManager.updateResolvedScheme(systemColorScheme)
+            }
+        }
         .task {
             logger.info("Skip app logs are viewable in the Xcode console for iOS; Android logs can be viewed in Studio or using adb logcat")
         }

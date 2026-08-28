@@ -1,13 +1,10 @@
 import SwiftUI
 
 /// Calls YOUR backend proxy (never Google directly) to generate a
-/// tailored savings plan via Gemini. See SECURITY_NOTES.txt for the proxy
-/// you need to deploy first — this file intentionally contains no Gemini key.
+/// tailored savings plan via Gemini. The caller's Supabase JWT, not a
+/// reusable app secret, authorizes this request.
 enum SavingsCoachService {
     static let proxyURL = URL(string: "https://hbbyrgmckacgbqqtteaq.supabase.co/functions/v1/coach")!
-    // Pulled from Secrets.swift, which is gitignored — see Secrets.example.swift
-    // for the template and SETUP_NOTES.md for how to fill it in locally.
-    static let appSharedSecret = Secrets.appSharedSecret
 
     struct PlanRequest {
         let goalTitle: String
@@ -17,7 +14,7 @@ enum SavingsCoachService {
         let currentStreak: Int
     }
 
-    static func generatePlan(_ request: PlanRequest) async throws -> String {
+    static func generatePlan(_ request: PlanRequest, accessToken: String) async throws -> String {
         let remaining = max(request.targetAmount - request.currentSavings, 0)
         let days = max(Calendar.current.dateComponents([.day], from: Date(), to: request.targetDate).day ?? 30, 1)
         let formatter = DateFormatter()
@@ -43,7 +40,7 @@ enum SavingsCoachService {
         var apiRequest = URLRequest(url: proxyURL)
         apiRequest.httpMethod = "POST"
         apiRequest.setValue("application/json", forHTTPHeaderField: "content-type")
-        apiRequest.setValue(appSharedSecret, forHTTPHeaderField: "x-app-secret")
+        apiRequest.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
         let body: [String: Any] = ["prompt": prompt, "max_tokens": 500]
         apiRequest.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -73,6 +70,7 @@ struct SavingsCoachView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var streakManager: StreakManager
     @EnvironmentObject var theme: ThemeManager
+    @EnvironmentObject var authManager: AuthManager
 
     let goalTitle: String
     let targetAmount: Double
@@ -241,6 +239,10 @@ struct SavingsCoachView: View {
     }
 
     private func requestPlan() async {
+        guard let accessToken = authManager.accessToken else {
+            errorMessage = "Create an account to use AI coaching."
+            return
+        }
         isLoading = true
         errorMessage = nil
         do {
@@ -251,7 +253,7 @@ struct SavingsCoachView: View {
                 targetDate: targetDate,
                 currentStreak: streakManager.currentStreak
             )
-            let result = try await SavingsCoachService.generatePlan(request)
+            let result = try await SavingsCoachService.generatePlan(request, accessToken: accessToken)
             plan = result
             chatMessages.append(ChatMessage(role: .model, text: result))
         } catch {

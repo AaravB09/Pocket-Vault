@@ -1,0 +1,4 @@
+[functions.coach]
+# The function verifies the caller explicitly so this also works with newer
+# asymmetric Supabase signing keys. Do not deploy it with anonymous access.
+verify_jwt = false

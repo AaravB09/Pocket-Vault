@@ -280,24 +280,62 @@ struct GoalBuildLibrary {
     // missing too. Spelling out equal R/G/B is the same color either way.
     private static let frostedGlass = UIColor(red: 0.97, green: 0.97, blue: 0.97, alpha: 0.75)
 
-    // MARK: - Aircraft: ~27 bricks, base -> fuselage -> wings -> tail -> nose reveal
+    // MARK: - Aircraft: ~32 bricks, gear -> fuselage (2 bricks tall) -> wing panels -> tail -> nose reveal
+    //
+    // FIX ("just a bunch of cubes floating around" — the actual reported
+    // shape, this build): the old version was a single-brick-wide spine
+    // crossed with a single-brick-wide row of loose wing cubes — a thin
+    // 3D "plus sign" skeleton with no bulk anywhere. Even with every
+    // brick touching its neighbor (see the mesh-size fix in
+    // BuildStudioView.spawnVoxel), a shape that's only ever one brick
+    // thick in cross-section reads as a scattered line of blocks, not a
+    // recognizable fuselage, because it has no width or depth of its
+    // own to catch light on multiple sides at once.
+    //
+    // Two changes give it real volume without changing the unlock
+    // mechanic (still just an ordered array — `unlockedCount` in
+    // BuildStudioView doesn't care how many pieces there are):
+    // 1. The fuselage is now two bricks tall (a lower body row added
+    //    beneath the original spine) instead of one, so it reads as a
+    //    solid tube instead of a wire.
+    // 2. The outer wing sections are `.flatSlab` panels (the same mesh
+    //    the car build already uses for its spoiler) instead of a row of
+    //    individual cubes — a real flat wing shape, not five separate
+    //    dots trailing off from the fuselage.
+    // The old pedestal (a short stand directly under the fuselage) is
+    // now proper landing gear one level further down, so it doesn't
+    // collide with the new lower fuselage row occupying the space it
+    // used to sit in.
     private static func flightVoxels(trimColor: UIColor) -> [VoxelUnit] {
         var units: [VoxelUnit] = []
         let u = Float(0.092) // brick pitch
 
-        // Pedestal base (4 bricks, charcoal, non-metallic)
+        // Landing gear (4 bricks, charcoal, non-metallic) — dropped one
+        // level below the fuselage body, since the old pedestal's spot
+        // (y = 0) is now the lower fuselage row.
         for i in -1...2 {
-            units.append(VoxelUnit(position: Vector3(Float(0.0), Float(0.0), Float(i) * u), mesh: .cube, color: charcoal, isMetallic: false, orientation: .identity))
+            units.append(VoxelUnit(position: Vector3(Float(0.0), -u, Float(i) * u), mesh: .cube, color: charcoal, isMetallic: false, orientation: .identity))
         }
 
-        // Fuselage spine (8 bricks, ivory, non-metallic)
+        // Fuselage lower row (8 bricks, ivory, non-metallic) — NEW: gives
+        // the body a second row of height so it reads as a boxy tube
+        // instead of a single-file line.
+        for i in -4...3 {
+            units.append(VoxelUnit(position: Vector3(Float(0.0), Float(0.0), Float(i) * u), mesh: .cube, color: ivory, isMetallic: false, orientation: .identity))
+        }
+
+        // Fuselage upper row / spine (8 bricks, ivory, non-metallic)
         for i in -4...3 {
             units.append(VoxelUnit(position: Vector3(Float(0.0), u, Float(i) * u), mesh: .cube, color: ivory, isMetallic: false, orientation: .identity))
         }
 
-        // Wings, symmetric, built outward (8 bricks, indigo, non-metallic)
-        for i in [1, -1, 2, -2, 3, -3, 4, -4] {
-            units.append(VoxelUnit(position: Vector3(Float(i) * u, u, Float(0.0)), mesh: .cube, color: indigo, isMetallic: false, orientation: .identity))
+        // Wing roots (2 bricks, indigo) bridging the fuselage to each
+        // wing panel, plus the wing panels themselves (2 `.flatSlab`
+        // pieces, indigo) — real flat wing shapes instead of a trailing
+        // row of separate cubes.
+        for side in [Float(1.0), Float(-1.0)] {
+            units.append(VoxelUnit(position: Vector3(side * u, u, Float(0.0)), mesh: .cube, color: indigo, isMetallic: false, orientation: .identity))
+            units.append(VoxelUnit(position: Vector3(side * u * Float(3.0), u, Float(0.0)), mesh: .flatSlab, color: indigo, isMetallic: false, orientation: .identity))
         }
 
         // Tail assembly (5 bricks)

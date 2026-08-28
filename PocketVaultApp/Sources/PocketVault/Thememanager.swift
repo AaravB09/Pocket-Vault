@@ -295,107 +295,311 @@ enum Layout {
 // a color-matched glow, so the button reads as "the thing to tap next",
 // not as a light source. Radius/height come from `Layout`.
 
+// MARK: - Shared button interaction states
+//
+// Every CTA below now goes through the same six visual states instead of
+// each screen improvising its own loading spinner / disabled dimming:
+//   1. Default  — solid fill, reads as "tap me".
+//   2. Hover    — trackpad/pointer only (iPad, Mac Catalyst); a no-op on
+//                 touch-only Android, so it's compiled out under Skip.
+//   3. Focus    — a ring drawn OUTSIDE the button when it has hardware
+//                 keyboard / Full Keyboard Access / Switch Control focus.
+//                 VoiceOver draws its own system highlight separately —
+//                 this ring is specifically for the non-VoiceOver
+//                 keyboard-navigation case, which otherwise has no visual
+//                 indicator at all on a custom SwiftUI control.
+//   4. Pressed  — an immediate darken + 0.98x scale for as long as the
+//                 finger is down, plus a one-shot fading "flash" overlay
+//                 and a light haptic tick right as the tap registers, so
+//                 there's feedback the instant a press lands, not only
+//                 once `action` finishes.
+//   5. Loading  — set `isLoading: true` right when `action` kicks off an
+//                 async task. The label stays laid out (so the button
+//                 doesn't resize) but fades to 0% opacity while a
+//                 `ProgressView` spins in its place, and the button stops
+//                 accepting taps until it's cleared.
+//   6. Disabled — a flat neutral grey fill instead of a dimmed accent
+//                 color, so "you can't press this" reads the same way
+//                 regardless of which theme color is active.
+// Not `private` — every custom button below lives in this file, but the
+// hand-rolled OAuth buttons in Socialsigninbuttons.swift also want the
+// same pressed-state haptic tick, so this needs module-internal (the
+// Swift default) rather than file-private visibility.
+func ctaHapticTick() {
+    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+}
+
 struct PrimaryCTAButton<Label: View>: View {
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var accent: Color
     var onAccent: Color = .black
+    var isLoading: Bool = false
     var action: () -> Void
     @ViewBuilder var label: () -> Label
 
     @State private var isPressed = false
+    @State private var flash = false
+    @FocusState private var isFocused: Bool
+    #if !SKIP
+    @State private var isHovering = false
+    #endif
+
+    // Explicit init — needed because Skip's Kotlin transpile puts every
+    // stored property (including the `private` @State/@FocusState ones
+    // above) into the generated constructor, unlike Swift's own
+    // memberwise init which excludes `private` properties. Without this,
+    // the trailing closure at call sites binds to whatever stored
+    // property Kotlin puts last instead of `label`, which is the
+    // "Function0<Unit>, but 'Boolean' was expected" build error.
+    init(
+        accent: Color,
+        onAccent: Color = .black,
+        isLoading: Bool = false,
+        action: @escaping () -> Void,
+        @ViewBuilder label: @escaping () -> Label
+    ) {
+        self.accent = accent
+        self.onAccent = onAccent
+        self.isLoading = isLoading
+        self.action = action
+        self.label = label
+    }
+
+    /// Loading counts as non-interactive too — otherwise a second tap
+    /// mid-flight could fire `action` again before the first finishes.
+    private var isInteractive: Bool { isEnabled && !isLoading }
+
+    private var fillColor: Color {
+        guard isInteractive else { return Color(white: 0.5).opacity(0.28) }
+        return accent.opacity(isPressed ? 0.85 : 1.0)
+    }
+
+    private var contentColor: Color { isInteractive ? onAccent : onAccent.opacity(0.45) }
 
     var body: some View {
-        Button(action: action) {
-            label()
-                .font(Font.custom("Inter-SemiBold", size: 16.0))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 17.0)
-                .background(accent)
-                .foregroundColor(onAccent)
-                .cornerRadius(Layout.controlRadius)
-                .overlay(
-                    RoundedRectangle(cornerRadius: Layout.controlRadius)
-                        .stroke(onAccent.opacity(isPressed ? 0.06 : 0.12), lineWidth: 1.0)
-                )
-                .shadow(
-                    color: Color.black.opacity(isEnabled ? (isPressed ? 0.08 : 0.18) : 0.0),
-                    radius: isPressed ? 4.0 : 14.0,
-                    y: isPressed ? 2.0 : 6.0
-                )
-                .opacity(isEnabled ? 1.0 : 0.4)
-                .scaleEffect(isPressed ? 0.98 : 1.0)
+        Button(action: {
+            guard isInteractive else { return }
+            ctaHapticTick()
+            action()
+        }) {
+            ZStack {
+                label().opacity(isLoading ? 0.0 : 1.0)
+                if isLoading {
+                    ProgressView().tint(onAccent)
+                }
+            }
+            .font(Font.custom("Inter-SemiBold", size: 16.0))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 17.0)
+            .background(fillColor)
+            .foregroundColor(contentColor)
+            .cornerRadius(Layout.controlRadius)
+            .overlay( // one-shot tap "flash" — fades out right after release
+                RoundedRectangle(cornerRadius: Layout.controlRadius)
+                    .fill(onAccent)
+                    .opacity(flash ? 0.18 : 0.0)
+                    .allowsHitTesting(false)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Layout.controlRadius)
+                    .stroke(onAccent.opacity(isInteractive ? (isPressed ? 0.06 : 0.12) : 0.0), lineWidth: 1.0)
+            )
+            .overlay( // accessibility focus ring — keyboard / Full Keyboard Access / Switch Control
+                RoundedRectangle(cornerRadius: Layout.controlRadius + 3.0)
+                    .stroke(accent, lineWidth: isFocused ? 3.0 : 0.0)
+                    .padding(-3.0)
+            )
+            .shadow(
+                color: Color.black.opacity(isInteractive ? (isPressed ? 0.08 : 0.18) : 0.0),
+                radius: isPressed ? 4.0 : 14.0,
+                y: isPressed ? 2.0 : 6.0
+            )
+            #if !SKIP
+            .scaleEffect(isPressed ? 0.98 : (isHovering ? 1.01 : 1.0))
+            #else
+            .scaleEffect(isPressed ? 0.98 : 1.0)
+            #endif
         }
         .buttonStyle(.plain)
-        .disabled(!isEnabled)
+        .disabled(!isInteractive)
+        .focused($isFocused)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded { _ in isPressed = false }
+                .onChanged { _ in if isInteractive { isPressed = true } }
+                .onEnded { _ in
+                    guard isPressed else { return }
+                    isPressed = false
+                    guard isInteractive, !reduceMotion else { return }
+                    flash = true
+                    withAnimation(.easeOut(duration: 0.35)) { flash = false }
+                }
         )
+        #if !SKIP
+        .onHover { isHovering = isInteractive && $0 }
+        #endif
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
         .animation(.easeOut(duration: 0.15), value: isEnabled)
+        .animation(.easeOut(duration: 0.2), value: isLoading)
     }
 }
 
 struct SecondaryCTAButton<Label: View>: View {
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var accent: Color
+    var isLoading: Bool = false
     var action: () -> Void
     @ViewBuilder var label: () -> Label
 
     @State private var isPressed = false
+    @State private var flash = false
+    @FocusState private var isFocused: Bool
+    #if !SKIP
+    @State private var isHovering = false
+    #endif
+
+    // See PrimaryCTAButton's init above for why this is needed under Skip.
+    init(
+        accent: Color,
+        isLoading: Bool = false,
+        action: @escaping () -> Void,
+        @ViewBuilder label: @escaping () -> Label
+    ) {
+        self.accent = accent
+        self.isLoading = isLoading
+        self.action = action
+        self.label = label
+    }
+
+    private var isInteractive: Bool { isEnabled && !isLoading }
+    private var borderColor: Color { isInteractive ? accent : Color(white: 0.5).opacity(0.4) }
+    private var contentColor: Color { isInteractive ? accent : Color(white: 0.5) }
 
     var body: some View {
-        Button(action: action) {
-            label()
-                .font(Font.custom("Inter-SemiBold", size: 15.0))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 15.0)
-                .background(accent.opacity(isPressed ? 0.2 : 0.12))
-                .foregroundColor(accent)
-                .cornerRadius(Layout.controlRadius)
-                .overlay(
-                    RoundedRectangle(cornerRadius: Layout.controlRadius)
-                        .stroke(accent.opacity(0.5), lineWidth: 1.2)
-                )
-                .opacity(isEnabled ? 1.0 : 0.4)
-                .scaleEffect(isPressed ? 0.98 : 1.0)
+        Button(action: {
+            guard isInteractive else { return }
+            ctaHapticTick()
+            action()
+        }) {
+            ZStack {
+                label().opacity(isLoading ? 0.0 : 1.0)
+                if isLoading {
+                    ProgressView().tint(accent)
+                }
+            }
+            .font(Font.custom("Inter-SemiBold", size: 15.0))
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 15.0)
+            .background(isInteractive ? accent.opacity(isPressed ? 0.2 : 0.12) : Color(white: 0.5).opacity(0.1))
+            .foregroundColor(contentColor)
+            .cornerRadius(Layout.controlRadius)
+            .overlay(
+                RoundedRectangle(cornerRadius: Layout.controlRadius)
+                    .fill(accent)
+                    .opacity(flash ? 0.16 : 0.0)
+                    .allowsHitTesting(false)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Layout.controlRadius)
+                    .stroke(borderColor.opacity(isInteractive ? 0.5 : 1.0), lineWidth: 1.2)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: Layout.controlRadius + 3.0)
+                    .stroke(accent, lineWidth: isFocused ? 3.0 : 0.0)
+                    .padding(-3.0)
+            )
+            #if !SKIP
+            .scaleEffect(isPressed ? 0.98 : (isHovering ? 1.01 : 1.0))
+            #else
+            .scaleEffect(isPressed ? 0.98 : 1.0)
+            #endif
         }
         .buttonStyle(.plain)
-        .disabled(!isEnabled)
+        .disabled(!isInteractive)
+        .focused($isFocused)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
-                .onEnded { _ in isPressed = false }
+                .onChanged { _ in if isInteractive { isPressed = true } }
+                .onEnded { _ in
+                    guard isPressed else { return }
+                    isPressed = false
+                    guard isInteractive, !reduceMotion else { return }
+                    flash = true
+                    withAnimation(.easeOut(duration: 0.35)) { flash = false }
+                }
         )
+        #if !SKIP
+        .onHover { isHovering = isInteractive && $0 }
+        #endif
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
         .animation(.easeOut(duration: 0.15), value: isEnabled)
+        .animation(.easeOut(duration: 0.2), value: isLoading)
     }
 }
 
 /// For the one action on a screen that shouldn't compete visually with
 /// the primary CTA — no fill, no stroke, just text. Use this instead of
 /// giving a tertiary action its own bordered/uppercase button treatment.
+/// Still gets the same disabled/focus/loading treatment as the two CTAs
+/// above, just expressed through opacity and a trailing spinner instead
+/// of a background fill, since there's no fill here to turn grey.
 struct TertiaryCTAButton<Label: View>: View {
+    @Environment(\.isEnabled) private var isEnabled
     var color: Color
+    var isLoading: Bool = false
     var action: () -> Void
     @ViewBuilder var label: () -> Label
 
     @State private var isPressed = false
+    @FocusState private var isFocused: Bool
+
+    // See PrimaryCTAButton's init above for why this is needed under Skip.
+    init(
+        color: Color,
+        isLoading: Bool = false,
+        action: @escaping () -> Void,
+        @ViewBuilder label: @escaping () -> Label
+    ) {
+        self.color = color
+        self.isLoading = isLoading
+        self.action = action
+        self.label = label
+    }
+
+    private var isInteractive: Bool { isEnabled && !isLoading }
 
     var body: some View {
-        Button(action: action) {
-            label()
-                .font(Font.custom("Inter-Medium", size: 15.0))
-                .foregroundColor(color)
-                .opacity(isPressed ? 0.6 : 1.0)
+        Button(action: {
+            guard isInteractive else { return }
+            ctaHapticTick()
+            action()
+        }) {
+            HStack(spacing: 6.0) {
+                label()
+                if isLoading {
+                    ProgressView().tint(color)
+                }
+            }
+            .font(Font.custom("Inter-Medium", size: 15.0))
+            .foregroundColor(isInteractive ? color : color.opacity(0.35))
+            .opacity(isPressed ? 0.6 : 1.0)
+            .overlay(
+                RoundedRectangle(cornerRadius: 6.0)
+                    .stroke(color, lineWidth: isFocused ? 2.0 : 0.0)
+                    .padding(-4.0)
+            )
         }
         .buttonStyle(.plain)
+        .disabled(!isInteractive)
+        .focused($isFocused)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
-                .onChanged { _ in isPressed = true }
+                .onChanged { _ in if isInteractive { isPressed = true } }
                 .onEnded { _ in isPressed = false }
         )
+        .animation(.easeOut(duration: 0.15), value: isPressed)
+        .animation(.easeOut(duration: 0.15), value: isEnabled)
     }
 }
 

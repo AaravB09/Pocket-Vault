@@ -123,6 +123,28 @@ struct ContentView: View {
                 .allowsHitTesting(false)
 
                 // Editorial UI Overlay
+                //
+                // FIX (Android: Deposit button unreachable): this was the
+                // only one of the main tabs (compare Budgettrackerview.swift
+                // / CalenderView.swift, both wrapped in `ScrollView`) laid
+                // out as a fixed-height VStack with a `Spacer()` pushing
+                // the Deposit button down to the bottom edge, instead of
+                // living inside a ScrollView. That only works if the
+                // content is guaranteed to fit in whatever height is
+                // available — true often enough across iPhone's fairly
+                // uniform screen sizes, but Android's much wider spread of
+                // screen sizes/aspect ratios (plus some devices' on-screen
+                // nav bar eating extra height) means this content can end
+                // up taller than the space actually available. With
+                // nothing to scroll, that overflow pushed the Deposit
+                // button — the last view in the stack — off the bottom of
+                // the screen with no way to reach it. Wrapping in a
+                // ScrollView (matching every other tab) fixes that:
+                // `.frame(minHeight: rootGeo.size.height)` below keeps
+                // today's fixed, non-scrolling look on screens where
+                // everything already fits, and only starts scrolling on
+                // the screens where it doesn't.
+                ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
                     // MARK: - Top Header Block
                 VStack(spacing: 16) {
@@ -212,13 +234,28 @@ struct ContentView: View {
                 // Small extra buffer on top of the real safe-area inset —
                 // tight to the notch/Dynamic Island without touching it.
                 //
-                // Android-only: shrunk further (6pt -> 0) after the first
-                // pass at this still read as extra empty space above the
-                // greeting on Android. iOS's buffer is untouched.
+                // FIX (Android: huge blank gap above the header): this was
+                // padding by the FULL raw `topInset` on Android with no
+                // buffer trimmed off, on the assumption Android needed
+                // exactly the safe-area value and nothing more. It
+                // doesn't — Android's system window already reserves
+                // space for the status bar before this view's own layout
+                // pass starts, so re-applying the entire `topInset` on
+                // top of that reserved space double-counts it, stacking
+                // a second status-bar's worth of blank padding above the
+                // header on every device (confirmed against a real
+                // screenshot: ~10% of the whole screen height was empty
+                // space before the profile row even started, which is
+                // also what was shoving the Deposit button below the
+                // fold). A small fixed value gets the same "clear of the
+                // notch/status bar" spacing without double-paying for
+                // it. iOS's buffer (which genuinely does need the full
+                // `topInset`, since iOS doesn't reserve that space for
+                // us) is untouched.
                 #if !SKIP
                 .padding(.top, topInset + 25)
                 #else
-                .padding(.top, topInset)
+                .padding(.top, 12)
                 #endif
 
                 // Goal Picker
@@ -237,7 +274,18 @@ struct ContentView: View {
                 ZStack {
                     VStack(spacing: 4) {
                         Text("\(Int(displayProgress * 100))%")
+                            // FIX (Android: fits without scrolling): 92pt
+                            // was consuming a large share of the screen's
+                            // vertical budget on top of the inset bug
+                            // above — between the two, the Deposit button
+                            // needed a scroll to reach on most Android
+                            // screens even after the ScrollView fix.
+                            // Smaller on Android only; iOS unchanged.
+                            #if !SKIP
                             .font(theme.font(92, weight: .ultraLight))
+                            #else
+                            .font(theme.font(68, weight: .ultraLight))
+                            #endif
                             .tracking(-3)
                             .foregroundStyle(
                                 LinearGradient(
@@ -287,7 +335,21 @@ struct ContentView: View {
                     // the decimal points) — reports "actual type is
                     // 'Int', but 'Double' was expected". Spell out the
                     // decimals here too.
+                    //
+                    // PERF (Android): `.blur` isn't implemented under Skip
+                    // at all (see the identical note/fix in
+                    // SavingsTrendChart.swift) — the `PrivacyRevealOverlay`
+                    // right below already fully covers this content when
+                    // masked, so the blur itself was dead weight on
+                    // Android: a modifier evaluated on every recomposition
+                    // of this screen's biggest, most frequently-updating
+                    // view (the hero % / dollar text) for zero visible
+                    // effect. Gating it to iOS-only removes that
+                    // per-frame cost on Android with no change to what's
+                    // shown on either platform.
+                    #if !SKIP
                     .blur(radius: privacy.shouldMask ? 14.0 : 0.0)
+                    #endif
                     .overlay {
                         if privacy.shouldMask {
                             PrivacyRevealOverlay()
@@ -297,13 +359,27 @@ struct ContentView: View {
                     ParticleBurstView(isActive: $showBurst)
                         .offset(y: -20)
                 }
+                // FIX (Android: fits without scrolling): trimmed slightly
+                // alongside the chart's own top padding below, now that
+                // the inset/hero-text fixes above have freed up real
+                // room — small compounding gaps like these were the rest
+                // of what pushed the Deposit button below the fold. iOS
+                // unchanged.
+                #if !SKIP
                 .padding(.top, 20)
+                #else
+                .padding(.top, 12)
+                #endif
 
                 SavingsTrendChart(
                     history: goalStore.activeGoal?.history ?? [],
                     targetAmount: targetGoal
                 )
+                #if !SKIP
                 .padding(.top, 24)
+                #else
+                .padding(.top, 14)
+                #endif
 
                 // Ask AI — docked here, right under the chart, instead of
                 // floating on top of it. This is the one tab where a
@@ -316,7 +392,11 @@ struct ContentView: View {
                     AskAIButton(selectedTab: $selectedTab, isPro: entitlementManager.isPro)
                 }
                 .padding(.horizontal, Layout.pageMargin)
+                #if !SKIP
                 .padding(.top, 16)
+                #else
+                .padding(.top, 10)
+                #endif
 
                 Spacer()
 
@@ -329,6 +409,13 @@ struct ContentView: View {
                 }
                 .padding(.horizontal, Layout.pageMargin)
                 .padding(.bottom, 24)
+                }
+                // See FIX note above the `ScrollView` that opens this
+                // block — this `minHeight` is what keeps the layout
+                // identical to before on screens tall enough to fit
+                // everything, while letting it scroll instead of clip on
+                // the ones that aren't.
+                .frame(minHeight: rootGeo.size.height)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)

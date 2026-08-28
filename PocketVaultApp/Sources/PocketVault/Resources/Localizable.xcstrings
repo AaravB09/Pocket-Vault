@@ -159,6 +159,9 @@
     "Amount" : {
 
     },
+    "and" : {
+
+    },
     "Appearance" : {
       "comment" : "Settings select label for the interface style of the controls (light, dark, or default)",
       "extractionState" : "stale",
@@ -235,6 +238,9 @@
 
     },
     "BUILDING YOUR PLAN…" : {
+
+    },
+    "By continuing, you agree to our" : {
 
     },
     "Cancel" : {
@@ -676,6 +682,9 @@
     "Offline — goals & budget still editable" : {
 
     },
+    "or" : {
+
+    },
     "or pick a quick preset" : {
 
     },
@@ -727,10 +736,10 @@
     "Privacy Mode" : {
 
     },
-    "Pro plans aren't set up yet" : {
+    "Privacy Policy" : {
 
     },
-    "Processing…" : {
+    "Pro plans aren't set up yet" : {
 
     },
     "Reset Password" : {
@@ -934,6 +943,9 @@
 
     },
     "Tell me when you want to hit your goal and I'll build a tailored plan to get you there." : {
+
+    },
+    "Terms" : {
 
     },
     "Thinking…" : {

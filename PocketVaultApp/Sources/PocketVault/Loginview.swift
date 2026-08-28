@@ -243,41 +243,47 @@ struct LoginView: View {
                             .padding(.horizontal, Layout.pageMargin)
                     }
 
-                    Button(action: {
-                        Task {
-                            if isSignUpMode {
-                                authManager.errorMessage = nil
-                                awaitingEmailConfirmation = false
-                                await authManager.signUp(email: email, password: password)
-                                if authManager.isAuthenticated == false, authManager.errorMessage == nil {
-                                    // No error and not authenticated means signup succeeded
-                                    // but is waiting on email confirmation.
-                                    awaitingEmailConfirmation = true
+                    SocialSignInButtons()
+                        .padding(.horizontal, Layout.pageMargin)
+
+                    HStack(spacing: 10) {
+                        Rectangle().fill(theme.cardStroke).frame(height: 1)
+                        Text("or")
+                            .font(theme.font(11, weight: .medium))
+                            .foregroundStyle(theme.textTertiary)
+                        Rectangle().fill(theme.cardStroke).frame(height: 1)
+                    }
+                    .padding(.horizontal, Layout.pageMargin)
+
+                    // Routed through PrimaryCTAButton (see ThemeManager.swift)
+                    // instead of a bespoke Button — gets the full default /
+                    // focus / pressed / loading / disabled treatment for free
+                    // rather than the old hand-rolled opacity-only disabled
+                    // state and no focus ring at all.
+                    PrimaryCTAButton(
+                        accent: theme.textPrimary,
+                        onAccent: theme.background,
+                        isLoading: authManager.isLoading,
+                        action: {
+                            Task {
+                                if isSignUpMode {
+                                    authManager.errorMessage = nil
+                                    awaitingEmailConfirmation = false
+                                    await authManager.signUp(email: email, password: password)
+                                    if authManager.isAuthenticated == false, authManager.errorMessage == nil {
+                                        // No error and not authenticated means signup succeeded
+                                        // but is waiting on email confirmation.
+                                        awaitingEmailConfirmation = true
+                                    }
+                                } else {
+                                    await authManager.signIn(email: email, password: password)
                                 }
-                            } else {
-                                await authManager.signIn(email: email, password: password)
                             }
                         }
-                    }) {
-                        HStack {
-                            if authManager.isLoading { ProgressView().tint(theme.background) }
-                            Text(authManager.isLoading ? "Please wait…" : (isSignUpMode ? "Create account" : "Sign in"))
-                        }
-                        .font(theme.font(16, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 17)
-                        .background(isValid ? theme.textPrimary : theme.textPrimary.opacity(0.25))
-                        .foregroundColor(theme.background)
-                        // NOTE(skip): `.clipShape` isn't resolved by Skip's
-                        // SwiftUI shim — `.cornerRadius` gives the same
-                        // rounded look on Android.
-                        #if !SKIP
-                        .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius))
-                        #else
-                        .cornerRadius(Layout.controlRadius)
-                        #endif
+                    ) {
+                        Text(isSignUpMode ? "Create account" : "Sign in")
                     }
-                    .disabled(!isValid || authManager.isLoading)
+                    .disabled(!isValid)
                     .padding(.horizontal, Layout.pageMargin)
 
                     Button(action: {
@@ -312,7 +318,10 @@ struct LoginView: View {
                         .padding(.top, 12)
                     }
 
-                    Spacer(minLength: 40)
+                    Spacer(minLength: 24)
+
+                    LegalFinePrint()
+                        .padding(.horizontal, Layout.pageMargin)
 
                     Spacer(minLength: 40)
                 }
@@ -434,17 +443,19 @@ private struct ForgotPasswordSheet: View {
                 // This call site was passing the accent/onAccent colors
                 // straight into the ButtonStyle initializer — those become
                 // PrimaryCTAButton's own accent/onAccent parameters instead.
+                // PrimaryCTAButton now renders its own flat grey fill when
+                // disabled, so the accent no longer needs to be dimmed by
+                // hand here — `.disabled(!isValidEmail)` is enough, and
+                // `isLoading` replaces the old manual ProgressView/text-swap.
                 PrimaryCTAButton(
-                    accent: isValidEmail ? theme.textPrimary : theme.textPrimary.opacity(0.25),
+                    accent: theme.textPrimary,
                     onAccent: theme.background,
+                    isLoading: isSending,
                     action: sendReset
                 ) {
-                    HStack {
-                        if isSending { ProgressView().tint(theme.background) }
-                        Text(isSending ? "Sending…" : "Send reset link")
-                    }
+                    Text("Send reset link")
                 }
-                .disabled(!isValidEmail || isSending)
+                .disabled(!isValidEmail)
                 .padding(.horizontal, Layout.pageMargin)
 
                 Spacer()

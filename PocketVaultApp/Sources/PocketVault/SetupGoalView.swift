@@ -29,6 +29,7 @@ private enum SetupStep: Int, CaseIterable {
 struct SetupGoalView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: ThemeManager
+    @EnvironmentObject var authManager: AuthManager
 
     @Binding var goalTitle: String
     @Binding var goalKindRaw: String
@@ -347,6 +348,20 @@ struct SetupGoalView: View {
                                 .stroke(isSelected ? Color.clear : theme.hairline, lineWidth: 1)
                         )
                     }
+                    // NOTE(skip): same root cause as PrimaryCTAButton /
+                    // SecondaryCTAButton / TertiaryCTAButton in
+                    // Thememanager.swift — a bare `Button` with no
+                    // `.buttonStyle` picks up Skip/Compose's default
+                    // Material button styling on Android, which paints its
+                    // own (dark/black) container OVER this Button's actual
+                    // content instead of just wrapping it. Every other
+                    // custom button in the app already carries
+                    // `.buttonStyle(.plain)` for exactly this reason; this
+                    // preset row was the one Button left without it, which
+                    // is why tapping any goal option here turned solid
+                    // black on Android instead of showing the theme's
+                    // accent color.
+                    .buttonStyle(.plain)
                 }
             }
             .padding(.horizontal, Layout.pageMargin)
@@ -407,16 +422,15 @@ struct SetupGoalView: View {
             // pattern as PrimaryCTAButtonStyle above — that ButtonStyle no
             // longer exists. SecondaryCTAButton's own foreground color is
             // `accent` (not onAccent, unlike the primary/filled button), so
-            // the ProgressView's tint is matched to that instead of carrying
-            // over the old onAccent tint, which would have been the wrong
-            // color even if it still compiled.
-            SecondaryCTAButton(accent: theme.accent, action: { Task { await generateSuggestion() } }) {
-                HStack(spacing: 8) {
-                    if isGeneratingSuggestion { ProgressView().tint(theme.accent) }
-                    Text(isGeneratingSuggestion ? "Thinking…" : "Generate with AI")
-                }
+            // its built-in `isLoading` spinner is matched to that automatically.
+            SecondaryCTAButton(
+                accent: theme.accent,
+                isLoading: isGeneratingSuggestion,
+                action: { Task { await generateSuggestion() } }
+            ) {
+                Text("Generate with AI")
             }
-            .disabled(isGeneratingSuggestion || customGoalDescription.trimmingCharacters(in: .whitespaces).isEmpty)
+            .disabled(customGoalDescription.trimmingCharacters(in: .whitespaces).isEmpty)
 
             if let aiErrorMessage {
                 Text(aiErrorMessage)
@@ -491,11 +505,15 @@ struct SetupGoalView: View {
     }
 
     private func generateSuggestion() async {
+        guard let accessToken = authManager.accessToken else {
+            aiErrorMessage = "Create an account to use AI goal suggestions."
+            return
+        }
         isGeneratingSuggestion = true
         aiErrorMessage = nil
         aiSuggestion = nil
         do {
-            let suggestion = try await AIGoalBuilderService.suggestGoal(from: customGoalDescription)
+            let suggestion = try await AIGoalBuilderService.suggestGoal(from: customGoalDescription, accessToken: accessToken)
             aiSuggestion = suggestion
         } catch {
             aiErrorMessage = error.localizedDescription

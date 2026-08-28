@@ -13,6 +13,9 @@ struct ProfileView: View {
     @EnvironmentObject var privacyManager: PrivacyManager
     @EnvironmentObject var goalStore: GoalStore
     @EnvironmentObject var budgetManager: BudgetManager
+    #if DEBUG
+    @EnvironmentObject var entitlementManager: EntitlementManager
+    #endif
 
     @State private var displayName: String = ""
     @State private var showSignOutConfirm: Bool = false
@@ -160,6 +163,13 @@ struct ProfileView: View {
                     privacyAndDataSection
                     ThemePickerSection()
 
+                    #if DEBUG
+                    devSection
+                    #endif
+
+                    LegalFinePrint()
+                        .padding(.top, 4)
+
                     Button(action: { showFeedback = true }) {
                         HStack(spacing: 10) {
                             Image(systemName: "envelope.fill")
@@ -260,6 +270,37 @@ struct ProfileView: View {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         #endif
     }
+
+    #if DEBUG
+    // MARK: - Dev tools (DEBUG builds only — see EntitlementManager for why
+    // this can't leak into a release build even if left in place).
+    private var devSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            SectionLabel("Dev tools")
+
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Force Pro unlocked")
+                        .font(theme.font(13, weight: .medium))
+                        .foregroundStyle(theme.textPrimary)
+                    Text("Bypasses RevenueCat entirely for this session. DEBUG builds only — never ships.")
+                        .font(theme.font(10, weight: .light))
+                        .foregroundStyle(theme.textTertiary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer()
+                Toggle("", isOn: $entitlementManager.forceProOverride)
+                    .labelsHidden()
+                    .tint(theme.danger)
+            }
+        }
+        .padding(20)
+        .background(theme.danger.opacity(0.08))
+        .cornerRadius(20)
+        .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.danger.opacity(0.3), lineWidth: 1))
+        .padding(.horizontal, Layout.pageMargin)
+    }
+    #endif
 
     // MARK: - Privacy & Data
     private var privacyAndDataSection: some View {

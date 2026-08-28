@@ -50,6 +50,35 @@ struct MainTabView: View {
     // nothing perturbing this value on that platform.
     @State private var fixedBottomSafeInset: CGFloat = 0
 
+    // FIX (Android: Deposit button — and anything else at the bottom of
+    // a tab — rendering underneath the floating tab bar): on iOS,
+    // `.safeAreaInset(edge: .bottom)` (see `body`) both positions the
+    // bar AND shrinks `mainTabContent`'s available height to make room
+    // for it, so every tab's own `GeometryReader`-measured height
+    // already excludes the bar. Android's tab bar was never switched to
+    // `.safeAreaInset` (see the note on `tabBarView` above and on
+    // `body` below) — it's a plain ZStack sibling, floated on top of
+    // `mainTabContent` with hand-computed bottom padding. That keeps
+    // the bar itself positioned correctly, but `mainTabContent` was
+    // never told to reserve room for it, so any tab whose content
+    // stretches to fill its full measured height (e.g. ContentView's
+    // Deposit button, pinned to the bottom of a screen-height
+    // `ScrollView`) ends up rendering directly behind the bar instead
+    // of above it — exactly what showed up as "Deposit funds" text
+    // peeking out from underneath the Vault/Build/Goals dock.
+    //
+    // Fix: measure the bar's real on-screen height once (same one-time
+    // "settle after first layout" treatment `fixedBottomSafeInset`
+    // above already gets) and pad `mainTabContent`'s bottom by that
+    // much on Android, so its content has the same effective ceiling
+    // iOS gets for free from `.safeAreaInset`. Seeded to a sane
+    // estimate of the bar's actual intrinsic height (17pt icon + 10pt
+    // vertical padding on the button, + 10pt vertical padding on the
+    // bar itself, doubled) rather than 0, so there's no first-frame
+    // flash of content sitting behind the bar before the real
+    // measurement lands.
+    @State private var androidTabBarHeight: CGFloat = 64
+
     // ROOT CAUSE (found after four failed attempts, all of which tried
     // to fix or freeze the *value* the bar's position was computed
     // from): the bug was never in what `safeAreaInsets.bottom` reports.
@@ -276,9 +305,11 @@ struct MainTabView: View {
             // softening the hard cut between tabs into a real crossfade,
             // so the swap itself doesn't read as an abrupt jump-cut even
             // though the underlying view is still being rebuilt.
+            #if !SKIP
             .id(selectedTab)
             .transition(.opacity)
             .animation(.easeInOut(duration: 0.18), value: selectedTab)
+            #endif
     }
 
     // MARK: - Floating Bottom Bar
@@ -333,7 +364,21 @@ struct MainTabView: View {
             .overlay(
                 Capsule().stroke(themeManager.cardStroke, lineWidth: 1)
             )
+            // PERF (Android): this dock is mounted on every tab and never
+            // unmounts, so its `.shadow` gets re-evaluated on every
+            // recomposition of the switched content behind it (tab
+            // switches, list scrolling, sheet presentation, etc.).
+            // SwiftUI's `.shadow` is a real-time blur pass under Skip, not
+            // a cheap hardware elevation like a native Android shadow, so
+            // a radius-16 shadow sitting there permanently was a steady,
+            // avoidable cost on every screen instead of an occasional one.
+            // A smaller radius keeps the same "floating dock" look at a
+            // fraction of the blur cost; iOS keeps the original.
+            #if !SKIP
             .shadow(color: Color.black.opacity(0.25), radius: 16, x: 0, y: 8)
+            #else
+            .shadow(color: Color.black.opacity(0.25), radius: 6, x: 0, y: 3)
+            #endif
             .padding(.horizontal, Layout.pageMargin)
     }
 
@@ -362,14 +407,40 @@ struct MainTabView: View {
                     }
                 }
                 .safeAreaInset(edge: .bottom) {
+                    // FIX (white strip under the floating tab bar): the pill
+                    // returned by `tabBarView` only sizes itself to its own
+                    // content (icons + padding) — it never claimed the
+                    // narrow strip of true safe area *below* it, down to the
+                    // home-indicator edge. `.safeAreaInset` reserves that
+                    // whole region for whatever's handed to it, but doesn't
+                    // paint it: with nothing else drawn there, that gap fell
+                    // through to the plain white UIWindow background behind
+                    // everything, instead of the app's dark theme. Every
+                    // other screen never showed this because they each call
+                    // `.themedSurface()`, which paints `theme.background`
+                    // — but that's on `mainTabContent`, and this inset area
+                    // sits below/behind that view, not inside it.
+                    // Fixed by giving this inset its own full-width,
+                    // safe-area-ignoring themed background sitting behind
+                    // the pill, so the strip beneath it now reads as the
+                    // same dark surface as the rest of the app instead of a
+                    // leftover system-default white rectangle.
                     tabBarView
+                        .frame(maxWidth: .infinity)
+                        .background(themeManager.background.ignoresSafeArea(edges: .bottom))
                 }
             #else
             // RealityView (and therefore this whole class of bug) is
             // iOS-only — see `BuildStudioView`, gated `#if !SKIP`.
             // Android never saw this jump, so its original, simpler
             // positioning is untouched.
+            //
+            // FIX (Deposit button underneath the tab bar): bottom-pad by
+            // the bar's real measured height (see `androidTabBarHeight`
+            // above) so content has the same clearance iOS gets for
+            // free from `.safeAreaInset`.
             mainTabContent
+                .padding(.bottom, androidTabBarHeight)
                 .background(
                     GeometryReader { g in
                         Color.clear
@@ -382,6 +453,20 @@ struct MainTabView: View {
                 )
 
             tabBarView
+                .background(
+                    GeometryReader { g in
+                        Color.clear
+                            .onAppear { androidTabBarHeight = g.size.height }
+                            .onChange(of: hasActiveSharedBudget) { _, _ in
+                                // The bar gains/loses the "Shared" button
+                                // depending on this, which can't change
+                                // its height (all buttons share one
+                                // fixed vertical padding) but re-measure
+                                // anyway rather than assume that.
+                                androidTabBarHeight = g.size.height
+                            }
+                    }
+                )
                 .padding(.bottom, fixedBottomSafeInset + 2.0)
                 .ignoresSafeArea(.container, edges: .bottom)
 
@@ -604,7 +689,16 @@ struct AskAIButton: View {
                         .offset(x: 4, y: -4)
                 }
             }
+            // PERF (Android): same reasoning as the tab bar dock's shadow
+            // above — this bubble floats over almost every tab and never
+            // unmounts, so a radius-10 blur shadow here is paid on every
+            // recomposition, not just once. Smaller radius on Android,
+            // iOS unchanged.
+            #if !SKIP
             .shadow(color: .black.opacity(0.22), radius: 10, y: 5)
+            #else
+            .shadow(color: .black.opacity(0.22), radius: 4, y: 2)
+            #endif
         }
         .animation(.spring(response: 0.3, dampingFraction: 0.75), value: showsLabel)
     }

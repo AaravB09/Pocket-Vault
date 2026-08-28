@@ -6,9 +6,8 @@ import Foundation
 /// limited to the four hardcoded presets, and short-term goals (a
 /// weekend, a week) don't get stretched into multi-month plans.
 ///
-/// Reuses the same Supabase proxy and shared secret as
-/// SavingsCoachService/AIChatService, so there's still only one backend
-/// endpoint to deploy and maintain.
+/// Reuses the same authenticated Supabase proxy as SavingsCoachService and
+/// AIChatService. No static client secret is used.
 enum AIGoalBuilderService {
     struct Suggestion: Codable {
         let title: String
@@ -51,7 +50,7 @@ enum AIGoalBuilderService {
         }
     }
 
-    static func suggestGoal(from description: String) async throws -> Suggestion {
+    static func suggestGoal(from description: String, accessToken: String) async throws -> Suggestion {
         let trimmed = description.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             throw NSError(domain: "AIGoalBuilder", code: 0, userInfo: [NSLocalizedDescriptionKey: "Describe the goal first."])
@@ -107,7 +106,7 @@ enum AIGoalBuilderService {
         var apiRequest = URLRequest(url: SavingsCoachService.proxyURL)
         apiRequest.httpMethod = "POST"
         apiRequest.setValue("application/json", forHTTPHeaderField: "content-type")
-        apiRequest.setValue(SavingsCoachService.appSharedSecret, forHTTPHeaderField: "x-app-secret")
+        apiRequest.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
 
         let body: [String: Any] = ["prompt": prompt, "max_tokens": 300]
         apiRequest.httpBody = try JSONSerialization.data(withJSONObject: body)

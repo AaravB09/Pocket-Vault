@@ -8,16 +8,16 @@ struct ChatMessage: Identifiable, Equatable {
     enum Role: String { case user, model }
 }
 
-/// Multi-turn chat against the same Supabase proxy the Savings Coach uses.
-/// Reuses SavingsCoachService's proxyURL/appSharedSecret so you only ever
-/// have to update those values in one place.
+/// Multi-turn chat against the same authenticated Supabase proxy the
+/// Savings Coach uses.
 enum AIChatService {
     static func send(
         history: [ChatMessage],
         goalTitle: String,
         targetGoal: Double,
         currentSavings: Double,
-        targetDate: Date
+        targetDate: Date,
+        accessToken: String
     ) async throws -> String {
         let formatter = DateFormatter()
         formatter.dateStyle = .medium
@@ -41,7 +41,7 @@ enum AIChatService {
         var request = URLRequest(url: SavingsCoachService.proxyURL)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "content-type")
-        request.setValue(SavingsCoachService.appSharedSecret, forHTTPHeaderField: "x-app-secret")
+        request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
         request.httpBody = try JSONSerialization.data(withJSONObject: ["contents": contents])
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -67,6 +67,7 @@ struct AIChatView: View {
     @EnvironmentObject var entitlementManager: EntitlementManager
     @EnvironmentObject var theme: ThemeManager
     @EnvironmentObject var networkMonitor: NetworkMonitor
+    @EnvironmentObject var authManager: AuthManager
     @Binding var selectedTab: Int
     @Binding var messages: [ChatMessage]
 
@@ -326,6 +327,10 @@ struct AIChatView: View {
     private func send() async {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
+        guard let accessToken = authManager.accessToken else {
+            errorMessage = "Create an account to use Ask AI."
+            return
+        }
         draft = ""
         errorMessage = nil
         messages.append(ChatMessage(role: .user, text: text))
@@ -336,7 +341,8 @@ struct AIChatView: View {
                 goalTitle: goalTitle,
                 targetGoal: targetGoal,
                 currentSavings: currentSavings,
-                targetDate: targetDate
+                targetDate: targetDate,
+                accessToken: accessToken
             )
             messages.append(ChatMessage(role: .model, text: reply))
         } catch {

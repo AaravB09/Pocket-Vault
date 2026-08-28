@@ -166,7 +166,16 @@ struct BudgetTrackerView: View {
                     }
                 }
             }
+            // PERF (Android): same dead-weight-blur situation as
+            // ContentView's hero balance — `.blur` isn't implemented
+            // under Skip (see SavingsTrendChart.swift's note), and the
+            // `PrivacyRevealOverlay` right below already fully masks this
+            // row on its own, so gating the blur to iOS-only changes
+            // nothing visible on either platform and removes a per-frame
+            // no-op modifier on Android.
+            #if !SKIP
             .blur(radius: privacy.shouldMask ? 10.0 : 0.0)
+            #endif
             .overlay {
                 if privacy.shouldMask {
                     PrivacyRevealOverlay()

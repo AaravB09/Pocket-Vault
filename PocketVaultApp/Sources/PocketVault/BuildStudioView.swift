@@ -19,6 +19,22 @@ struct BuildStudioView: View {
     @State private var rotationY: Float = Float(0.0)
     @State private var lastDragTranslation: CGFloat = 0.0
     @State private var lastUnlockedCount: Int = 0
+    // Android-only momentum tracking for voxelStandIn2D's drag-to-rotate
+    // (see the gesture there) — a smoothed running average of recent
+    // per-frame rotation deltas, carried forward as a short spring-damped
+    // spin on release instead of stopping the sculpture dead.
+    @State private var dragVelocity: Float = Float(0.0)
+
+    // iOS-only: the hand-modeled reveal entity (see GoalShowcaseModels)
+    // that replaces the voxel pile once a goal completes, for the
+    // GoalKinds that have one. nil either means "not loaded yet" or "no
+    // showcase model exists for this goal kind" — loadShowcaseIfNeeded
+    // below is what tells those two cases apart via showcaseLoadAttempted,
+    // so a genuine miss doesn't get retried every frame.
+    #if !SKIP
+    @State private var showcaseEntity: Entity? = nil
+    #endif
+    @State private var showcaseLoadAttempted: Bool = false
 
     private var goalKind: GoalKind { GoalKind(rawValue: goalKindRaw) ?? .flight }
 
@@ -75,6 +91,18 @@ struct BuildStudioView: View {
         }
     }
 
+    // Switching goal kind (or blueprint) means any previously-loaded
+    // showcase entity belongs to the OLD goal — drop it so the
+    // update: closure loads the right one fresh instead of leaving the
+    // wrong finished mesh on screen or skipping the load because
+    // showcaseLoadAttempted was already true from the last goal.
+    private func resetShowcaseState() {
+        #if !SKIP
+        showcaseEntity = nil
+        #endif
+        showcaseLoadAttempted = false
+    }
+
     // FIX: nested `min(max(...))` over Doubles is the same generic-
     // overload pattern that broke AmountScrubPicker, BudgetTrackerView,
     // and TransactionRow — Skip's Kotlin codegen can't resolve the
@@ -98,11 +126,26 @@ struct BuildStudioView: View {
         return min(cachedVoxels.count, max(earned, 1))
     }
 
+    // POLISH ("clean and neat like Not So Boring Habits"): that reference
+    // shot's payoff isn't just the model itself — it's the shower of gold
+    // shards over it. This screen already had the mechanic for exactly
+    // that (`ParticleBurstView`, used elsewhere on a successful deposit)
+    // but never fired it here, so every piece unlock — and the finished
+    // sculpture itself — landed with zero celebratory feedback beyond a
+    // haptic tap. Wiring it in here is a small, low-risk addition (reused
+    // component, not a new effect) that goes a real way toward that
+    // "polished, considered" feel the flat voxel-brick shape alone can't
+    // provide on its own.
+    @State private var showUnlockBurst = false
+
     private var isComplete: Bool { unlockedCount >= cachedVoxels.count }
 
     var body: some View {
         ZStack {
             sculptureView
+
+            ParticleBurstView(isActive: $showUnlockBurst)
+                .allowsHitTesting(false)
 
             VStack {
                 VStack(spacing: 4) {
@@ -173,11 +216,25 @@ struct BuildStudioView: View {
                 #if !SKIP
                 UIImpactFeedbackGenerator(style: .rigid).impactOccurred()
                 #endif
+                // Toggle true then false on the next runloop tick so a
+                // second unlock right after can re-trigger it — matches
+                // how ParticleBurstView is already driven at its other
+                // call site (an `isActive` flip, not a one-shot event).
+                showUnlockBurst = true
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    showUnlockBurst = false
+                }
             }
             lastUnlockedCount = unlockedCount
         }
-        .onChange(of: goalKindRaw) { _ in recomputeVoxels() }
-        .onChange(of: customVoxelBlueprint) { _ in recomputeVoxels() }
+        .onChange(of: goalKindRaw) { _ in
+            recomputeVoxels()
+            resetShowcaseState()
+        }
+        .onChange(of: customVoxelBlueprint) { _ in
+            recomputeVoxels()
+            resetShowcaseState()
+        }
         .onChange(of: theme.accent) { _ in recomputeVoxels() }
         .onAppear {
             recomputeVoxels()
@@ -210,8 +267,63 @@ struct BuildStudioView: View {
         #if !SKIP
         if #available(iOS 18.0, *) {
             RealityView { content in
+                // FIX ("just a bunch of cubes floating around"): three
+                // separate root causes were stacking on top of each other
+                // here, none of which are about the voxel *shapes*
+                // themselves.
+                //
+                // 1. No explicit camera. Without one, RealityKit supplies
+                //    an undocumented default (straight-on, unknown FOV),
+                //    so the sculpture landed small and off-center instead
+                //    of filling the frame the way a deliberate product
+                //    shot (or the Android stand-in's tuned isometric
+                //    projection) does.
+                // 2. The base platform (`baseMat`, `white: 0.16`) was
+                //    almost the exact same brightness as the app's dark
+                //    theme background — effectively invisible. With
+                //    nothing to read as "the ground," every voxel looked
+                //    like it was hanging in empty space rather than
+                //    sitting on something.
+                // 3. Two lights, one key + one fill, both pure white, is a
+                //    fine start but leaves the far/underside faces of each
+                //    brick close to pure black — against an already near-
+                //    black background, that means only the one or two lit
+                //    faces per brick are visible at all, so a contiguous
+                //    row of touching cubes reads as scattered bright
+                //    fragments instead of one solid connected form.
+                //
+                // Fixed by: an explicit camera framing a 3/4 hero angle
+                // (matching how the reference shot and the Android
+                // isometric stand-in both frame their subject), a
+                // brighter/warmer base plate that's actually visible
+                // against the background, a soft dark contact-shadow disc
+                // under it (the same trick `voxelStandIn2D` already uses
+                // on Android), and a third warm rim light so no face of
+                // the sculpture goes fully black. `spawnVoxel` below also
+                // now sizes each brick to actually touch its neighbors
+                // instead of leaving a visible gap between them.
+                content.camera = .virtual
+
+                let heroCamera = PerspectiveCamera()
+                heroCamera.camera.fieldOfViewInDegrees = 38
+                heroCamera.look(at: [0, -0.08, -0.85], from: [0.5, 0.46, 0.05], relativeTo: nil)
+                content.add(heroCamera)
+
+                // Soft contact shadow, same blurred-ellipse-under-the-
+                // object language as the Android stand-in's shadow — an
+                // unlit, partially transparent disc rather than a real
+                // RealityKit shadow, so it reads identically regardless of
+                // light direction.
+                let shadowMesh = MeshResource.generatePlane(width: 0.62, depth: 0.34, cornerRadius: 0.17)
+                let shadowEntity = ModelEntity(mesh: shadowMesh, materials: [UnlitMaterial(color: UIColor.black.withAlphaComponent(0.4))])
+                shadowEntity.position = [0, -0.21, -0.85]
+                content.add(shadowEntity)
+
+                // Base platform — lightened and warmed so it actually
+                // reads as a surface against the dark scene background
+                // instead of disappearing into it.
                 let baseMesh = MeshResource.generateCylinder(height: 0.02, radius: 0.6)
-                let baseMat = SimpleMaterial(color: UIColor(white: 0.16, alpha: 1.0), isMetallic: false)
+                let baseMat = SimpleMaterial(color: UIColor(red: 0.26, green: 0.23, blue: 0.19, alpha: 1.0), isMetallic: false)
                 let baseEntity = ModelEntity(mesh: baseMesh, materials: [baseMat])
                 baseEntity.position = [0, -0.2, -0.85]
                 baseEntity.name = "assemblyBase"
@@ -219,16 +331,30 @@ struct BuildStudioView: View {
 
                 // Key light — without this, materials (especially metallic ones)
                 // render close to black regardless of the color assigned.
+                // Tinted warm gold (the app's own campfire-glow accent
+                // convention, same read as the Android stand-in's glow and
+                // the reference shot's lighting) instead of flat white.
                 let keyLight = Entity()
-                keyLight.components.set(DirectionalLightComponent(color: UIColor.white, intensity: 4000))
+                keyLight.components.set(DirectionalLightComponent(color: UIColor(red: 1.0, green: 0.93, blue: 0.78, alpha: 1.0), intensity: 4500))
                 keyLight.look(at: [0, -0.3, -1.3], from: [0.6, 0.7, -0.3], relativeTo: nil)
                 content.add(keyLight)
 
                 // Soft fill light so the shadowed side of the sculpture isn't pure black.
                 let fillLight = Entity()
-                fillLight.components.set(PointLightComponent(color: UIColor.white, intensity: 3500, attenuationRadius: 4))
+                fillLight.components.set(PointLightComponent(color: UIColor.white, intensity: 4200, attenuationRadius: 4))
                 fillLight.position = [-0.5, 0.2, -0.8]
                 content.add(fillLight)
+
+                // Warm rim/back light so the far side of the sculpture
+                // (facing away from key+fill) still has SOME light on it
+                // instead of going fully black and vanishing into the
+                // background — this is the single biggest reason a row of
+                // touching bricks used to look like separate floating
+                // fragments rather than one connected shape.
+                let rimLight = Entity()
+                rimLight.components.set(PointLightComponent(color: UIColor(red: 1.0, green: 0.78, blue: 0.45, alpha: 1.0), intensity: 2600, attenuationRadius: 3))
+                rimLight.position = [0, 0.15, -1.5]
+                content.add(rimLight)
             } update: { content in
                 guard let baseEntity = content.entities.first(where: { $0.name == "assemblyBase" }) else { return }
                 baseEntity.orientation = simd_quatf(angle: rotationY, axis: [0, 1, 0])
@@ -236,6 +362,52 @@ struct BuildStudioView: View {
                 let unlocked = unlockedCount
                 for (index, unit) in cachedVoxels.enumerated() where index < unlocked {
                     spawnVoxel(index: index, unit: unit, on: baseEntity)
+                }
+
+                // Completion reveal: swap the voxel pile for the real
+                // hand-modeled mesh, for the GoalKinds that have one.
+                // customVoxelBlueprint is excluded — that's an
+                // AI-generated arbitrary shape and we don't have a
+                // showcase mesh for arbitrary goals, only the curated
+                // GoalKind categories in GoalShowcaseModels.
+                let usingCustomBlueprint = (customVoxelBlueprint?.isEmpty == false)
+                if isComplete && !usingCustomBlueprint && GoalShowcaseModels.hasShowcase(for: goalKind) {
+                    if showcaseEntity == nil && !showcaseLoadAttempted {
+                        showcaseLoadAttempted = true
+                        Task {
+                            let loaded = await GoalShowcaseModels.loadEntity(for: goalKind)
+                            await MainActor.run {
+                                guard let loaded else { return } // load failed — silently keep voxel pile
+                                loaded.name = "showcaseModel"
+                                loaded.position = [0, 0, 0]
+                                loaded.scale = [0.001, 0.001, 0.001] // start tiny, animate in below
+                                loaded.components.set(GroundingShadowComponent(castsShadow: true))
+                                baseEntity.addChild(loaded)
+                                var grown = loaded.transform
+                                grown.scale = [1, 1, 1]
+                                loaded.move(to: grown, relativeTo: baseEntity, duration: 0.6, timingFunction: .easeOut)
+                                showcaseEntity = loaded
+                                // Hide the voxel pile now that the real mesh has taken its place —
+                                // spawnVoxel names each piece "voxel_<index>".
+                                for child in baseEntity.children where child.name.hasPrefix("voxel_") {
+                                    child.isEnabled = false
+                                }
+                            }
+                        }
+                    } else if let showcase = showcaseEntity {
+                        showcase.isEnabled = true
+                        for child in baseEntity.children where child.name.hasPrefix("voxel_") {
+                            child.isEnabled = false
+                        }
+                    }
+                } else if let showcase = showcaseEntity {
+                    // Regressed below complete (e.g. a withdrawal) — go
+                    // back to showing the voxel pile instead of the
+                    // finished mesh, since "finished" is no longer true.
+                    showcase.isEnabled = false
+                    for child in baseEntity.children where child.name.hasPrefix("voxel_") {
+                        child.isEnabled = true
+                    }
                 }
             }
             .gesture(
@@ -261,7 +433,36 @@ struct BuildStudioView: View {
         // same colors, same unlock progression, same drag-to-rotate
         // feel — using only plain SwiftUI shapes, which is the closest
         // Android can get without a 3D engine.
-        voxelStandIn2D
+        //
+        // Completed curated goals use the actual GLB showcase. The
+        // SceneView implementation owns all camera gestures internally;
+        // unlike the earlier experiment, it does not mutate a native node
+        // from a SwiftUI drag recomposition while the tab is disappearing.
+        let usingCustomBlueprintAndroid = (customVoxelBlueprint?.isEmpty == false)
+        if isComplete && !usingCustomBlueprintAndroid && GoalShowcaseModels.hasShowcase(for: goalKind) {
+            // FIX (yellow glitch square / camera "auto-zoom" on completion):
+            // `sculptureView` sits in the same ZStack as ParticleBurstView,
+            // which flips `showUnlockBurst` on and off every unlock and
+            // drives its own animation — both recompose this whole ZStack
+            // far more often than `isComplete` itself actually changes.
+            // Without an explicit identity, Skip's Compose codegen has no
+            // guarantee it will keep treating this branch's `AndroidView`
+            // (the native SurfaceView backing the SceneView) as the SAME
+            // instance across those recompositions, rather than tearing it
+            // down and recreating it. A freshly created Android surface
+            // shows whatever was last in its (uncleared) graphics buffer
+            // until the first real frame lands — that's the yellow flash —
+            // and `rememberCameraManipulator` resets to `orbitHomePosition`
+            // on every fresh instance, which reads as the view suddenly
+            // "zooming." Pinning `.id(goalKind)` gives Compose a stable key
+            // for this subtree so it survives unrelated sibling
+            // recompositions and is only actually rebuilt when the goal
+            // kind (and therefore the model/asset) genuinely changes.
+            AndroidGoalShowcaseView(goalKind: goalKind)
+                .id(goalKind)
+        } else {
+            voxelStandIn2D
+        }
         #endif
     }
 
@@ -269,8 +470,20 @@ struct BuildStudioView: View {
     /// Simple isometric-style projection of a voxel's 3D position onto
     /// the 2D canvas: x and z both contribute to the horizontal axis (z
     /// also nudges vertically for a sense of depth), y is height.
+    //
+    // POLISH (Android "boring"/small-cluster-in-a-void complaint): was
+    // 300.0. The individual voxel faces (voxelChip below) are sized to
+    // read clearly on their own, but at this spacing the assembled
+    // sculpture only filled a small fraction of its own canvas — next
+    // to RealityKit's real camera framing on iOS (which fills the
+    // frame with the piece by design), this stand-in read as a sparse
+    // handful of cubes floating in a lot of empty space instead of one
+    // cohesive object. Scaled up ~12% together with the canvas/base/
+    // glow sizes just below, so the whole assembly fills its frame the
+    // same way — a uniform zoom, not a change to any single mesh
+    // type's calibrated proportions.
     private func projectedVoxelPoint(_ p: Vector3, center: CGPoint) -> CGPoint {
-        let scale: CGFloat = 300.0
+        let scale: CGFloat = 336.0
         let x = CGFloat(p.x) * scale
         let y = CGFloat(p.y) * scale
         let z = CGFloat(p.z) * scale
@@ -391,13 +604,26 @@ struct BuildStudioView: View {
     }
 
     @ViewBuilder
-    private func voxelCylinder(baseColor: Color, scale: CGFloat, haze: Double) -> some View {
+    private func voxelCylinder(baseColor: Color, scale: CGFloat, haze: Double, isMetallic: Bool) -> some View {
         // Roughly matches GoalBuildLibrary's real proportions (height
         // 0.08 vs radius 0.038 -> a little taller than it is wide),
         // instead of the perfectly round dot every cylinder/cone piece
         // used to share.
-        let width: CGFloat = 15.0 * scale
-        let height: CGFloat = 19.0 * scale
+        // FIX ("tiny speck" complaint): was 15.0/19.0 — big enough next
+        // to the platform's old 170pt width, but once that base shrank
+        // to match real proportions (see voxelStandIn2D), the pieces
+        // themselves were still too small to read as an actual shape,
+        // especially early on with only 1-2 unlocked. Bumped ~35% across
+        // every mesh type below (cylinder/cone/flatSlab/cube) so a
+        // single starter piece is clearly visible instead of a smudge.
+        //
+        // POLISH: another ~12% on top of that, matching the same bump
+        // to voxelStandIn2D's projection spacing above — pieces grow
+        // together with the extra room between them instead of just
+        // spreading further apart at the old size, which would have
+        // made the sculpture read as sparser, not more substantial.
+        let width: CGFloat = 22.4 * scale
+        let height: CGFloat = 28.0 * scale
         let capHeight: CGFloat = width * 0.42
 
         ZStack {
@@ -408,16 +634,30 @@ struct BuildStudioView: View {
                 .offset(y: capHeight * 0.25)
 
             // Shadowed left face — weaker fill light only (x=-0.5), same
-            // convention as the cube case below.
+            // convention as the cube case below. Metallic pieces get a
+            // deeper shadow (metals have a higher lit/shadow contrast
+            // ratio than matte surfaces since they reflect the light
+            // source directly instead of scattering it).
             RoundedRectangle(cornerRadius: width * 0.18)
-                .fill(Color.black.opacity(0.26 + haze * 0.4))
+                .fill(Color.black.opacity((isMetallic ? 0.4 : 0.26) + haze * 0.4))
                 .frame(width: width * 0.36, height: height - capHeight * 0.5)
                 .offset(x: -width * 0.32, y: capHeight * 0.25)
+
+            // Narrow, near-white "hot" specular streak — the metallic
+            // signature that was completely missing before, which made
+            // gold cylinder pieces (bottle necks, ring accents) read as
+            // dull matte plastic instead of metal.
+            if isMetallic {
+                RoundedRectangle(cornerRadius: width * 0.1)
+                    .fill(Color.white.opacity(0.6 - haze))
+                    .frame(width: width * 0.16, height: (height - capHeight * 0.5) * 0.8)
+                    .offset(x: width * 0.18, y: capHeight * 0.25)
+            }
 
             // Top cap — the lit, camera-facing plane, catching the key
             // light from above just like the cube's top face.
             Ellipse()
-                .fill(Color.white.opacity(0.28 - haze))
+                .fill(Color.white.opacity((isMetallic ? 0.5 : 0.28) - haze))
                 .frame(width: width, height: capHeight)
                 .offset(y: -height / 2.0 + capHeight * 0.5)
             Ellipse()
@@ -437,13 +677,14 @@ struct BuildStudioView: View {
     }
 
     @ViewBuilder
-    private func voxelCone(baseColor: Color, scale: CGFloat, haze: Double) -> some View {
+    private func voxelCone(baseColor: Color, scale: CGFloat, haze: Double, isMetallic: Bool) -> some View {
         // Real proportions (height 0.17 vs radius 0.07) make this the
         // tallest, most tapered piece in the build — the nose cone and
         // turbine housings depend on that taper actually reading as a
         // point, not a circle, to look like their real-world shape.
-        let width: CGFloat = 17.0 * scale
-        let height: CGFloat = 22.0 * scale
+        // POLISH: ~12% bump, same reasoning as voxelCylinder above.
+        let width: CGFloat = 25.8 * scale
+        let height: CGFloat = 33.6 * scale
         let baseCapHeight: CGFloat = width * 0.36
 
         ZStack {
@@ -459,15 +700,18 @@ struct BuildStudioView: View {
 
             // Lit streak down the right side of the cone (key light at
             // x=+0.6), narrowing toward the apex the same way a real
-            // cone's highlight would.
+            // cone's highlight would. Metallic pieces (gold reveal cones,
+            // gem prongs) get this brighter and tighter — a sharp glint
+            // instead of a soft sheen — which is the main visual cue that
+            // was missing versus iOS's metallic SimpleMaterial.
             ConeSilhouette()
-                .fill(Color.white.opacity(0.22 - haze))
-                .frame(width: width * 0.22, height: (height - baseCapHeight * 0.5) * 0.85)
+                .fill(Color.white.opacity((isMetallic ? 0.5 : 0.22) - haze))
+                .frame(width: width * (isMetallic ? 0.14 : 0.22), height: (height - baseCapHeight * 0.5) * 0.85)
                 .offset(x: width * 0.22, y: baseCapHeight * 0.25 + (height - baseCapHeight * 0.5) * 0.06)
 
             // Base ellipse the cone tapers up from.
             Ellipse()
-                .fill(Color.black.opacity(0.24 + haze * 0.3))
+                .fill(Color.black.opacity((isMetallic ? 0.34 : 0.24) + haze * 0.3))
                 .frame(width: width, height: baseCapHeight)
                 .offset(y: height / 2.0 - baseCapHeight * 0.4)
         }
@@ -502,24 +746,31 @@ struct BuildStudioView: View {
 
         switch unit.mesh {
         case .cylinder:
-            voxelCylinder(baseColor: baseColor, scale: scale, haze: haze)
+            voxelCylinder(baseColor: baseColor, scale: scale, haze: haze, isMetallic: unit.isMetallic)
 
         case .cone:
-            voxelCone(baseColor: baseColor, scale: scale, haze: haze)
+            voxelCone(baseColor: baseColor, scale: scale, haze: haze, isMetallic: unit.isMetallic)
 
         case .flatSlab:
-            let width: CGFloat = 26.0 * scale
-            let height: CGFloat = 8.0 * scale
+            let width: CGFloat = 34.0 * scale
+            let height: CGFloat = 10.5 * scale
             ZStack {
                 RoundedRectangle(cornerRadius: 3.0).fill(baseColor)
                 // Top edge highlight so the slab reads as a thin block,
-                // not a flat painted rectangle.
+                // not a flat painted rectangle. Metallic trim (gold
+                // ribbon/edging) gets a narrower, near-white "hot" streak
+                // instead of the broad soft highlight matte pieces get —
+                // real metals reflect the light source itself rather than
+                // scattering it, so the highlight is small and intense
+                // rather than wide and gentle. Matches SimpleMaterial's
+                // isMetallic look on iOS, which this fallback previously
+                // ignored entirely.
                 RoundedRectangle(cornerRadius: 2.0)
-                    .fill(Color.white.opacity(0.24 - haze))
-                    .frame(height: height * 0.4)
-                    .offset(y: -height * 0.26)
+                    .fill(Color.white.opacity(unit.isMetallic ? 0.62 - haze : 0.24 - haze))
+                    .frame(width: unit.isMetallic ? width * 0.5 : width, height: height * (unit.isMetallic ? 0.3 : 0.4))
+                    .offset(x: unit.isMetallic ? -width * 0.18 : 0.0, y: -height * 0.26)
                 RoundedRectangle(cornerRadius: 2.0)
-                    .fill(Color.black.opacity(0.22 + haze * 0.4))
+                    .fill(Color.black.opacity((unit.isMetallic ? 0.32 : 0.22) + haze * 0.4))
                     .frame(height: height * 0.32)
                     .offset(y: height * 0.3)
             }
@@ -528,7 +779,7 @@ struct BuildStudioView: View {
             .shadow(color: .black.opacity(0.3), radius: 2.0 * scale, x: 1.0 * scale, y: 2.0 * scale)
 
         case .cube:
-            let s: CGFloat = 16.0 * scale
+            let s: CGFloat = 21.0 * scale
             ZStack {
                 // Front/right face — base tone. This is the face angled
                 // toward the key light (see the cylinder/cone fix above:
@@ -536,6 +787,22 @@ struct BuildStudioView: View {
                 // full base color rather than being darkened.
                 RoundedRectangle(cornerRadius: 2.5).fill(baseColor)
                     .frame(width: s, height: s)
+
+                // Metallic-only: a small, sharp diagonal glint across the
+                // lit face. This is what previously made gold pieces
+                // (ring bands, trim, bows) render as flat matte-colored
+                // squares indistinguishable from charcoal/ivory pieces —
+                // `unit.isMetallic` was carried on every VoxelUnit but
+                // never actually read anywhere in this rendering path.
+                if unit.isMetallic {
+                    RoundedRectangle(cornerRadius: 1.0)
+                        .fill(Color.white.opacity(0.55 - haze * 0.6))
+                        .frame(width: s * 0.22, height: s * 0.85)
+                        .rotationEffect(.degrees(28))
+                        .offset(x: s * 0.12, y: -s * 0.05)
+                        .frame(width: s, height: s)
+                        .clipShape(RoundedRectangle(cornerRadius: 2.5))
+                }
 
                 // Left face — darkened and squeezed thin, offset to the
                 // left, reading as the cube's receding side plane.
@@ -603,6 +870,31 @@ struct BuildStudioView: View {
         return GeometryReader { geo in
             let center = CGPoint(x: geo.size.width / 2.0, y: geo.size.height * 0.62)
             ZStack {
+                // POLISH (Android "boring" complaint): this was a single
+                // flat white glow, sized and tinted like a fluorescent
+                // work light rather than anything that felt considered.
+                // Two layers now — a wide, warm outer glow tinted with
+                // the app's own accent color (the same "campfire glow"
+                // read as the reference — a warm pool of light the
+                // object sits in, not a cold spotlight) plus the
+                // original tighter white highlight kept on top for a
+                // bit of a hot center. Both sized up alongside the
+                // scale bump above so the glow reads as part of the
+                // same bigger, more deliberate presentation.
+                RadialGradient(
+                    colors: [theme.accent.opacity(0.22), Color.clear],
+                    center: .center, startRadius: 8, endRadius: 170
+                )
+                .frame(width: 340, height: 340)
+                .position(x: center.x, y: center.y - 6)
+
+                RadialGradient(
+                    colors: [Color.white.opacity(0.12), Color.clear],
+                    center: .center, startRadius: 4, endRadius: 140
+                )
+                .frame(width: 290, height: 290)
+                .position(x: center.x, y: center.y - 10)
+
                 // Soft ambient shadow beneath the platform — iOS gets this
                 // for free from RealityKit's own shadow-casting; this
                 // blurred, oversized dark ellipse is the flat-shape
@@ -610,27 +902,27 @@ struct BuildStudioView: View {
                 // something instead of floating over a hard-edged disc.
                 Ellipse()
                     .fill(Color.black.opacity(0.35))
-                    .frame(width: 190.0, height: 40.0)
-                    .blur(radius: 10)
-                    .position(x: center.x, y: center.y + 40.0)
+                    .frame(width: 132.0, height: 28.0)
+                    .blur(radius: 7)
+                    .position(x: center.x, y: center.y + 28.0)
 
                 // Base platform, matching the iOS cylinder base.
                 Ellipse()
                     .fill(
                         LinearGradient(
-                            colors: [Color(white: 0.22), Color(white: 0.12)],
+                            colors: [Color(white: 0.24), Color(white: 0.12)],
                             startPoint: .top, endPoint: .bottom
                         )
                     )
-                    .frame(width: 170.0, height: 46.0)
-                    .position(x: center.x, y: center.y + 34.0)
+                    .frame(width: 119.0, height: 32.0)
+                    .position(x: center.x, y: center.y + 23.0)
                 // Thin rim catching the key light, same upper-right
                 // convention as every voxel face above.
                 Ellipse()
                     .trim(from: 0.05, to: 0.45)
-                    .stroke(Color.white.opacity(0.14), lineWidth: 1.5)
-                    .frame(width: 170.0, height: 46.0)
-                    .position(x: center.x, y: center.y + 34.0)
+                    .stroke(Color.white.opacity(0.18), lineWidth: 1.25)
+                    .frame(width: 119.0, height: 32.0)
+                    .position(x: center.x, y: center.y + 23.0)
 
                 ForEach(depthOrdered, id: \.offset) { item in
                     voxelChip(item.unit, depthT: depthFraction(item.rotatedPosition.z))
@@ -638,7 +930,7 @@ struct BuildStudioView: View {
                 }
             }
         }
-        .frame(height: 260.0)
+        .frame(height: 292.0)
         .gesture(
             DragGesture()
                 .onChanged { value in
@@ -655,9 +947,32 @@ struct BuildStudioView: View {
                     // responsive).
                     let delta = Float(value.translation.width - lastDragTranslation) * Float(0.01)
                     rotationY += delta
+                    // Tracked per-frame so release can carry it forward
+                    // as fling velocity below — smoothed (not just the
+                    // latest instantaneous delta) so a slightly jittery
+                    // final touch sample right at lift-off doesn't
+                    // produce a jerky flick.
+                    dragVelocity = dragVelocity * Float(0.7) + delta * Float(0.3)
                     lastDragTranslation = value.translation.width
                 }
-                .onEnded { _ in lastDragTranslation = 0 }
+                .onEnded { _ in
+                    lastDragTranslation = 0
+                    // FIX (Android "smooth" ask): rotation used to stop
+                    // dead the instant the finger lifted — every other
+                    // interactive surface in the app (buttons, tab
+                    // switches) eases in/out, so a hard stop here read as
+                    // noticeably stiffer/cheaper than the rest of the UI.
+                    // This carries the last few frames of drag speed
+                    // forward as a short spring-damped spin, the same
+                    // "flick and it glides to a stop" feel as a native
+                    // scroll view or the reference clips' card/sheet
+                    // transitions, instead of the sculpture just halting.
+                    let flingDistance = dragVelocity * Float(9.0)
+                    withAnimation(.spring(response: 0.7, dampingFraction: 0.9)) {
+                        rotationY += flingDistance
+                    }
+                    dragVelocity = Float(0.0)
+                }
         )
     }
     #endif
@@ -671,22 +986,40 @@ struct BuildStudioView: View {
         let name = "voxel_\(index)"
         guard base.findEntity(named: name) == nil else { return }
 
+        // FIX ("floating cubes" — size vs. pitch mismatch): brick
+        // positions come from GoalBuildLibrary at a pitch of ~0.09-0.096
+        // (the `u` constant in each build), but these meshes were sized
+        // at a flat 0.08 regardless of build — leaving a visible gap
+        // (10-17% of a brick's width) between every adjacent pair. Two
+        // bricks that are SUPPOSED to sit edge-to-edge as one solid bar
+        // instead sat a hair apart with dark background showing through
+        // the seam, which at this scale reads as separate floating
+        // pieces rather than one connected object. Sized up ~12% (and
+        // the corner radius trimmed proportionally, since a bigger
+        // bevel on a bigger cube would exaggerate the per-brick "pebble"
+        // look this is trying to get rid of) so neighboring bricks now
+        // actually touch across every build's pitch instead of gapping.
         let mesh: MeshResource
         switch unit.mesh {
         case .cube:
-            mesh = .generateBox(size: 0.08, cornerRadius: 0.012)
+            mesh = .generateBox(size: 0.09, cornerRadius: 0.008)
         case .cylinder:
-            mesh = .generateCylinder(height: 0.08, radius: 0.038)
+            mesh = .generateCylinder(height: 0.09, radius: 0.042)
         case .cone:
-            mesh = .generateCone(height: 0.17, radius: 0.07)
+            mesh = .generateCone(height: 0.19, radius: 0.078)
         case .flatSlab:
-            mesh = .generateBox(size: [0.25, 0.018, 0.07], cornerRadius: 0.006)
+            mesh = .generateBox(size: [0.27, 0.02, 0.078], cornerRadius: 0.006)
         }
 
         let material = SimpleMaterial(color: unit.color, isMetallic: unit.isMetallic)
         let entity = ModelEntity(mesh: mesh, materials: [material])
         entity.name = name
         entity.orientation = simd_quatf(angle: unit.orientation.angle, axis: axis)
+        // Lets each brick cast/receive RealityKit's real shadow, on top
+        // of the whole-assembly contact shadow added in sculptureView —
+        // small, but it's another cue that these pieces occupy real
+        // shared space instead of each floating independently.
+        entity.components.set(GroundingShadowComponent(castsShadow: true))
 
         entity.position = position + SIMD3<Float>(0, 0.3, 0)
         entity.scale = [0.15, 0.15, 0.15]

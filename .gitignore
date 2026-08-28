@@ -26,3 +26,6 @@ Pods/
 
 # macOS
 .DS_Store
+
+# Local AI Rules
+.clinerules

@@ -194,6 +194,74 @@ final class AuthManager: ObservableObject {
         await performAuth(path: "token?grant_type=password", email: email, password: password)
     }
 
+    /// Completes a native "Sign in with Apple" flow. `identityToken` and
+    /// `rawNonce` come from ASAuthorizationAppleIDCredential (see
+    /// SocialSignInButtons) — Supabase verifies the token against Apple's
+    /// own public keys and separately re-hashes `rawNonce` to confirm it
+    /// matches the hash embedded inside that token, so this must be the
+    /// exact same raw string whose SHA256 was set as the `nonce` on the
+    /// original ASAuthorizationAppleIDRequest, not a new one generated here.
+    func signInWithApple(identityToken: String, rawNonce: String) async {
+        await signInWithIDToken(provider: "apple", idToken: identityToken, nonce: rawNonce)
+    }
+
+    private func signInWithIDToken(provider: String, idToken: String, nonce: String?) async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+
+        guard let url = URL(string: "\(SupabaseConfig.projectURL.absoluteString)/auth/v1/token?grant_type=id_token") else { return }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
+        req.setValue("application/json", forHTTPHeaderField: "content-type")
+        var body: [String: Any] = ["provider": provider, "id_token": idToken]
+        if let nonce { body["nonce"] = nonce }
+        req.httpBody = try? JSONSerialization.data(withJSONObject: body)
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: req)
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+                print("Supabase \(provider) sign-in error:", String(data: data, encoding: .utf8) ?? "no body")
+                errorMessage = "That sign-in didn't go through. Try again."
+                return
+            }
+            guard let auth = try? JSONDecoder().decode(SupabaseAuthResponse.self, from: data),
+                  let accessToken = auth.access_token, let user = auth.user else {
+                errorMessage = "That sign-in didn't go through. Try again."
+                return
+            }
+            completeSignIn(userID: user.id, email: user.email, accessToken: accessToken)
+            errorMessage = nil
+            await identifyWithRevenueCat(userID: user.id)
+        } catch {
+            errorMessage = "That sign-in didn't go through. Try again."
+        }
+    }
+
+    /// Builds the URL that starts Supabase's own hosted OAuth page for a
+    /// given provider (e.g. "google", or "apple" on a platform with no
+    /// native Apple API). This is deliberately NOT a native SDK
+    /// integration — it needs the provider enabled in your Supabase
+    /// dashboard (Authentication → Providers) with that provider's own
+    /// OAuth client credentials, but nothing new in this app's
+    /// dependencies. Supabase redirects back to `redirectTo` with the
+    /// session in the URL fragment — the exact same
+    /// `#access_token=...&refresh_token=...` shape `handleAuthCallback`
+    /// already parses for magic links and password resets, so no new
+    /// callback-parsing logic is needed either.
+    func oauthAuthorizeURL(provider: String, redirectTo: String = "pocketvault://auth-callback") -> URL? {
+        var components = URLComponents(
+            url: SupabaseConfig.projectURL.appendingPathComponent("auth/v1/authorize"),
+            resolvingAgainstBaseURL: false
+        )
+        components?.queryItems = [
+            URLQueryItem(name: "provider", value: provider),
+            URLQueryItem(name: "redirect_to", value: redirectTo)
+        ]
+        return components?.url
+    }
+
     /// Clears the local session AND rotates RevenueCat to a fresh
     /// anonymous identity. Call this from a "Sign Out" button, or from the
     /// DEBUG-only reset button in MainTabView while testing purchases.

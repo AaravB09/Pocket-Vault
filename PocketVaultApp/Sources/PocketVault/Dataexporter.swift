@@ -8,7 +8,7 @@ import Foundation
 enum DataExporter {
     private static var isoFormatter: ISO8601DateFormatter {
         let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
+        formatter.formatOptions = ISO8601DateFormatter.Options.withInternetDateTime
         return formatter
     }
 
@@ -20,13 +20,13 @@ enum DataExporter {
 
     private static var jsonEncoder: JSONEncoder {
         let encoder = JSONEncoder()
-        encoder.dateEncodingStrategy = .iso8601
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = JSONEncoder.DateEncodingStrategy.iso8601
+        encoder.outputFormatting = [JSONEncoder.OutputFormatting.prettyPrinted, JSONEncoder.OutputFormatting.sortedKeys]
         return encoder
     }
 
     static func goalsJSON(_ goals: [Goal]) -> String {
-        guard let data = try? jsonEncoder.encode(goals), let string = String(data: data, encoding: .utf8) else {
+        guard let data = try? jsonEncoder.encode(goals), let string = String(data: data, encoding: String.Encoding.utf8) else {
             return "[]"
         }
         return string
@@ -34,7 +34,7 @@ enum DataExporter {
 
     static func transactionsJSON(_ transactions: [SpendTransaction]) -> String {
         let sorted = transactions.sorted { $0.date < $1.date }
-        guard let data = try? jsonEncoder.encode(sorted), let string = String(data: data, encoding: .utf8) else {
+        guard let data = try? jsonEncoder.encode(sorted), let string = String(data: data, encoding: String.Encoding.utf8) else {
             return "[]"
         }
         return string
@@ -73,7 +73,7 @@ enum DataExporter {
     static func writeTempFile(_ contents: String, filename: String) -> URL? {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         do {
-            try contents.write(to: url, atomically: true, encoding: .utf8)
+            try contents.write(to: url, atomically: true, encoding: String.Encoding.utf8)
             return url
         } catch {
             return nil

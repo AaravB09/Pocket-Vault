@@ -216,15 +216,10 @@ struct CustomPaywallView: View {
                     .foregroundStyle(.tertiary)
             }
 
-            Button(action: { Task { await restore() } }) {
-                HStack(spacing: 6) {
-                    if isRestoring { ProgressView().tint(theme.textSecondary) }
-                    Text(isRestoring ? "Restoring…" : "Restore purchases")
-                }
-                .font(theme.font(12, weight: .medium))
-                .foregroundStyle(.tertiary)
+            TertiaryCTAButton(color: theme.textSecondary, isLoading: isRestoring, action: { Task { await restore() } }) {
+                Text("Restore purchases")
+                    .font(theme.font(12, weight: .medium))
             }
-            .disabled(isRestoring)
 
             if let loadErrorMessage {
                 Text(loadErrorMessage)
@@ -274,13 +269,15 @@ struct CustomPaywallView: View {
     // wrapper views (see PrimaryCTAButton in ThemeManager.swift). Use
     // the wrapper directly instead of a Button + buttonStyle pair.
     private var purchaseButton: some View {
-        PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: { Task { await purchase() } }) {
-            HStack {
-                if isPurchasing { ProgressView().tint(theme.onAccent) }
-                Text(isPurchasing ? "Processing…" : "Continue")
-            }
+        PrimaryCTAButton(
+            accent: theme.accent,
+            onAccent: theme.onAccent,
+            isLoading: isPurchasing,
+            action: { Task { await purchase() } }
+        ) {
+            Text("Continue")
         }
-        .disabled(isPurchasing || currentPackage == nil)
+        .disabled(currentPackage == nil)
         .padding(.horizontal, Layout.pageMargin)
     }
 
@@ -658,13 +655,15 @@ struct CustomPaywallView: View {
     }
 
     private var purchaseButton: some View {
-        PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: { Task { await purchase() } }) {
-            HStack {
-                if isPurchasing { ProgressView().tint(theme.onAccent) }
-                Text(isPurchasing ? "Processing…" : "Continue")
-            }
+        PrimaryCTAButton(
+            accent: theme.accent,
+            onAccent: theme.onAccent,
+            isLoading: isPurchasing,
+            action: { Task { await purchase() } }
+        ) {
+            Text("Continue")
         }
-        .disabled(isPurchasing || currentPackage == nil)
+        .disabled(currentPackage == nil)
         .padding(.horizontal, Layout.pageMargin)
     }
 

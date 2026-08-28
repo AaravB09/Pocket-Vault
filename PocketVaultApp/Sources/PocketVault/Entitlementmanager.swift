@@ -7,7 +7,25 @@ import Combine
 #if !SKIP
 @MainActor
 final class EntitlementManager: NSObject, ObservableObject, PurchasesDelegate {
-    @Published var isPro: Bool = false
+    @Published private var rawIsPro: Bool = false
+    #if DEBUG
+    /// Dev-only paywall bypass, toggled from ProfileView's dev section.
+    /// Deliberately NOT persisted to UserDefaults — it resets to false on
+    /// every fresh launch so it can't accidentally linger. Wrapped in
+    /// `#if DEBUG` at the type level, not just hidden in the UI: this
+    /// entire property, and the ProfileView section that sets it, are
+    /// compiled OUT of Release/TestFlight/App Store builds. There's no
+    /// "forget to remove it" risk — it physically cannot exist in a
+    /// release binary.
+    @Published var forceProOverride: Bool = false
+    #endif
+
+    var isPro: Bool {
+        #if DEBUG
+        if forceProOverride { return true }
+        #endif
+        return rawIsPro
+    }
 
     private let proEntitlementID = "pro"
 
@@ -29,7 +47,7 @@ final class EntitlementManager: NSObject, ObservableObject, PurchasesDelegate {
     func refresh() async {
         #if DEBUG
         if ProcessInfo.processInfo.environment["POCKET_VAULT_FORCE_PRO"] == "1" {
-            isPro = true
+            rawIsPro = true
             return
         }
         #endif
@@ -57,7 +75,7 @@ final class EntitlementManager: NSObject, ObservableObject, PurchasesDelegate {
 
     private func apply(_ info: CustomerInfo) {
         let active = info.entitlements[proEntitlementID]?.isActive == true
-        isPro = active
+        rawIsPro = active
 
         #if DEBUG
         if !active && !info.allPurchasedProductIdentifiers.isEmpty {
@@ -76,7 +94,19 @@ import SkipRevenue
 /// view already depends on, so nothing else needed to change.
 @MainActor
 final class EntitlementManager: NSObject, ObservableObject {
-    @Published var isPro: Bool = false
+    @Published private var rawIsPro: Bool = false
+    #if DEBUG
+    /// See the iOS half of this file for why this is safe to leave in:
+    /// compiled out entirely outside DEBUG builds, not just hidden in UI.
+    @Published var forceProOverride: Bool = false
+    #endif
+
+    var isPro: Bool {
+        #if DEBUG
+        if forceProOverride { return true }
+        #endif
+        return rawIsPro
+    }
 
     private let proEntitlementID = "pro"
 
@@ -94,14 +124,14 @@ final class EntitlementManager: NSObject, ObservableObject {
     func refresh() async {
         #if DEBUG
         if ProcessInfo.processInfo.environment["POCKET_VAULT_FORCE_PRO"] == "1" {
-            isPro = true
+            rawIsPro = true
             return
         }
         #endif
 
         do {
             let info = try await RevenueCatFuse.shared.getCustomerInfo()
-            isPro = info.isEntitlementActive(proEntitlementID)
+            rawIsPro = info.isEntitlementActive(proEntitlementID)
         } catch {
             // Leave isPro at its last known value rather than assuming false.
         }
