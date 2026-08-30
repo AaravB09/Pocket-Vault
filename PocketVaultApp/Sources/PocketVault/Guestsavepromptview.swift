@@ -41,21 +41,15 @@ struct GuestSavePromptView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, Layout.pageMargin)
 
-                // FIX: `.buttonStyle(.primaryCTA(theme))` referenced a
-                // custom ButtonStyle static member that no longer exists —
-                // same leftover migration gap as every other screen (see
-                // PrimaryCTAButton's doc comment in ThemeManager.swift).
-                // Use the wrapper directly instead of a Button + buttonStyle
-                // pair.
-                PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: { showSignUp = true }) {
-                    Text("Create free account")
+// Refactored to use VaultButton for consistent cross-platform button styling
+                VaultButton("Create free account", variant: .primary) {
+                    showSignUp = true
                 }
                 .padding(.horizontal, Layout.pageMargin)
 
-                Button(action: { dismiss() }) {
-                    Text("Not now")
-                        .font(theme.font(12, weight: .light))
-                        .foregroundStyle(theme.textTertiary)
+                // Tertiary text button for secondary action
+                VaultButton("Not now", variant: .tertiary) {
+                    dismiss()
                 }
 
                 Spacer()

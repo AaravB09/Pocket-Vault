@@ -5,15 +5,6 @@ import SwiftUI
 private struct FeatureRow: View {
     @EnvironmentObject var theme: ThemeManager
     let icon: String
-    // FIX: `icon` used to be handed straight to `Image(systemName:)`
-    // below, unwrapped. "sparkles", "target", and "person.2.fill" (3 of
-    // the 4 paywall feature icons) are outside Skip's Android fallback
-    // table — see the matching note on GoalKind.androidDisplayIcon in
-    // Goalbuildmodels.swift — so most of the feature list on this
-    // upgrade screen was showing "symbol not found" warning triangles
-    // instead of its icons on Android. Defaults to `icon` so existing
-    // call sites (none currently) wouldn't be forced to change, but
-    // every call site below now passes an explicit Android-safe name.
     var androidIcon: String? = nil
     let title: String
     let description: String
@@ -87,10 +78,6 @@ private func formattedPrice(_ value: Double, currencyCode: String?) -> String {
 #if !SKIP
 import RevenueCat
 
-/// A fully custom paywall showing both plans side by side, each with a
-/// dramatic "was $X, now $Y" price-drop reveal animation on appear.
-/// On successful purchase, hands off to SavingsCoachView so the user
-/// immediately gets a tailored plan for their current goal.
 struct CustomPaywallView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var entitlementManager: EntitlementManager
@@ -110,9 +97,6 @@ struct CustomPaywallView: View {
     @State private var isPurchasing: Bool = false
     @State private var isRestoring: Bool = false
     @State private var showCoach: Bool = false
-    // Guests must create a real account before subscribing — a purchase
-    // tied only to a local, deletable guest identity has nowhere
-    // reliable to attach an entitlement to on a new device.
     @State private var showAccountRequired: Bool = false
 
     var body: some View {
@@ -131,10 +115,6 @@ struct CustomPaywallView: View {
                 paywallContent
             }
         }
-        // Background here is a custom gradient (not the flat theme.background
-        // surface), so we apply just the foregroundStyle cascade rather than
-        // the full .themedSurface(theme) — that would also inject a redundant
-        // flat background layer underneath the gradient.
         .foregroundStyle(theme.textPrimary, theme.textSecondary, theme.textTertiary)
         .task { await loadOfferings() }
         .fullScreenCover(isPresented: $showCoach) {
@@ -168,7 +148,6 @@ struct CustomPaywallView: View {
             }
             .padding(.top, 28)
 
-            // MARK: Plan cards — side-by-side with price-drop reveal
             if packages.count >= 2 {
                 HStack(spacing: 12) {
                     ForEach(Array(packages.enumerated()), id: \.offset) { index, package in
@@ -196,7 +175,6 @@ struct CustomPaywallView: View {
                 .padding(.horizontal, 40)
             }
 
-            // MARK: - Pro Features List
             pocketVaultFeatureList
                 .padding(20)
                 .background(.ultraThinMaterial)
@@ -216,10 +194,17 @@ struct CustomPaywallView: View {
                     .foregroundStyle(.tertiary)
             }
 
-            TertiaryCTAButton(color: theme.textSecondary, isLoading: isRestoring, action: { Task { await restore() } }) {
-                Text("Restore purchases")
-                    .font(theme.font(12, weight: .medium))
-            }
+            VaultButton(
+                variant: VaultButtonVariant.tertiary,
+                isLoading: isRestoring,
+                fontSize: 12.0,
+                fontWeight: Font.Weight.medium,
+                action: { Task { await restore() } },
+                label: AnyView(
+                    Text("Restore purchases")
+                        .font(theme.font(12, weight: .medium))
+                )
+            )
 
             if let loadErrorMessage {
                 Text(loadErrorMessage)
@@ -261,22 +246,13 @@ struct CustomPaywallView: View {
         }
     }
 
-    // FIX: `.buttonStyle(.primaryCTA(theme))` referenced a custom
-    // ButtonStyle static member that no longer exists — same leftover
-    // migration gap as BuildStudioView/AccountRequiredGateView/
-    // SetupGoalView: custom ButtonStyle conformance isn't supported by
-    // Skip, so those styles were all replaced app-wide with plain
-    // wrapper views (see PrimaryCTAButton in ThemeManager.swift). Use
-    // the wrapper directly instead of a Button + buttonStyle pair.
     private var purchaseButton: some View {
-        PrimaryCTAButton(
-            accent: theme.accent,
-            onAccent: theme.onAccent,
+        VaultButton(
+            variant: VaultButtonVariant.primary,
             isLoading: isPurchasing,
-            action: { Task { await purchase() } }
-        ) {
-            Text("Continue")
-        }
+            action: { Task { await purchase() } },
+            label: AnyView(Text("Continue"))
+        )
         .disabled(currentPackage == nil)
         .padding(.horizontal, Layout.pageMargin)
     }
@@ -296,9 +272,7 @@ struct CustomPaywallView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, Layout.pageMargin)
-            Button("Close") { dismiss() }
-                .font(theme.font(12, weight: .bold))
-                .foregroundStyle(theme.accent)
+            VaultButton("Close", variant: VaultButtonVariant.secondary, height: 36.0, fontSize: 12.0, fontWeight: Font.Weight.bold, action: { dismiss() })
                 .padding(.top, 8)
         }
         .padding()
@@ -355,10 +329,6 @@ struct CustomPaywallView: View {
             if entitlementManager.isPro {
                 dismiss()
             } else {
-                // Previously this dismissed unconditionally even when
-                // nothing was found, which is exactly why it looked like
-                // "restore doesn't work" — it silently closed the paywall
-                // either way with no indication of what happened.
                 loadErrorMessage = "No previous purchases were found for this account."
             }
         } catch {
@@ -387,56 +357,61 @@ private struct PlanCard: View {
     }
 
     var body: some View {
-        Button(action: onSelect) {
-            VStack(spacing: 8) {
-                Text(package.storeProduct.localizedTitle)
-                    .font(theme.font(13, weight: .semibold))
-                    .foregroundStyle(isSelected ? theme.accent : theme.textSecondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-
-                ZStack {
-                    if let anchorPrice, !revealReal {
-                        Text(fmt(anchorPrice))
-                            .font(theme.font(34, weight: .black))
-                            .foregroundStyle(.primary)
-                            .transition(.scale.combined(with: .opacity))
-                    }
-
-                    if revealReal {
-                        VStack(spacing: 2) {
-                            Text(fmt(realPrice))
-                                .font(theme.font(30, weight: .light))
-                                .foregroundStyle(theme.accent)
-                            if let anchorPrice {
-                                Text(fmt(anchorPrice))
-                                    .font(theme.font(12, weight: .light))
-                                    .foregroundStyle(.tertiary)
-                                    .strikethrough(color: theme.textTertiary)
-                            }
+        VaultButton(
+            variant: VaultButtonVariant.ghost,
+            height: 130.0,
+            fontSize: 13.0,
+            fontWeight: Font.Weight.semibold,
+            horizontalPadding: 0.0,
+            fullWidth: false,
+            action: onSelect,
+            label: AnyView(
+                VStack(spacing: 8) {
+                    Text(package.storeProduct.localizedTitle)
+                        .font(theme.font(13, weight: .semibold))
+                        .foregroundStyle(isSelected ? theme.accent : theme.textSecondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    ZStack {
+                        if let anchorPrice, !revealReal {
+                            Text(fmt(anchorPrice))
+                                .font(theme.font(34, weight: .black))
+                                .foregroundStyle(.primary)
+                                .transition(.scale.combined(with: .opacity))
                         }
-                        .transition(.scale.combined(with: .opacity))
+                        if revealReal {
+                            VStack(spacing: 2) {
+                                Text(fmt(realPrice))
+                                    .font(theme.font(30, weight: .light))
+                                    .foregroundStyle(theme.accent)
+                                if let anchorPrice {
+                                    Text(fmt(anchorPrice))
+                                        .font(theme.font(12, weight: .light))
+                                        .foregroundStyle(.tertiary)
+                                        .strikethrough(color: theme.textTertiary)
+                                }
+                            }
+                            .transition(.scale.combined(with: .opacity))
+                        }
                     }
+                    .frame(height: 56)
+                    .animation(.spring(response: 0.55, dampingFraction: 0.7), value: revealReal)
+                    Text(periodLabel)
+                        .font(theme.font(11, weight: .medium))
+                        .foregroundStyle(.tertiary)
                 }
-                .frame(height: 56)
-                .animation(.spring(response: 0.55, dampingFraction: 0.7), value: revealReal)
-
-                Text(periodLabel)
-                    .font(theme.font(11, weight: .medium))
-                    .foregroundStyle(.tertiary)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 22)
-            .padding(.horizontal, 14)
-            .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 18))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18)
-                    .stroke(isSelected ? theme.accent : theme.cardStroke, lineWidth: isSelected ? 2.5 : 1)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 22)
+                .padding(.horizontal, 14)
+                .background(.ultraThinMaterial)
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(isSelected ? theme.accent : theme.cardStroke, lineWidth: isSelected ? 2.5 : 1)
+                )
+                .shadow(color: .black.opacity(isSelected ? 0.14 : 0), radius: 12, y: 5)
             )
-            .shadow(color: .black.opacity(isSelected ? 0.14 : 0), radius: 12, y: 5)
-        }
-        .buttonStyle(.plain)
+        )
         .onAppear {
             guard anchorPrice != nil else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
@@ -448,22 +423,9 @@ private struct PlanCard: View {
 
 #else
 // MARK: - Android paywall (SkipRevenue's RevenueCat integration)
-//
-// Rebuilt to match the iOS card-based design exactly, rather than the
-// dashboard-configured RCFusePaywallView template. That template was
-// showing a blank white screen because it renders whatever Paywall is
-// published in the RevenueCat dashboard for the offering — if none is
-// configured there, it has nothing to draw. Building against
-// skip-revenue's own RCFuseOffering/RCFusePackage/RCFuseStoreProduct
-// types (via RevenueCatFuse) instead means this screen — like the iOS
-// one — always renders from the Offering's Packages directly, with no
-// dashboard paywall template required.
+
 import SkipRevenue
 
-/// Mirrors the iOS CustomPaywallView above: same header, same
-/// side-by-side price-drop-reveal PlanCards, same feature list and
-/// purchase/restore flow — built against SkipRevenue's RCFuse* types
-/// instead of RevenueCat's native iOS types.
 struct CustomPaywallView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var entitlementManager: EntitlementManager
@@ -483,9 +445,6 @@ struct CustomPaywallView: View {
     @State private var isPurchasing: Bool = false
     @State private var isRestoring: Bool = false
     @State private var showCoach: Bool = false
-    // Guests must create a real account before subscribing — a purchase
-    // tied only to a local, deletable guest identity has nowhere
-    // reliable to attach an entitlement to on a new device.
     @State private var showAccountRequired: Bool = false
 
     var body: some View {
@@ -504,22 +463,6 @@ struct CustomPaywallView: View {
                 paywallContent
             }
         }
-        // FIX (Android "View Pro Plans shows nothing but a caution
-        // triangle"): the iOS CustomPaywallView above sets
-        // `.foregroundStyle(theme.textPrimary, theme.textSecondary,
-        // theme.textTertiary)` at its root so every unstyled `.primary` /
-        // `.secondary` Text on this whole screen resolves to the app's
-        // theme colors. This Android copy never had the equivalent line —
-        // it was just missing — so every one of those Texts (the
-        // "Pro plans aren't set up yet" title, the explanatory paragraph,
-        // etc. in notConfiguredState below, plus everything unstyled in
-        // paywallContent) was falling back to raw platform defaults
-        // instead of the theme, rather than actually being invisible by
-        // design. Only `exclamationmark.triangle.fill` above has an
-        // explicit `theme.accent` color, which is why that was the only
-        // thing reliably showing up. Adding the single-argument Android
-        // fallback here, matching the same pattern ThemedSurfaceModifier
-        // already uses in ThemedSurface.swift.
         .foregroundStyle(theme.textPrimary)
         .task { await loadOfferings() }
         .fullScreenCover(isPresented: $showCoach) {
@@ -549,11 +492,10 @@ struct CustomPaywallView: View {
                     .foregroundStyle(theme.accent)
                 Text("Unlock Pro")
                     .font(theme.font(26, weight: .light))
-                    .foregroundStyle(theme.textPrimary) // was .primary — same Android fallback gap as notConfiguredState above
+                    .foregroundStyle(theme.textPrimary)
             }
             .padding(.top, 28)
 
-            // MARK: Plan cards — side-by-side with price-drop reveal
             if packages.count >= 2 {
                 HStack(spacing: 12) {
                     ForEach(Array(packages.enumerated()), id: \.offset) { index, pkg in
@@ -580,11 +522,6 @@ struct CustomPaywallView: View {
                 .padding(.horizontal, 40)
             }
 
-            // MARK: - Pro Features List
-            // NOTE(skip): only `.ultraThinMaterial` is unresolved by
-            // Skip's SwiftUI shim — `.clipShape` resolves fine once it
-            // isn't cascading from that broken symbol right above it
-            // (see Networkmonitor.swift for the same pattern).
             pocketVaultFeatureList
                 .padding(20)
                 .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
@@ -601,18 +538,24 @@ struct CustomPaywallView: View {
             if authManager.isGuest {
                 Text("You'll create a free account on the next step")
                     .font(theme.font(10, weight: .light))
-                    .foregroundStyle(.secondary) // was .tertiary — unsupported by Skip
+                    .foregroundStyle(.secondary)
             }
 
-            Button(action: { Task { await restore() } }) {
-                HStack(spacing: 6) {
-                    if isRestoring { ProgressView().tint(theme.textSecondary) }
-                    Text(isRestoring ? "Restoring…" : "Restore purchases")
-                }
-                .font(theme.font(12, weight: .medium))
-                .foregroundStyle(.secondary) // was .tertiary — unsupported by Skip
-            }
-            .disabled(isRestoring)
+            VaultButton(
+                variant: VaultButtonVariant.tertiary,
+                isLoading: isRestoring,
+                fontSize: 12.0,
+                fontWeight: Font.Weight.medium,
+                horizontalPadding: 0.0,
+                height: 36.0,
+                fullWidth: false,
+                action: { Task { await restore() } },
+                label: AnyView(
+                    Text("Restore purchases")
+                        .font(theme.font(12, weight: .medium))
+                        .foregroundStyle(.secondary)
+                )
+            )
 
             if let loadErrorMessage {
                 Text(loadErrorMessage)
@@ -655,14 +598,12 @@ struct CustomPaywallView: View {
     }
 
     private var purchaseButton: some View {
-        PrimaryCTAButton(
-            accent: theme.accent,
-            onAccent: theme.onAccent,
+        VaultButton(
+            variant: VaultButtonVariant.primary,
             isLoading: isPurchasing,
-            action: { Task { await purchase() } }
-        ) {
-            Text("Continue")
-        }
+            action: { Task { await purchase() } },
+            label: AnyView(Text("Continue"))
+        )
         .disabled(currentPackage == nil)
         .padding(.horizontal, Layout.pageMargin)
     }
@@ -674,18 +615,6 @@ struct CustomPaywallView: View {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(theme.font(34, weight: .bold))
                 .foregroundStyle(theme.accent)
-            // FIX (Android "just a triangle and Close, title/body invisible"):
-            // `.foregroundStyle(.primary)` / `.secondary` here were relying on
-            // the ancestor's `.foregroundStyle(theme.textPrimary)` (line ~526)
-            // to resolve them, the way real SwiftUI's hierarchical
-            // foregroundStyle would on iOS. But Skip only implements the
-            // single-argument form (see the note in ThemedSurfaceModifier),
-            // so on Android these two Texts fell back to raw platform
-            // default colors instead of the theme — invisible against this
-            // screen's near-black background, leaving only the
-            // already-explicit accent triangle and accent "Close" visible.
-            // Referencing the theme tokens directly, same as every other
-            // Android-safe Text in this file, fixes it.
             Text("Pro plans aren't set up yet")
                 .font(theme.font(16, weight: .semibold))
                 .foregroundStyle(theme.textPrimary)
@@ -694,9 +623,7 @@ struct CustomPaywallView: View {
                 .foregroundStyle(theme.textSecondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, Layout.pageMargin)
-            Button("Close") { dismiss() }
-                .font(theme.font(12, weight: .bold))
-                .foregroundStyle(theme.accent)
+            VaultButton("Close", variant: VaultButtonVariant.secondary, height: 36.0, fontSize: 12.0, fontWeight: Font.Weight.bold, action: { dismiss() })
                 .padding(.top, 8)
         }
         .padding()
@@ -740,10 +667,6 @@ struct CustomPaywallView: View {
             await entitlementManager.refresh()
             showCoach = true
         } catch {
-            // Kotlin doesn't support `catch ... where` clauses, so the
-            // cancellation check happens inside a plain catch instead —
-            // silent on cancel, same as the iOS `result.userCancelled`
-            // early return.
             if let storeError = error as? StoreError, storeError == .userCancelled {
                 // no-op
             } else {
@@ -765,7 +688,6 @@ struct CustomPaywallView: View {
                 loadErrorMessage = "No previous purchases were found for this account."
             }
         } catch {
-            // Same Kotlin `catch ... where` limitation as purchase() above.
             if let storeError = error as? StoreError, storeError == .noPurchasesFound {
                 loadErrorMessage = "No previous purchases were found for this account."
             } else {
@@ -794,58 +716,61 @@ private struct PlanCard: View {
     }
 
     var body: some View {
-        Button(action: onSelect) {
-            VStack(spacing: 8) {
-                Text(pkg.storeProduct.localizedTitle)
-                    .font(theme.font(13, weight: .semibold))
-                    .foregroundStyle(isSelected ? theme.accent : theme.textSecondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
-
-                ZStack {
-                    if let anchorPrice, !revealReal {
-                        Text(fmt(anchorPrice))
-                            .font(theme.font(34, weight: .black))
-                            .foregroundStyle(.primary)
-                            .transition(.scale.combined(with: .opacity))
-                    }
-
-                    if revealReal {
-                        VStack(spacing: 2) {
-                            Text(fmt(realPrice))
-                                .font(theme.font(30, weight: .light))
-                                .foregroundStyle(theme.accent)
-                            if let anchorPrice {
-                                Text(fmt(anchorPrice))
-                                    .font(theme.font(12, weight: .light))
-                                    .foregroundStyle(.secondary) // was .tertiary — unsupported by Skip
-                                    .strikethrough(color: theme.textTertiary)
-                            }
+        VaultButton(
+            variant: VaultButtonVariant.ghost,
+            height: 130.0,
+            fontSize: 13.0,
+            fontWeight: Font.Weight.semibold,
+            horizontalPadding: 0.0,
+            fullWidth: false,
+            action: onSelect,
+            label: AnyView(
+                VStack(spacing: 8) {
+                    Text(pkg.storeProduct.localizedTitle)
+                        .font(theme.font(13, weight: .semibold))
+                        .foregroundStyle(isSelected ? theme.accent : theme.textSecondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.7)
+                    ZStack {
+                        if let anchorPrice, !revealReal {
+                            Text(fmt(anchorPrice))
+                                .font(theme.font(34, weight: .black))
+                                .foregroundStyle(.primary)
+                                .transition(.scale.combined(with: .opacity))
                         }
-                        .transition(.scale.combined(with: .opacity))
+                        if revealReal {
+                            VStack(spacing: 2) {
+                                Text(fmt(realPrice))
+                                    .font(theme.font(30, weight: .light))
+                                    .foregroundStyle(theme.accent)
+                                if let anchorPrice {
+                                    Text(fmt(anchorPrice))
+                                        .font(theme.font(12, weight: .light))
+                                        .foregroundStyle(.secondary)
+                                        .strikethrough(color: theme.textTertiary)
+                                }
+                            }
+                            .transition(.scale.combined(with: .opacity))
+                        }
                     }
+                    .frame(height: 56)
+                    .animation(.spring(response: 0.55, dampingFraction: 0.7), value: revealReal)
+                    Text(periodLabel)
+                        .font(theme.font(11, weight: .medium))
+                        .foregroundStyle(.secondary)
                 }
-                .frame(height: 56)
-                .animation(.spring(response: 0.55, dampingFraction: 0.7), value: revealReal)
-
-                Text(periodLabel)
-                    .font(theme.font(11, weight: .medium))
-                    .foregroundStyle(.secondary) // was .tertiary — unsupported by Skip
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 22)
-            .padding(.horizontal, 14)
-            // NOTE(skip): same .ultraThinMaterial swap as paywallContent
-            // above — .clipShape itself is fine, only the material isn't.
-            .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
-            .clipShape(RoundedRectangle(cornerRadius: 18))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18)
-                    .stroke(isSelected ? theme.accent : theme.cardStroke, lineWidth: isSelected ? 2.5 : 1.0)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 22)
+                .padding(.horizontal, 14)
+                .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(isSelected ? theme.accent : theme.cardStroke, lineWidth: isSelected ? 2.5 : 1.0)
+                )
+                .shadow(color: .black.opacity(isSelected ? 0.14 : 0.0), radius: 12, y: 5)
             )
-            .shadow(color: .black.opacity(isSelected ? 0.14 : 0.0), radius: 12, y: 5)
-        }
-        .buttonStyle(.plain)
+        )
         .onAppear {
             guard anchorPrice != nil else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {

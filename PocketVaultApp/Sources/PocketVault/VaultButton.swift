@@ -12,6 +12,9 @@ public enum VaultButtonVariant {
     case destructive
     /// Fully transparent with a subtle tinted fill on hover/press.
     case ghost
+    /// Fully transparent text-only button — no fill, no stroke.
+    /// Disabled/loading states are expressed through opacity alone.
+    case tertiary
 }
 
 // MARK: - VaultButton
@@ -141,6 +144,8 @@ public struct VaultButton: View {
             return theme.danger.opacity(isPressed ? 0.85 : 1.0)
         case .ghost:
             return Color.clear
+        case .tertiary:
+            return Color.clear
         }
     }
 
@@ -156,6 +161,8 @@ public struct VaultButton: View {
         case .destructive:
             return fillColor
         case .ghost:
+            return fillColor
+        case .tertiary:
             return fillColor
         }
     }
@@ -173,6 +180,8 @@ public struct VaultButton: View {
             return theme.onAccent
         case .ghost:
             return theme.textPrimary
+        case .tertiary:
+            return theme.textSecondary
         }
     }
 
@@ -197,19 +206,27 @@ public struct VaultButton: View {
             return theme.onAccent.opacity(isPressed ? 0.06 : 0.12)
         case .ghost:
             return Color.clear
+        case .tertiary:
+            return Color.clear
         }
     }
 
     private var shadowColor: Color {
-        Color.black.opacity(isInteractive ? (isPressed ? 0.08 : 0.18) : 0.0)
+        // Tertiary has no shadow — it's a pure text button.
+        guard variant != .tertiary else { return Color.clear }
+        return Color.black.opacity(isInteractive ? (isPressed ? 0.08 : 0.18) : 0.0)
     }
 
     private var shadowRadius: CGFloat {
-        isPressed ? 4.0 : 14.0
+        // Tertiary has no shadow.
+        guard variant != .tertiary else { return 0.0 }
+        return isPressed ? 4.0 : 14.0
     }
 
     private var shadowY: CGFloat {
-        isPressed ? 2.0 : 6.0
+        // Tertiary has no shadow.
+        guard variant != .tertiary else { return 0.0 }
+        return isPressed ? 2.0 : 6.0
     }
 
     // MARK: - Body
@@ -295,6 +312,8 @@ public struct VaultButton: View {
             return theme.onAccent
         case .ghost:
             return theme.textPrimary
+        case .tertiary:
+            return theme.accent
         }
     }
 
@@ -304,6 +323,8 @@ public struct VaultButton: View {
             return theme.accent
         case .destructive:
             return theme.danger
+        case .tertiary:
+            return theme.accent
         }
     }
 
@@ -313,6 +334,8 @@ public struct VaultButton: View {
             return theme.onAccent
         case .secondary, .ghost:
             return theme.accent
+        case .tertiary:
+            return theme.textSecondary
         }
     }
 

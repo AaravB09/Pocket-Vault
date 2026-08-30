@@ -25,14 +25,20 @@ struct BuildStudioView: View {
     // spin on release instead of stopping the sculpture dead.
     @State private var dragVelocity: Float = Float(0.0)
 
-    // iOS-only: the hand-modeled reveal entity (see GoalShowcaseModels)
-    // that replaces the voxel pile once a goal completes, for the
-    // GoalKinds that have one. nil either means "not loaded yet" or "no
-    // showcase model exists for this goal kind" — loadShowcaseIfNeeded
-    // below is what tells those two cases apart via showcaseLoadAttempted,
-    // so a genuine miss doesn't get retried every frame.
+    // iOS-only: the loaded GLB root entity (see GoalShowcaseModels) for the
+    // hand-modeled reveal that progressively replaces the voxel pile during
+    // the build, for the GoalKinds that have one. showcaseRootEntity is
+    // nil either when "not loaded yet" or "no showcase model exists for
+    // this goal kind" — showcaseLoadAttempted below is what tells those
+    // two cases apart, so a genuine miss doesn't get retried every frame.
+    //
+    // showcaseRevealedNodes caches each child entity by its glTF node name
+    // (e.g. "body", "wheel_0") after it's been resolved, so we don't pay
+    // the findEntity(named:) lookup on every progress recomposition —
+    // matches the existing optimization pattern of cachedVoxels.
     #if !SKIP
-    @State private var showcaseEntity: Entity? = nil
+    @State private var showcaseRootEntity: Entity? = nil
+    @State private var showcaseRevealedNodes: [String: Entity] = [:]
     #endif
     @State private var showcaseLoadAttempted: Bool = false
 
@@ -98,7 +104,8 @@ struct BuildStudioView: View {
     // showcaseLoadAttempted was already true from the last goal.
     private func resetShowcaseState() {
         #if !SKIP
-        showcaseEntity = nil
+        showcaseRootEntity = nil
+        showcaseRevealedNodes = [:]
         #endif
         showcaseLoadAttempted = false
     }
@@ -364,49 +371,95 @@ struct BuildStudioView: View {
                     spawnVoxel(index: index, unit: unit, on: baseEntity)
                 }
 
-                // Completion reveal: swap the voxel pile for the real
-                // hand-modeled mesh, for the GoalKinds that have one.
-                // customVoxelBlueprint is excluded — that's an
-                // AI-generated arbitrary shape and we don't have a
-                // showcase mesh for arbitrary goals, only the curated
-                // GoalKind categories in GoalShowcaseModels.
-                let usingCustomBlueprint = (customVoxelBlueprint?.isEmpty == false)
-                if isComplete && !usingCustomBlueprint && GoalShowcaseModels.hasShowcase(for: goalKind) {
-                    if showcaseEntity == nil && !showcaseLoadAttempted {
+                // Progressive reveal for GoalKinds that have a curated build
+                // asset (car, house). Voxels are shown for goal kinds without
+                // a showcase asset (flight, gamingRig, etc.) or when a custom
+                // AI-generated blueprint is active — we don't have a showcase
+                // mesh for arbitrary shapes, only the curated GoalKind categories.
+                // (customVoxelBlueprint is a Binding<String?>, so we unwrap via
+                // `if let`-on-the-value the same way recomputeVoxels does above.)
+                let blueprintJSON: String? = customVoxelBlueprint.flatMap { $0.isEmpty ? nil : $0 }
+                let hasShowcase = (blueprintJSON == nil) && GoalShowcaseModels.hasShowcase(for: goalKind)
+                let showcaseParts = hasShowcase ? (GoalShowcaseModels.showcaseBuildOrder[goalKind] ?? []) : []
+
+                if hasShowcase {
+                    // Show the real parts, hide the voxel pile.
+                    for child in baseEntity.children where child.name.hasPrefix("voxel_") {
+                        child.isEnabled = false
+                    }
+                    // Load the GLB once when the showcase is first reached.
+                    if showcaseRootEntity == nil && !showcaseLoadAttempted {
                         showcaseLoadAttempted = true
                         Task {
-                            let loaded = await GoalShowcaseModels.loadEntity(for: goalKind)
+                            let loaded = await GoalShowcaseModels.loadGLBEntity(for: goalKind)
                             await MainActor.run {
                                 guard let loaded else { return } // load failed — silently keep voxel pile
-                                loaded.name = "showcaseModel"
+                                loaded.name = "showcaseRoot"
                                 loaded.position = [0, 0, 0]
-                                loaded.scale = [0.001, 0.001, 0.001] // start tiny, animate in below
+                                loaded.scale = [1, 1, 1]
                                 loaded.components.set(GroundingShadowComponent(castsShadow: true))
+                                // All parts start hidden; we'll reveal them progressively below.
+                                // Parent opacity doesn't affect individual child visibility, so
+                                // set isEnabled on each named node directly.
+                                for nodeName in showcaseParts {
+                                    if let node = loaded.findEntity(named: nodeName) {
+                                        node.isEnabled = false
+                                    }
+                                }
                                 baseEntity.addChild(loaded)
-                                var grown = loaded.transform
-                                grown.scale = [1, 1, 1]
-                                loaded.move(to: grown, relativeTo: baseEntity, duration: 0.6, timingFunction: .easeOut)
-                                showcaseEntity = loaded
-                                // Hide the voxel pile now that the real mesh has taken its place —
-                                // spawnVoxel names each piece "voxel_<index>".
-                                for child in baseEntity.children where child.name.hasPrefix("voxel_") {
-                                    child.isEnabled = false
+                                showcaseRootEntity = loaded
+                            }
+                        }
+                    }
+                    // Reveal one part per progress stage crossed. Stages are
+                    // divided evenly across showcaseParts — e.g. 9 parts for
+                    // car = ~11% per stage. At 0% nothing is visible; at 100%
+                    // all 9 parts form the complete car.
+                    if let root = showcaseRootEntity {
+                        let totalParts = showcaseParts.count
+                        let revealedCount: Int = totalParts > 0
+                            ? min(totalParts, max(0, Int(progressRatio * Double(totalParts))))
+                            : 0
+                        for (partIndex, nodeName) in showcaseParts.enumerated() {
+                            let shouldBeVisible = partIndex < revealedCount
+                            // Find or retrieve the cached node entity.
+                            if let node = showcaseRevealedNodes[nodeName] {
+                                // Already animated in — just keep it visible.
+                                node.isEnabled = shouldBeVisible
+                            } else if shouldBeVisible {
+                                // This part just crossed into the revealed range —
+                                // look it up and fly it in.
+                                if let node = root.findEntity(named: nodeName) {
+                                    showcaseRevealedNodes[nodeName] = node
+                                    // Start offset: same pattern as spawnVoxel — offset
+                                    // +0.3 on Y, scale 0.15, then animate to resting
+                                    // position and scale 1.0 using the same easeOut.
+                                    // The GLB nodes have their authored resting transforms
+                                    // baked into the geometry, so identity = final pose.
+                                    var startTransform = node.transform
+                                    startTransform.translation.y += Float(0.3)
+                                    startTransform.scale = SIMD3<Float>(repeating: Float(0.15))
+                                    node.transform = startTransform
+                                    node.isEnabled = true
+                                    var finalTransform = node.transform
+                                    finalTransform.translation.y -= Float(0.3)
+                                    finalTransform.scale = SIMD3<Float>(repeating: Float(1.0))
+                                    node.move(to: finalTransform, relativeTo: node.parent, duration: 0.5, timingFunction: .easeOut)
                                 }
                             }
                         }
-                    } else if let showcase = showcaseEntity {
-                        showcase.isEnabled = true
-                        for child in baseEntity.children where child.name.hasPrefix("voxel_") {
-                            child.isEnabled = false
-                        }
                     }
-                } else if let showcase = showcaseEntity {
-                    // Regressed below complete (e.g. a withdrawal) — go
-                    // back to showing the voxel pile instead of the
-                    // finished mesh, since "finished" is no longer true.
-                    showcase.isEnabled = false
+                } else {
+                    // No showcase — show the voxel pile, hide any residual showcase nodes.
                     for child in baseEntity.children where child.name.hasPrefix("voxel_") {
                         child.isEnabled = true
+                    }
+                    if let root = showcaseRootEntity {
+                        for nodeName in showcaseParts {
+                            if let node = showcaseRevealedNodes[nodeName] {
+                                node.isEnabled = false
+                            }
+                        }
                     }
                 }
             }
@@ -439,26 +492,15 @@ struct BuildStudioView: View {
         // unlike the earlier experiment, it does not mutate a native node
         // from a SwiftUI drag recomposition while the tab is disappearing.
         let usingCustomBlueprintAndroid = (customVoxelBlueprint?.isEmpty == false)
-        if isComplete && !usingCustomBlueprintAndroid && GoalShowcaseModels.hasShowcase(for: goalKind) {
-            // FIX (yellow glitch square / camera "auto-zoom" on completion):
-            // `sculptureView` sits in the same ZStack as ParticleBurstView,
-            // which flips `showUnlockBurst` on and off every unlock and
-            // drives its own animation — both recompose this whole ZStack
-            // far more often than `isComplete` itself actually changes.
-            // Without an explicit identity, Skip's Compose codegen has no
-            // guarantee it will keep treating this branch's `AndroidView`
-            // (the native SurfaceView backing the SceneView) as the SAME
-            // instance across those recompositions, rather than tearing it
-            // down and recreating it. A freshly created Android surface
-            // shows whatever was last in its (uncleared) graphics buffer
-            // until the first real frame lands — that's the yellow flash —
-            // and `rememberCameraManipulator` resets to `orbitHomePosition`
-            // on every fresh instance, which reads as the view suddenly
-            // "zooming." Pinning `.id(goalKind)` gives Compose a stable key
-            // for this subtree so it survives unrelated sibling
-            // recompositions and is only actually rebuilt when the goal
-            // kind (and therefore the model/asset) genuinely changes.
-            AndroidGoalShowcaseView(goalKind: goalKind)
+        // Progressive reveal on Android: the same real GLB parts used for the
+        // completion reveal are now shown progressively as savings grow, using
+        // per-node visibility control via the FilamentAsset's glTF node
+        // hierarchy (see Androidgoalshowcaseview.swift). The `.id(goalKind)`
+        // identity key prevents unnecessary SceneView teardowns during
+        // particle-burst recompositions — the same fix that applied when this
+        // was only at 100% completion, now running throughout the build.
+        if !usingCustomBlueprintAndroid && GoalShowcaseModels.hasShowcase(for: goalKind) {
+            AndroidGoalShowcaseView(goalKind: goalKind, progressRatio: progressRatio)
                 .id(goalKind)
         } else {
             voxelStandIn2D
