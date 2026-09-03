@@ -90,7 +90,7 @@ final class BudgetManager: ObservableObject {
     }
 
     var transactionsThisMonth: [SpendTransaction] {
-        transactions.filter { calendar.isDate($0.date, equalTo: Date(), toGranularity: .month) }
+        transactions.filter { calendar.isDate($0.date, equalTo: Date(), toGranularity: Calendar.Component.month) }
             .sorted { $0.date > $1.date }
     }
 
@@ -150,7 +150,7 @@ final class BudgetManager: ObservableObject {
     func mergeImportedTransactions(_ rows: [PlaidTransactionRow]) {
         let existingIDs = Set(transactions.compactMap { $0.plaidTransactionID })
         let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withFullDate]
+        formatter.formatOptions = [ISO8601DateFormatter.Options.withFullDate]
 
         var added = 0
         for row in rows where !existingIDs.contains(row.plaid_transaction_id) {

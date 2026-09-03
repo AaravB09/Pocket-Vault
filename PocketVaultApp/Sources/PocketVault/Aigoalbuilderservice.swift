@@ -46,12 +46,12 @@ enum AIGoalBuilderService {
         /// is used instead.
         var voxelBlueprintJSON: String? {
             guard let voxels, !voxels.isEmpty, let data = try? JSONEncoder().encode(voxels) else { return nil }
-            return String(data: data, encoding: .utf8)
+            return String(data: data, encoding: String.Encoding.utf8)
         }
     }
 
     static func suggestGoal(from description: String, accessToken: String) async throws -> Suggestion {
-        let trimmed = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = description.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             throw NSError(domain: "AIGoalBuilder", code: 0, userInfo: [NSLocalizedDescriptionKey: "Describe the goal first."])
         }
@@ -113,7 +113,7 @@ enum AIGoalBuilderService {
 
         let (data, response) = try await URLSession.shared.data(for: apiRequest)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            let raw = String(data: data, encoding: .utf8) ?? "unknown error"
+            let raw = String(data: data, encoding: String.Encoding.utf8) ?? "unknown error"
             throw NSError(domain: "AIGoalBuilder", code: 1, userInfo: [NSLocalizedDescriptionKey: "API error: \(raw)"])
         }
 
@@ -132,9 +132,9 @@ enum AIGoalBuilderService {
         let cleaned = text
             .replacingOccurrences(of: "```json", with: "")
             .replacingOccurrences(of: "```", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
 
-        guard let jsonData = cleaned.data(using: .utf8) else {
+        guard let jsonData = cleaned.data(using: String.Encoding.utf8) else {
             throw NSError(domain: "AIGoalBuilder", code: 3, userInfo: [NSLocalizedDescriptionKey: "Couldn't understand that goal — try rephrasing it."])
         }
 

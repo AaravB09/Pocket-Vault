@@ -30,7 +30,7 @@ struct AccountRequiredGateView: View {
                 ZStack {
                     Circle().fill(theme.accent.opacity(0.12)).frame(width: 76.0, height: 76.0)
                     Image(systemName: "lock.fill")
-                        .font(theme.font(26.0, weight: .light))
+                        .font(theme.font(26.0, weight: Font.Weight.light))
                         .foregroundStyle(theme.accent)
                 }
 
@@ -38,22 +38,22 @@ struct AccountRequiredGateView: View {
                     SectionLabel("Account required")
 
                     Text(featureName)
-                        .font(theme.font(20.0, weight: .light))
+                        .font(theme.font(20.0, weight: Font.Weight.light))
                         .foregroundStyle(theme.textPrimary)
-                        .multilineTextAlignment(.center)
+                        .multilineTextAlignment(TextAlignment.center)
                 }
 
                 Text(message)
-                    .font(theme.font(13.0, weight: .light))
+                    .font(theme.font(13.0, weight: Font.Weight.light))
                     .foregroundStyle(theme.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, Layout.pageMargin)
+                    .multilineTextAlignment(TextAlignment.center)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                 PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: { showSignUp = true }) {
                     Text("Create free account")
                 }
-                .padding(.horizontal, Layout.pageMargin)
-                .padding(.top, 6.0)
+                .padding(Edge.Set.horizontal, Layout.pageMargin)
+                .padding(Edge.Set.top, 6.0)
 
                 Spacer()
                 Spacer()

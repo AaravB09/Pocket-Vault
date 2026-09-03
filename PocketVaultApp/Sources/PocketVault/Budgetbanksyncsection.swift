@@ -51,13 +51,13 @@ struct BudgetBankSyncSection: View {
                 Image.platformSymbol("building.columns.fill", android: "house.fill")
                     .font(theme.font(15.0))
                     .foregroundStyle(theme.accent)
-                VStack(alignment: .leading, spacing: 2.0) {
+                VStack(alignment: HorizontalAlignment.leading, spacing: 2.0) {
                     Text("BANK SYNC")
-                        .font(theme.font(10.0, weight: .bold))
+                        .font(theme.font(10.0, weight: Font.Weight.bold))
                         .tracking(2.0)
                         .foregroundStyle(theme.textPrimary)
                     Text(plaid.isConnected ? "Connected — new transactions import automatically" : "Connect a bank to auto-log spending")
-                        .font(theme.font(11.0, weight: .light))
+                        .font(theme.font(11.0, weight: Font.Weight.light))
                         .foregroundStyle(theme.textTertiary)
                 }
                 Spacer()
@@ -80,11 +80,11 @@ struct BudgetBankSyncSection: View {
                 HStack {
                     if plaid.isConnecting || plaid.isSyncing { ProgressView().tint(theme.onAccent) }
                     Text(plaid.isConnected ? "SYNC NOW" : "CONNECT BANK")
-                        .font(theme.font(12.0, weight: .bold))
+                        .font(theme.font(12.0, weight: Font.Weight.bold))
                         .tracking(2.4)
                 }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 17.0)
+                .frame(maxWidth: CGFloat.infinity)
+                .padding(Edge.Set.vertical, 17.0)
                 .background(theme.accent)
                 .foregroundColor(theme.onAccent)
                 .clipShape(Capsule())
@@ -97,12 +97,12 @@ struct BudgetBankSyncSection: View {
                 Text("Bank sync needs a connection — log payments by hand until you're back online.")
                     .font(theme.font(11.0))
                     .foregroundStyle(theme.textTertiary)
-                    .multilineTextAlignment(.center)
+                    .multilineTextAlignment(TextAlignment.center)
             } else if let errorMessage = plaid.errorMessage {
                 Text(errorMessage)
                     .font(theme.font(11.0))
                     .foregroundStyle(theme.danger.opacity(0.9))
-                    .multilineTextAlignment(.center)
+                    .multilineTextAlignment(TextAlignment.center)
             }
         }
         .padding(16.0)
@@ -123,18 +123,18 @@ struct BudgetBankSyncSection: View {
                     Circle().fill(theme.accent.opacity(0.15)).frame(width: 36.0, height: 36.0)
                     Image(systemName: "lock.fill").font(theme.font(13.0)).foregroundStyle(theme.accent)
                 }
-                VStack(alignment: .leading, spacing: 2.0) {
+                VStack(alignment: HorizontalAlignment.leading, spacing: 2.0) {
                     Text("BANK SYNC — PRO")
-                        .font(theme.font(10.0, weight: .bold))
+                        .font(theme.font(10.0, weight: Font.Weight.bold))
                         .tracking(2.0)
                         .foregroundStyle(theme.textPrimary)
                     Text("Auto-import spending instead of logging by hand")
-                        .font(theme.font(11.0, weight: .light))
+                        .font(theme.font(11.0, weight: Font.Weight.light))
                         .foregroundStyle(theme.textTertiary)
                 }
                 Spacer()
                 Image(systemName: "chevron.right")
-                    .font(theme.font(11.0, weight: .bold))
+                    .font(theme.font(11.0, weight: Font.Weight.bold))
                     .foregroundStyle(theme.textTertiary)
             }
             .padding(16.0)

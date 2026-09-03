@@ -52,7 +52,7 @@ struct AmountScrubPicker: View {
 
     private static let formatter: NumberFormatter = {
         let f = NumberFormatter()
-        f.numberStyle = .decimal
+        f.numberStyle = NumberFormatter.Style.decimal
         f.maximumFractionDigits = 0
         return f
     }()
@@ -91,7 +91,7 @@ struct AmountScrubPicker: View {
             ZStack {
                 VStack(spacing: 2.0) {
                     Text(fmt(neighborUp))
-                        .font(theme.font(15.0, weight: .light))
+                        .font(theme.font(15.0, weight: Font.Weight.light))
                         .foregroundStyle(Color.gray.opacity(0.5))
                         .blur(radius: 2.5)
                     #if !SKIP
@@ -106,11 +106,11 @@ struct AmountScrubPicker: View {
                     ZStack {
                         HStack(spacing: 2.0) {
                             Text("$")
-                                .font(theme.font(30.0, weight: .light))
+                                .font(theme.font(30.0, weight: Font.Weight.light))
                                 .foregroundStyle(Color.gray.opacity(0.5))
                             Text(fmt(amount))
-                                .font(theme.font(48.0, weight: .light))
-                                .foregroundStyle(.primary)
+                                .font(theme.font(48.0, weight: Font.Weight.light))
+                                .foregroundStyle(Color.primary)
                             #if !SKIP
                                 .contentTransition(.numericText(value: amount))
                             #endif
@@ -119,13 +119,13 @@ struct AmountScrubPicker: View {
 
                         HStack(spacing: 2.0) {
                             Text("$")
-                                .font(theme.font(30.0, weight: .light))
+                                .font(theme.font(30.0, weight: Font.Weight.light))
                                 .foregroundStyle(Color.gray.opacity(0.5))
                             TextField("", text: $typedText)
-                                .keyboardType(.numberPad)
-                                .multilineTextAlignment(.center)
-                                .font(theme.font(48.0, weight: .light))
-                                .foregroundStyle(.primary)
+                                .keyboardType(UIKeyboardType.numberPad)
+                                .multilineTextAlignment(TextAlignment.center)
+                                .font(theme.font(48.0, weight: Font.Weight.light))
+                                .foregroundStyle(Color.primary)
                                 .fixedSize()
                                 .focused($isTyping)
                                 .onChange(of: typedText) { newValue in
@@ -139,26 +139,26 @@ struct AmountScrubPicker: View {
                         }
                         .opacity(isTyping ? 1.0 : 0.0)
                     }
-                    .animation(.spring(response: 0.3, dampingFraction: 0.75), value: amount)
+                    .animation(Animation.spring(response: 0.3, dampingFraction: 0.75), value: amount)
 
                     Text(fmt(neighborDown))
-                        .font(theme.font(15.0, weight: .light))
+                        .font(theme.font(15.0, weight: Font.Weight.light))
                         .foregroundStyle(Color.gray.opacity(0.5))
                         .blur(radius: 2.5)
                     #if !SKIP
                         .contentTransition(.numericText(value: neighborDown))
                     #endif
                 }
-                .animation(.spring(response: 0.3, dampingFraction: 0.75), value: amount)
+                .animation(Animation.spring(response: 0.3, dampingFraction: 0.75), value: amount)
             }
             .frame(height: 130.0)
-            .overlay(alignment: .top) {
-                LinearGradient(colors: [theme.background, theme.background.opacity(0.0)], startPoint: .top, endPoint: .bottom)
+            .overlay(alignment: Alignment.top) {
+                LinearGradient(colors: [theme.background, theme.background.opacity(0.0)], startPoint: UnitPoint.top, endPoint: UnitPoint.bottom)
                     .frame(height: 36.0)
                     .allowsHitTesting(false)
             }
-            .overlay(alignment: .bottom) {
-                LinearGradient(colors: [theme.background, theme.background.opacity(0.0)], startPoint: .bottom, endPoint: .top)
+            .overlay(alignment: Alignment.bottom) {
+                LinearGradient(colors: [theme.background, theme.background.opacity(0.0)], startPoint: UnitPoint.bottom, endPoint: UnitPoint.top)
                     .frame(height: 36.0)
                     .allowsHitTesting(false)
             }
@@ -172,13 +172,13 @@ struct AmountScrubPicker: View {
 
             tickRuler
                 .frame(height: 26.0)
-                .padding(.top, 6.0)
+                .padding(Edge.Set.top, 6.0)
 
             Text(isTyping ? "tap elsewhere to confirm" : "drag the ruler, tap ahead to jump, or tap the amount to type")
-                .font(theme.font(9.0, weight: .medium))
+                .font(theme.font(9.0, weight: Font.Weight.medium))
                 .tracking(0.5)
                 .foregroundStyle(Color.gray.opacity(0.5))
-                .padding(.top, 2.0)
+                .padding(Edge.Set.top, 2.0)
         }
         .onAppear { typedText = amount > 0.0 ? "\(Int(amount.rounded()))" : "" }
         .onChange(of: amount) { newValue in
@@ -231,14 +231,14 @@ struct AmountScrubPicker: View {
                     .fill(
                         LinearGradient(
                             colors: [theme.accent.opacity(0.55), theme.accent.opacity(0.0)],
-                            startPoint: trailSign > 0.0 ? .trailing : .leading,
-                            endPoint: trailSign > 0.0 ? .leading : .trailing
+                            startPoint: trailSign > 0.0 ? UnitPoint.trailing : UnitPoint.leading,
+                            endPoint: trailSign > 0.0 ? UnitPoint.leading : UnitPoint.trailing
                         )
                     )
                     .frame(width: trailWidth, height: 14.0)
                     .blur(radius: 4.0)
                     .position(x: centerX - (trailSign * trailWidth / 2.0), y: centerY)
-                    .blendMode(.plusLighter)
+                    .blendMode(BlendMode.plusLighter)
                     .allowsHitTesting(false)
 
                 // Soft halo behind the pointer that flashes brighter each
@@ -283,7 +283,7 @@ struct AmountScrubPicker: View {
             #if !SKIP
             .animation(.interactiveSpring(response: 0.15, dampingFraction: 0.86, blendDuration: 0.1), value: amount)
             #else
-            .animation(isDragging ? nil : .interactiveSpring(response: 0.15, dampingFraction: 0.86, blendDuration: 0.1), value: amount)
+            .animation(isDragging ? nil : Animation.interactiveSpring(response: 0.15, dampingFraction: 0.86, blendDuration: 0.1), value: amount)
             #endif
             #if !SKIP
             .contentShape(Rectangle())
@@ -316,7 +316,7 @@ struct AmountScrubPicker: View {
                             // with a plain comparison instead of
                             // `min(50.0, ...)`.
                             let proposedTrailWidth = abs(frameDelta) * 5.0 + 12.0
-                            withAnimation(.easeOut(duration: 0.1)) {
+                            withAnimation(Animation.easeOut(duration: 0.1)) {
                                 trailWidth = proposedTrailWidth > 50.0 ? 50.0 : proposedTrailWidth
                             }
                         }
@@ -334,10 +334,10 @@ struct AmountScrubPicker: View {
                                 #if !SKIP
                                 UISelectionFeedbackGenerator().selectionChanged()
                                 #endif
-                                withAnimation(.easeOut(duration: 0.08)) {
+                                withAnimation(Animation.easeOut(duration: 0.08)) {
                                     pointerGlow = 1.0
                                 }
-                                withAnimation(.easeOut(duration: 0.3).delay(0.06)) {
+                                withAnimation(Animation.easeOut(duration: 0.3).delay(0.06)) {
                                     pointerGlow = 0.0
                                 }
                             }
@@ -348,7 +348,7 @@ struct AmountScrubPicker: View {
                         isDragging = false
                         let moved = abs(value.translation.width) > 4.0 || abs(value.translation.height) > 4.0
                         lastDragTranslation = 0.0
-                        withAnimation(.easeOut(duration: 0.35)) {
+                        withAnimation(Animation.easeOut(duration: 0.35)) {
                             trailWidth = 0.0
                         }
                         if !moved {
@@ -360,16 +360,16 @@ struct AmountScrubPicker: View {
                             #if !SKIP
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             #endif
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                            withAnimation(Animation.spring(response: 0.35, dampingFraction: 0.75)) {
                                 amount = (target / step).rounded() * step
                                 pointerGlow = 1.0
                             }
-                            withAnimation(.easeOut(duration: 0.4).delay(0.1)) {
+                            withAnimation(Animation.easeOut(duration: 0.4).delay(0.1)) {
                                 pointerGlow = 0.0
                             }
                         } else {
                             // Settle to a clean $step value on release.
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            withAnimation(Animation.spring(response: 0.3, dampingFraction: 0.8)) {
                                 amount = (amount / step).rounded() * step
                             }
                         }

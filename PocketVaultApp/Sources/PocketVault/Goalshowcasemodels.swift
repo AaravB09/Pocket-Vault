@@ -51,6 +51,90 @@ enum GoalShowcaseModels {
         ],
     ]
 
+    /// Per-node reveal threshold as a fraction of the user's savings
+    /// progress (0.0 → 1.0). A node becomes visible once progressRatio
+    /// (clamped to [0.0, 1.0]) is >= the threshold stored here.
+    ///
+    /// Single source of truth for both platforms: iOS reads it in
+    /// BuildStudioView's per-node isEnabled loop, Android reads it in
+    /// AndroidShowcaseComposable's per-node isRevealed check. The two
+    /// render paths must agree exactly so a $200 deposit into a $1000
+    /// goal reveals the SAME parts on both platforms.
+    ///
+    /// Design rules:
+    ///   • First node (structural base: chassis / walls) starts at 0.10
+    ///     so a goal with literally any savings still shows progress —
+    ///     matches the existing "STARTER PIECE" UX from BuildStudioView
+    ///     (1 piece unlocked at 0% to give "you started" momentum).
+    ///   • Steps are roughly even across 0.10–0.90, leaving 1.00 as a
+    ///     guarantee that every part is revealed at completion regardless
+    ///     of float rounding (the > comparison below uses >= against
+    ///     progressRatio clamped to exactly 1.0, so the last node never
+    ///     gets stuck hidden).
+    ///   • House has 8 nodes vs car's 9, so its steps are slightly
+    ///     wider (~10–15% each) but still monotonic.
+    ///   • Any GoalKind missing from this dictionary falls back to the
+    ///     voxel pile for its entire build (same behavior as before this
+    ///     existed) — i.e. no regression for flight, gamingRig, etc.
+    static let revealCheckpoints: [GoalKind: [String: Double]] = [
+        .car: [
+            // Chassis first — gives the model its dominant mass.
+            "body":         0.10,
+            // 4 wheels, evenly stepped — give the car its "stance".
+            "wheel_0":      0.20,
+            "wheel_1":      0.30,
+            "wheel_2":      0.40,
+            "wheel_3":      0.50,
+            // Glass next — front and rear.
+            "windshield":   0.60,
+            "rear_window":  0.70,
+            // Lights last — the smallest pieces.
+            "headlight_l":  0.80,
+            "headlight_r":  0.90,
+            // 1.00 clamps guarantee all 9 are visible at completion.
+        ],
+        .house: [
+            // Structural base first.
+            "walls":        0.10,
+            // Roof rises above the walls — defines the silhouette.
+            "roof":         0.25,
+            // Primary entrance.
+            "door":         0.40,
+            // Front windows, left-to-right.
+            "window_1":     0.55,
+            "window_2":     0.65,
+            // Side windows.
+            "window_3":     0.75,
+            "window_4":     0.85,
+            // Chimney — the crowning detail.
+            "chimney":      0.95,
+            // 1.00 clamp guarantees all 8 are visible at completion.
+        ],
+    ]
+
+    /// True when a node should be revealed given the current progress
+    /// ratio. Clamps progressRatio to [0.0, 1.0] so float drift
+    /// (e.g. 0.9999999 from a 99.99% saving) never leaves the last
+    /// checkpoint stuck hidden — both platforms call this and use the
+    /// exact same comparison.
+    ///
+    /// Returns `false` for any (goalKind, nodeName) pair not present in
+    /// revealCheckpoints (fail-closed — "hide unknown" rather than risk
+    /// showing a phantom node that isn't in the curated build order).
+    /// The showcaseBuildOrder list is the authoritative gate; if a node
+    /// is not listed there it won't be looked up regardless.
+    static func isRevealed(nodeName: String, for goalKind: GoalKind,
+                           progressRatio rawProgress: Double) -> Bool {
+        let clamped: Double
+        if rawProgress < 0.0 { clamped = 0.0 }
+        else if rawProgress > 1.0 { clamped = 1.0 }
+        else { clamped = rawProgress }
+        guard let threshold = revealCheckpoints[goalKind]?[nodeName] else {
+            return false
+        }
+        return clamped >= threshold
+    }
+
     static func hasShowcase(for goalKind: GoalKind) -> Bool {
         showcaseBuildOrder[goalKind] != nil
     }

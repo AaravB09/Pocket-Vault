@@ -14,6 +14,7 @@ import io.github.sceneview.Scene
 import io.github.sceneview.SurfaceType
 import io.github.sceneview.node.CylinderNode
 import io.github.sceneview.node.ModelNode
+import io.github.sceneview.node.Node // Imported to ensure Skip resolves child nodes correctly
 import io.github.sceneview.rememberCameraManipulator
 import io.github.sceneview.rememberEngine
 import io.github.sceneview.rememberEnvironmentLoader
@@ -92,8 +93,7 @@ func AndroidShowcaseComposable(assetPath: String, goalKind: GoalKind,
         targetPosition: Position(x: Float(0.0), y: Float(0.32), z: Float(0.0)),
         orbitHomePosition: Position(x: Float(0.0), y: Float(0.48), z: Float(3.4)))
 
-    // Capture the ModelNode reference once constructed so SideEffect can
-    // walk and mutate its renderable children on every progress change.
+    // Store reference to the created ModelNode
     @State var showcaseNode: ModelNode? = nil
 
     Scene(
@@ -108,6 +108,7 @@ func AndroidShowcaseComposable(assetPath: String, goalKind: GoalKind,
         let plinthMaterial = materialLoader.createColorInstance(
             color: Color(red: Float(0.26), green: Float(0.23), blue: Float(0.19), alpha: Float(1.0)),
             metallic: Float(0.0), roughness: Float(0.8), reflectance: Float(0.2))
+        
         CylinderNode(
             radius: Float(0.72),
             height: Float(0.035),
@@ -121,34 +122,22 @@ func AndroidShowcaseComposable(assetPath: String, goalKind: GoalKind,
 
         let baseInstance = rememberModelInstance(modelLoader, assetPath)
         if baseInstance != nil {
-
-            // ONE ModelNode for the whole asset — no per-part instances.
-            // The apply: closure receives self (the ModelNode) so we can
-            // capture a reference and do the initial visibility setup.
             ModelNode(
                 modelInstance: baseInstance,
                 scaleToUnits: Float(1.25),
                 centerOrigin: Position(x: Float(0.0), y: Float(0.0), z: Float(-1.0)),
                 position: baseTransform,
                 rotation: baseRotation,
-                apply: { [showcaseNode] capturedNode in
-                    // Capture the ModelNode reference for SideEffect.
-                    showcaseNode = capturedNode
+                apply: {
+                    // Save reference to self (ModelNode) for SideEffect updates
+                    showcaseNode = self
 
-                    // One-shot diagnostic: log all renderable node names on first load
-                    // so we can verify they match the strings in showcaseBuildOrder.
-                    let allNames: [String] = capturedNode.renderableNodes.map { $0.name ?? "(null)" }
-                    print("[nodeNames] all=\(allNames)")
-
-                    // Initial visibility: show only the parts that pass their
-                    // checkpoint at this progress ratio. Unrevealed parts are
-                    // hidden immediately so the car/house assembles correctly.
-                    for partName in showcaseParts {
-                        let shouldReveal = GoalShowcaseModels.isRevealed(
-                            nodeName: partName, for: goalKind, progressRatio: clampedProgress)
-                        let foundNode = capturedNode.renderableNodes.getOrNull(name: partName)
-                        if let foundNode {
-                            foundNode.isVisible = shouldReveal
+                    // Initial node visibility setup using SceneView's 'childNodes'.
+                    // Using a direct for-loop prevents Skip closure mapping errors.
+                    for childNode in childNodes {
+                        if let childName = childNode.name, showcaseParts.contains(childName) {
+                            childNode.isVisible = GoalShowcaseModels.isRevealed(
+                                nodeName: childName, for: goalKind, progressRatio: clampedProgress)
                         }
                     }
 
@@ -157,23 +146,18 @@ func AndroidShowcaseComposable(assetPath: String, goalKind: GoalKind,
                 }
             )
         }
-    } // Closes: Scene
+    }
 
-    // SideEffect re-fires whenever clampedProgress changes (deposits landing,
-    // savings deducted, etc.) and mutates the already-constructed ModelNode's
-    // renderable children in-place. This is the same pattern iOS uses in
-    // BuildStudioView's update: closure — a reactive mutation that doesn't
-    // recreate the model.
+    // Reactive updates when progressRatio changes
     SideEffect {
         guard let node = showcaseNode else { return }
-        for partName in showcaseParts {
-            let shouldReveal = GoalShowcaseModels.isRevealed(
-                nodeName: partName, for: goalKind, progressRatio: clampedProgress)
-            let foundNode = node.renderableNodes.getOrNull(name: partName)
-            if let foundNode {
-                foundNode.isVisible = shouldReveal
+        
+        for childNode in node.childNodes {
+            if let childName = childNode.name, showcaseParts.contains(childName) {
+                childNode.isVisible = GoalShowcaseModels.isRevealed(
+                    nodeName: childName, for: goalKind, progressRatio: clampedProgress)
             }
         }
     }
-} // Closes: func AndroidShowcaseComposable
+}
 #endif // SKIP

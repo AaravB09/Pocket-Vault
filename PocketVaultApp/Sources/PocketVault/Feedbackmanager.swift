@@ -40,7 +40,7 @@ final class FeedbackManager: ObservableObject {
     }
 
     func submit(message: String, userID: String?, displayName: String?) async {
-        let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = message.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
         isSubmitting = true

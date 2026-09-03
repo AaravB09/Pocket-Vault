@@ -8,7 +8,7 @@ struct GoalPickerBar: View {
     var onAddGoal: () -> Void
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+        ScrollView(Axis.Set.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 ForEach(goalStore.goals) { goal in
                     let isActive = goal.id == goalStore.activeGoal?.id
@@ -30,18 +30,18 @@ struct GoalPickerBar: View {
                             // triangle on Android instead of its icon.
                             let kind = GoalKind(rawValue: goal.kindRaw) ?? .custom
                             Image.platformSymbol(kind.displayIcon, android: kind.androidDisplayIcon)
-                                .font(theme.font(11, weight: .light))
+                                .font(theme.font(11, weight: Font.Weight.light))
                             Text(goal.title)
-                                .font(theme.font(12, weight: .semibold))
+                                .font(theme.font(12, weight: Font.Weight.semibold))
                             if goal.sharedGoalID != nil {
                                 Image.platformSymbol("person.2.fill", android: "person.fill")
-                                    .font(theme.font(9, weight: .semibold))
+                                    .font(theme.font(9, weight: Font.Weight.semibold))
                                     .opacity(0.8)
                             }
                         }
                         .foregroundStyle(isActive ? theme.onAccent : theme.textSecondary)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 9)
+                        .padding(Edge.Set.horizontal, 14.0)
+                        .padding(Edge.Set.vertical, 9.0)
                         .background(
                             Capsule().fill(isActive ? theme.accent : (theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06)))
                         )
@@ -53,14 +53,14 @@ struct GoalPickerBar: View {
 
                 Button(action: onAddGoal) {
                     Image(systemName: "plus")
-                        .font(theme.font(12, weight: .semibold))
+                        .font(theme.font(12, weight: Font.Weight.semibold))
                         .foregroundStyle(theme.accent)
                         .frame(width: 34, height: 34)
                         .background(Circle().fill(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06)))
                         .overlay(Circle().stroke(theme.accent.opacity(0.4), lineWidth: 1))
                 }
             }
-            .padding(.horizontal, Layout.pageMargin)
+            .padding(Edge.Set.horizontal, Layout.pageMargin)
         }
     }
 }
