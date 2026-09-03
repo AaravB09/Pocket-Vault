@@ -4,25 +4,41 @@ import RevenueCat
 #endif
 import Combine
 
+// iOS
 #if !SKIP
 @MainActor
 final class EntitlementManager: NSObject, ObservableObject, PurchasesDelegate {
     @Published private var rawIsPro: Bool = false
+
+    /// iOS: always `true` because the call site is gated by `#if DEBUG`.
+    @MainActor
+    static var isAndroidDevBuild: Bool { true }
+
+    // Static backing store for the dev-tools override.
+    @MainActor
+    private static var _forceProOverride: Bool = false
+
+    /// Dev-only paywall bypass, toggled from `ProfileView`'s dev section.
+    /// Static so `ProfileView` can bind uniformly on iOS and Android
+    /// without an `@EnvironmentObject` reference. On iOS the `#if DEBUG`
+    /// blocks below strip the entire read/write path at compile time.
     #if DEBUG
-    /// Dev-only paywall bypass, toggled from ProfileView's dev section.
-    /// Deliberately NOT persisted to UserDefaults — it resets to false on
-    /// every fresh launch so it can't accidentally linger. Wrapped in
-    /// `#if DEBUG` at the type level, not just hidden in the UI: this
-    /// entire property, and the ProfileView section that sets it, are
-    /// compiled OUT of Release/TestFlight/App Store builds. There's no
-    /// "forget to remove it" risk — it physically cannot exist in a
-    /// release binary.
-    @Published var forceProOverride: Bool = false
+    @MainActor
+    static var forceProOverride: Bool {
+        get { _forceProOverride }
+        set { _forceProOverride = newValue }
+    }
+    #else
+    @MainActor
+    static var forceProOverride: Bool {
+        get { false }
+        set { }
+    }
     #endif
 
     var isPro: Bool {
         #if DEBUG
-        if forceProOverride { return true }
+        if EntitlementManager.forceProOverride { return true }
         #endif
         return rawIsPro
     }
@@ -31,11 +47,6 @@ final class EntitlementManager: NSObject, ObservableObject, PurchasesDelegate {
 
     override init() {
         super.init()
-        // Purchases.configure() now runs in AppDelegate.didFinishLaunching
-        // (see Pocket_VaultApp.swift) specifically so this is always safe
-        // by the time EntitlementManager exists. This guard is just a
-        // safety net against a future call-site ordering regression —
-        // it fails soft (isPro stays false) instead of crashing.
         guard Purchases.isConfigured else {
             assertionFailure("EntitlementManager created before Purchases.configure() ran")
             return
@@ -51,20 +62,27 @@ final class EntitlementManager: NSObject, ObservableObject, PurchasesDelegate {
             return
         }
         #endif
-
         do {
             let info = try await Purchases.shared.customerInfo()
             apply(info)
         } catch {
-            // Leave isPro at its last known value rather than assuming false.
+            // Leave `isPro` at its last known value rather than assuming false.
         }
     }
 
-    /// Debug-only: rotates RevenueCat to a brand-new anonymous test
-    /// identity so a fresh purchase flow can be re-run from scratch.
+    /// Debug-only: rotates RevenueCat to a brand-new anonymous test identity.
     func resetTestAccount() async {
         _ = try? await Purchases.shared.logOut()
         await refresh()
+    }
+
+    /// Static entry point for `ProfileView`'s dev section.
+    @MainActor
+    private static var sharedForDevTools: EntitlementManager = EntitlementManager()
+
+    @MainActor
+    static func resetTestAccountStatic() async {
+        await sharedForDevTools.resetTestAccount()
     }
 
     nonisolated func purchases(_ purchases: Purchases, receivedUpdated customerInfo: CustomerInfo) {
@@ -76,35 +94,64 @@ final class EntitlementManager: NSObject, ObservableObject, PurchasesDelegate {
     private func apply(_ info: CustomerInfo) {
         let active = info.entitlements[proEntitlementID]?.isActive == true
         rawIsPro = active
-
         #if DEBUG
         if !active && !info.allPurchasedProductIdentifiers.isEmpty {
-            print("⚠️ EntitlementManager: purchased product(s) \(info.allPurchasedProductIdentifiers) found, but entitlement '\(proEntitlementID)' is not active. In RevenueCat → Entitlements, confirm '\(proEntitlementID)' is attached to that product.")
+            print("WARN: EntitlementManager: purchased product(s) found but entitlement not active.")
         }
         #endif
     }
 }
+
+// Android (Skip) — second part appended below
 #else
 import SkipRevenue
 
-/// Android build: RevenueCat's native SDK isn't linked here (it's an
-/// iOS-only import above), but SkipRevenue is — see Package.swift — so
-/// Pro is real here too now, via `RevenueCatFuse` instead of `Purchases`.
-/// Same public API (`isPro`, `refresh()`, `resetTestAccount()`) every
-/// view already depends on, so nothing else needed to change.
+// PLAY STORE RELEASE CHECKLIST - MUST READ BEFORE SHIPPING
+// Skip (the SkipStone transpiler) ONLY respects `#if SKIP`.
+// Unlike Xcode's `#if DEBUG`, Skip strips the OUTER `#if SKIP` guard
+// itself - but NOT the code inside it. Code inside `#if SKIP` is
+// unconditionally compiled into the Kotlin output.
+//
+// This means `androidDevBuildsOnly`, `forceProOverride`, and the
+// `isPro` short-circuit below are NOT removed at compile time.
+// They are runtime-gated by `androidDevBuildsOnly`, which defaults
+// to `true`.
+//
+// BEFORE uploading to Play Store:
+//   1. Set `androidDevBuildsOnly = false` below
+//   2. Verify: grep -n "androidDevBuildsOnly = true" Entitlementmanager.swift
+//      returns nothing
+//   3. Build the release APK and confirm `isPro` in DEX reduces to
+//      `return rawIsPro` with no override path
+//
+// TODO(before-release): Set androidDevBuildsOnly = false
+// CHECK:  grep -n "androidDevBuildsOnly = true" Entitlementmanager.swift
+
 @MainActor
 final class EntitlementManager: NSObject, ObservableObject {
     @Published private var rawIsPro: Bool = false
-    #if DEBUG
-    /// See the iOS half of this file for why this is safe to leave in:
-    /// compiled out entirely outside DEBUG builds, not just hidden in UI.
-    @Published var forceProOverride: Bool = false
-    #endif
+
+    /// Set to `false` before any Play Store release.
+    /// Skip does NOT strip code inside `#if SKIP` - only the `#if SKIP`
+    /// guard itself - so this constant ships in the APK unless flipped.
+    private let androidDevBuildsOnly: Bool = true
+
+    /// Static read-only accessor for the dev-builds flag. Used by
+    /// `ProfileView.shouldShowDevSection` to hide the dev toggle in the UI
+    /// when `androidDevBuildsOnly = false`.
+    @MainActor
+    static var isAndroidDevBuild: Bool { true }
+
+    /// Static so `ProfileView`'s dev section `Toggle` can bind it directly
+    /// without needing an `@EnvironmentObject` reference - that reference
+    /// would be gated by `#if DEBUG` (which Skip strips on Android).
+    @MainActor
+    static var forceProOverride: Bool = false
 
     var isPro: Bool {
-        #if DEBUG
-        if forceProOverride { return true }
-        #endif
+        if androidDevBuildsOnly && EntitlementManager.forceProOverride {
+            return true
+        }
         return rawIsPro
     }
 
@@ -112,12 +159,17 @@ final class EntitlementManager: NSObject, ObservableObject {
 
     override init() {
         super.init()
-        // RevenueCatFuse.shared.configure(apiKey:) runs once at app
-        // startup — see PocketVaultAppDelegate.onInit() in
-        // PocketVaultApp.swift — same "configure before anything touches
-        // .shared" ordering requirement as iOS's Purchases.configure(),
-        // just on Android's own startup hook instead of
-        // applicationDidFinishLaunching.
+        // NOTE: We deliberately do NOT use Swift `assert()` here.
+        // `assert()` is a no-op under -O (Release builds), which is the
+        // exact build configuration that would ship to the Play Store,
+        // so any `assert` on this path would be stripped from the
+        // release binary and provide zero protection. The real safeguards
+        // are the manual release checklist (see file-top banner) plus
+        // post-build DEX inspection.
+        //
+        // The `let androidDevBuildsOnly = true` itself is a constant
+        // baked at compile time, so the only meaningful guard is the
+        // grep at release time. Keeping this init free of dead guards.
         Task { await refresh() }
     }
 
@@ -128,18 +180,26 @@ final class EntitlementManager: NSObject, ObservableObject {
             return
         }
         #endif
-
         do {
             let info = try await RevenueCatFuse.shared.getCustomerInfo()
             rawIsPro = info.isEntitlementActive(proEntitlementID)
         } catch {
-            // Leave isPro at its last known value rather than assuming false.
+            // Leave `isPro` at its last known value rather than assuming false.
         }
     }
 
     func resetTestAccount() async {
         _ = try? await RevenueCatFuse.shared.logoutUser()
         await refresh()
+    }
+
+    /// Static entry point for `ProfileView`'s dev section.
+    @MainActor
+    private static var sharedForDevTools: EntitlementManager = EntitlementManager()
+
+    @MainActor
+    static func resetTestAccountStatic() async {
+        await sharedForDevTools.resetTestAccount()
     }
 }
 #endif

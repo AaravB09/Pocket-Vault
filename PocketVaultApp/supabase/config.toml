@@ -2,3 +2,9 @@
 # The function verifies the caller explicitly so this also works with newer
 # asymmetric Supabase signing keys. Do not deploy it with anonymous access.
 verify_jwt = false
+
+[functions.delete-account]
+# The function verifies the caller's JWT and derives the deletion target
+# from auth.getUser() server-side. Never deploy it with anonymous access
+# -- that would let anyone with the URL wipe any account.
+verify_jwt = false

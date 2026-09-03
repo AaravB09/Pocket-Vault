@@ -4,6 +4,19 @@ import UIKit
 import PhotosUI
 #endif
 
+// ⚠️ PLAY STORE RELEASE CHECKLIST — MUST READ BEFORE SHIPPING ⚠️
+// ────────────────────────────────────────────────────────────────
+// The `devSection` in this file is conditionally compiled in via
+// `#if DEBUG` on iOS (safe — Xcode strips it from release) but
+// `#if SKIP` on Android. Skip does NOT strip the code inside
+// `#if SKIP` — only the outer guard. So the Android devSection
+// ships in the release APK unless `EntitlementManager.androidDevBuildsOnly`
+// is flipped to `false`. See Entitlementmanager.swift for the
+// full checklist. Both `shouldShowDevSection` (here) and `isPro`
+// (there) gate on the same flag, so a forgotten flip means the
+// toggle is hidden in the UI even if the code path is still present.
+// ────────────────────────────────────────────────────────────────
+
 struct ProfileView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var authManager: AuthManager
@@ -164,7 +177,9 @@ struct ProfileView: View {
                     ThemePickerSection()
 
                     #if DEBUG
-                    devSection
+                    if shouldShowDevSection {
+                        devSection
+                    }
                     #endif
 
                     LegalFinePrint()
@@ -271,9 +286,31 @@ struct ProfileView: View {
         #endif
     }
 
+    // iOS: always true — the call site is guarded by `#if DEBUG`, which
+    // Xcode strips from App Store builds. Android: runtime-check against
+    // `androidDevBuildsOnly` (EntitlementManager.isAndroidDevBuild).
+    // Both gates together: if `androidDevBuildsOnly = false` at release
+    // time, the dev section is invisible even if the code somehow slipped
+    // through (defence in depth; the real gate is in EntitlementManager).
+    #if !SKIP
+    private var shouldShowDevSection: Bool { true }
+    #else
+    private var shouldShowDevSection: Bool {
+        EntitlementManager.isAndroidDevBuild
+    }
+    #endif
+
     #if DEBUG
     // MARK: - Dev tools (DEBUG builds only — see EntitlementManager for why
     // this can't leak into a release build even if left in place).
+    //
+    // On iOS: `#if DEBUG` is a compile-time guarantee — this entire section
+    //   is stripped from the App Store binary.
+    // On Android: the compile-time guard is `#if SKIP` (which strips the
+    //   outer `#if SKIP` guard, leaving the inner code). The `isPro`
+    //   short-circuit in EntitlementManager AND the `shouldShowDevSection`
+    //   check above BOTH gate on `androidDevBuildsOnly`, which must be
+    //   flipped to `false` before Play Store release (see that file).
     private var devSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionLabel("Dev tools")
@@ -289,9 +326,28 @@ struct ProfileView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
-                Toggle("", isOn: $entitlementManager.forceProOverride)
+                // Explicit `Binding(get:set:)` rather than the `$EntitlementManager.forceProOverride`
+                // projection, because Skip's Kotlin transpile of a static-property
+                // projected binding can be brittle (static @Published on a
+                // class that also has an instance @EnvironmentObject on iOS is
+                // unusual). The explicit form works uniformly on both platforms.
+                Toggle("", isOn: Binding(
+                    get: { EntitlementManager.forceProOverride },
+                    set: { EntitlementManager.forceProOverride = $0 }
+                ))
                     .labelsHidden()
                     .tint(theme.danger)
+            }
+
+            Button(action: {
+                Task { await EntitlementManager.resetTestAccountStatic() }
+            }) {
+                HStack(spacing: 8) {
+                    Image(systemName: "arrow.counterclockwise")
+                    Text("Reset test account")
+                }
+                .font(theme.font(12, weight: .medium))
+                .foregroundStyle(theme.danger)
             }
         }
         .padding(20)

@@ -13,6 +13,7 @@ supabase link --project-ref hbyrgmckacgbqqtteaq
 supabase db push
 supabase secrets set GEMINI_API_KEY=... GEMINI_MODEL=gemini-2.5-flash
 supabase functions deploy coach --no-verify-jwt
+supabase functions deploy delete-account --no-verify-jwt
 ```
 
 `--no-verify-jwt` is intentional here: the function uses `auth.getUser()` for
