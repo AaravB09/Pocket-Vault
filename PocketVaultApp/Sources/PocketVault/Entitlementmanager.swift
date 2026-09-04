@@ -85,6 +85,12 @@ final class EntitlementManager: NSObject, ObservableObject, PurchasesDelegate {
         await sharedForDevTools.resetTestAccount()
     }
 
+    /// Static accessor so callers that don't have an `@EnvironmentObject`
+    /// reference (e.g. confirmation dialogs in views gated by `#if DEBUG`)
+    /// can still check `EntitlementManager.isPro` without a compile error.
+    @MainActor
+    static var isPro: Bool { sharedForDevTools.isPro }
+
     nonisolated func purchases(_ purchases: Purchases, receivedUpdated customerInfo: CustomerInfo) {
         Task { @MainActor in
             self.apply(customerInfo)
@@ -201,5 +207,11 @@ final class EntitlementManager: NSObject, ObservableObject {
     static func resetTestAccountStatic() async {
         await sharedForDevTools.resetTestAccount()
     }
+
+    /// Static accessor so callers that don't have an `@EnvironmentObject`
+    /// reference (e.g. confirmation dialogs in views gated by `#if DEBUG`)
+    /// can still check `EntitlementManager.isPro` without a compile error.
+    @MainActor
+    static var isPro: Bool { sharedForDevTools.isPro }
 }
 #endif

@@ -32,6 +32,7 @@ struct ProfileView: View {
 
     @State private var displayName: String = ""
     @State private var showSignOutConfirm: Bool = false
+    @State private var showDeleteAccountConfirm: Bool = false
     @State private var showFeedback: Bool = false
     @State private var showLeaderboard: Bool = false
     @State private var exportURLs: [URL]? = nil
@@ -201,6 +202,13 @@ struct ProfileView: View {
                     .padding(.horizontal, Layout.pageMargin)
                     .padding(.top, 8)
 
+                    Button(action: { showDeleteAccountConfirm = true }) {
+                        Text("Delete account")
+                    }
+                    .secondaryCTA(accent: Color.red.opacity(0.85))
+                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(.top, 6)
+
                     Spacer(minLength: 40)
                 }
             }
@@ -233,6 +241,29 @@ struct ProfileView: View {
                 }
             }
             Button("Cancel", role: .cancel) {}
+        }
+        .confirmationDialog(
+            "Delete your account?",
+            isPresented: $showDeleteAccountConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Delete Account", role: .destructive) {
+                Task {
+                    do {
+                        try await authManager.deleteAccount()
+                        dismiss()
+                    } catch {
+                        print("Delete account failed:", error.localizedDescription)
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            if EntitlementManager.isPro {
+                Text("You have an active Pro subscription. Cancel it in your device's store settings BEFORE deleting, or you may continue to be charged.")
+            } else {
+                Text("This will permanently delete all your goals, savings history, and account data. This cannot be undone.")
+            }
         }
         .sheet(isPresented: $showFeedback) {
             FeedbackView()

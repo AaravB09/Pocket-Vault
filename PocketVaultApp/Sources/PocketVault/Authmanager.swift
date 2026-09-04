@@ -508,6 +508,48 @@ final class AuthManager: ObservableObject {
         }
     }
 
+    /// Permanently deletes the user's Supabase Auth account and wipes all
+    /// local data. This action is IRREVERSIBLE — the account, all goals,
+    /// savings history, and transaction records are deleted server-side
+    /// and cannot be recovered.
+    ///
+    /// Steps:
+    ///   1. Call the `delete-account` Edge Function (server-side deletion,
+    ///      RLS-authorized by the user's JWT so the function only touches
+    ///      that user's row; also revokes the Supabase session).
+    ///   2. Wipe all UserDefaults under the current namespace.
+    ///   3. Call `signOut()` to reset all auth state and navigate to the
+    ///      login screen.
+    ///
+    /// Throws on network/Edge Function failure. Local data is wiped and
+    /// sign-out runs regardless of server outcome — so a user whose session
+    /// expired mid-delete still lands on the login screen cleanly.
+    func deleteAccount() async throws {
+        // Step 1: server-side deletion (RLS-authorized by access token)
+        if let token = defaults.string(forKey: accessTokenKey) {
+            guard let url = URL(string: "\(SupabaseConfig.projectURL.absoluteString)/functions/v1/delete-account") else {
+                throw NSError(domain: "AuthManager", code: 8, userInfo: [NSLocalizedDescriptionKey: "Invalid server URL"])
+            }
+            var req = URLRequest(url: url)
+            req.httpMethod = "POST"
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            req.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
+            req.setValue("application/json", forHTTPHeaderField: "content-type")
+
+            let (_, response) = try await URLSession.shared.data(for: req)
+            if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
+                throw NSError(domain: "AuthManager", code: 9, userInfo: [NSLocalizedDescriptionKey: "Account deletion failed — please check your connection and try again."])
+            }
+        }
+
+        // Step 2: wipe all local data under current namespace
+        let ns = storageNamespace
+        wipeNamespace(ns)
+
+        // Step 3: reset auth state and navigate to login screen
+        await signOut()
+    }
+
     private func identifyWithRevenueCat(userID: String) async {
         #if !SKIP
         _ = try? await Purchases.shared.logIn(userID)
