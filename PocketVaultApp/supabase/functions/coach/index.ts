@@ -33,6 +33,9 @@ Deno.serve(async (request) => {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const { data: { user }, error: authError } = await caller.auth.getUser();
+  // DEBUG: surface exactly what the SDK sees so we can distinguish an expired
+  // token (exp iat mismatch) from a key-rotation / signature mismatch.
+  console.log(`[coachAuth] authError=${authError?.message ?? "nil"} userId=${user?.id ?? "nil"}`);
   if (authError || !user) return fail(401, "invalid session");
 
   let payload: Record<string, unknown>;
@@ -62,22 +65,51 @@ Deno.serve(async (request) => {
     p_limit: 20,
     p_window_seconds: 3600,
   });
+  // DEBUG: log the raw Postgres error so we can distinguish a missing table
+  // / function (DDL not pushed) from an RLS denial (BYPASSRLS missing).
+  console.log(`[coachQuota] quotaError=${quotaError?.message ?? "nil"} allowed=${allowed}`);
   if (quotaError) return fail(500, "quota check failed");
   if (!allowed) return fail(429, "AI limit reached. Try again later.");
 
-  const model = Deno.env.get("GEMINI_MODEL") ?? "gemini-2.5-flash";
+  const model = Deno.env.get("GEMINI_MODEL") ?? "gemini-3.6-flash";
   const providerBody = isPrompt
     ? { contents: [{ role: "user", parts: [{ text: prompt }] }], generationConfig: { maxOutputTokens: maxTokens } }
     : { contents, generationConfig: { maxOutputTokens: maxTokens } };
 
-  const providerResponse = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(geminiKey)}`,
-    { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(providerBody) },
-  );
-  if (!providerResponse.ok) {
-    console.error("Gemini request failed", providerResponse.status, user.id);
+  // Retry 503s (UNAVAILABLE / high demand) up to 2 times with exponential
+  // backoff. All other non-ok statuses are terminal — retrying them wastes the
+  // user's quota window and won't change the outcome.
+  const delaysMs = [500, 1000];
+  let lastResponse: Response | null = null;
+  for (let attempt = 0; attempt <= delaysMs.length; attempt++) {
+    lastResponse = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(geminiKey)}`,
+      { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(providerBody) },
+    );
+    if (lastResponse.ok) break;
+    if (lastResponse.status !== 503) {
+      // Terminal failure — log body and give up immediately.
+      const geminiBody = await lastResponse.text();
+      console.error(
+        `Gemini request failed status=${lastResponse.status} userId=${user.id} model=${model} body=${geminiBody}`,
+      );
+      return fail(502, "AI provider unavailable");
+    }
+    if (attempt < delaysMs.length) {
+      console.log(`[coachGemini] 503 on attempt ${attempt + 1}, retrying in ${delaysMs[attempt]}ms...`);
+      await new Promise((resolve) => setTimeout(resolve, delaysMs[attempt]));
+    }
+  }
+
+  if (!lastResponse!.ok) {
+    // All 503 retries exhausted.
+    const geminiBody = await lastResponse!.text();
+    console.error(
+      `Gemini request failed status=${lastResponse!.status} userId=${user.id} model=${model} body=${geminiBody}`,
+    );
     return fail(502, "AI provider unavailable");
   }
+  const providerResponse = lastResponse!;
 
   // Return only the response shape the app needs; do not expose provider
   // headers, API keys, or raw errors to the client.

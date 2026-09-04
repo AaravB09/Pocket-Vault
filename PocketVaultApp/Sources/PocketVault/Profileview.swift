@@ -45,7 +45,18 @@ struct ProfileView: View {
     }
 
     @State private var profileImageData: Data?
-    
+
+    /// Local toggle state for the dev-section Force Pro toggle. We use a local
+    /// `@State` rather than binding directly to `EntitlementManager.forceProOverride`
+    /// because on Android Skip translates a static `@Published` as a plain `var`
+    /// with no Compose-tracked state, so a direct binding doesn't trigger a re-render
+    /// when the user flips the switch. The local `@State` is the source of truth
+    /// for the toggle UI; `.task` reads the initial value from
+    /// `EntitlementManager.forceProOverride`, and `.onChange(of: isForceProOverride)`
+    /// pushes changes back. On iOS Release, `forceProOverride`'s setter is a no-op,
+    /// so the push is harmless.
+    @State private var isForceProOverride: Bool = false
+
     #if !SKIP
     @State private var selectedItem: PhotosPickerItem? = nil
     #endif
@@ -177,11 +188,9 @@ struct ProfileView: View {
                     privacyAndDataSection
                     ThemePickerSection()
 
-                    #if DEBUG
                     if shouldShowDevSection {
                         devSection
                     }
-                    #endif
 
                     LegalFinePrint()
                         .padding(.top, 4)
@@ -317,31 +326,30 @@ struct ProfileView: View {
         #endif
     }
 
-    // iOS: always true — the call site is guarded by `#if DEBUG`, which
-    // Xcode strips from App Store builds. Android: runtime-check against
-    // `androidDevBuildsOnly` (EntitlementManager.isAndroidDevBuild).
-    // Both gates together: if `androidDevBuildsOnly = false` at release
+    // iOS: true only in Debug builds (compile-time stripped via #if DEBUG inside)
+    // Android: runtime-check against androidDevBuildsOnly (EntitlementManager.isAndroidDevBuild)
+    // Both gates together: if androidDevBuildsOnly = false at release
     // time, the dev section is invisible even if the code somehow slipped
     // through (defence in depth; the real gate is in EntitlementManager).
     #if !SKIP
-    private var shouldShowDevSection: Bool { true }
+    private var shouldShowDevSection: Bool {
+        #if DEBUG
+        return true
+        #else
+        return false
+        #endif
+    }
     #else
     private var shouldShowDevSection: Bool {
         EntitlementManager.isAndroidDevBuild
     }
     #endif
 
-    #if DEBUG
-    // MARK: - Dev tools (DEBUG builds only — see EntitlementManager for why
-    // this can't leak into a release build even if left in place).
-    //
-    // On iOS: `#if DEBUG` is a compile-time guarantee — this entire section
-    //   is stripped from the App Store binary.
-    // On Android: the compile-time guard is `#if SKIP` (which strips the
-    //   outer `#if SKIP` guard, leaving the inner code). The `isPro`
-    //   short-circuit in EntitlementManager AND the `shouldShowDevSection`
-    //   check above BOTH gate on `androidDevBuildsOnly`, which must be
-    //   flipped to `false` before Play Store release (see that file).
+    // On iOS: `shouldShowDevSection` returns true in Debug builds, false in
+    // Release — so this entire section is only reachable when building for
+    // development. On Android: same gate via `androidDevBuildsOnly`.
+    // The `devSection` is left outside any `#if DEBUG` so Skip's transpile
+    // doesn't strip it (Skip only respects `#if SKIP`, not `#if DEBUG`).
     private var devSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             SectionLabel("Dev tools")
@@ -357,15 +365,13 @@ struct ProfileView: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
-                // Explicit `Binding(get:set:)` rather than the `$EntitlementManager.forceProOverride`
-                // projection, because Skip's Kotlin transpile of a static-property
-                // projected binding can be brittle (static @Published on a
-                // class that also has an instance @EnvironmentObject on iOS is
-                // unusual). The explicit form works uniformly on both platforms.
-                Toggle("", isOn: Binding(
-                    get: { EntitlementManager.forceProOverride },
-                    set: { EntitlementManager.forceProOverride = $0 }
-                ))
+                // Uses `$isForceProOverride` (local @State) as the source of truth,
+                // with .task loading the initial value from EntitlementManager and
+                // .onChange pushing updates back. We can't bind directly to the static
+                // EntitlementManager.forceProOverride because Skip translates the static
+                // @Published as a plain Kotlin var with no Compose state tracking, so
+                // a direct Binding wouldn't trigger re-renders on Android.
+                Toggle("", isOn: $isForceProOverride)
                     .labelsHidden()
                     .tint(theme.danger)
             }
@@ -386,8 +392,11 @@ struct ProfileView: View {
         .cornerRadius(20)
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.danger.opacity(0.3), lineWidth: 1))
         .padding(.horizontal, Layout.pageMargin)
+        // Sync local @State from static EntitlementManager.forceProOverride on appear.
+        .task { isForceProOverride = EntitlementManager.forceProOverride }
+        // Push local @State changes back into EntitlementManager.forceProOverride.
+        .onChange(of: isForceProOverride) { EntitlementManager.forceProOverride = $0 }
     }
-    #endif
 
     // MARK: - Privacy & Data
     private var privacyAndDataSection: some View {

@@ -47,6 +47,9 @@ enum AIChatService {
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
             let raw = String(data: data, encoding: .utf8) ?? "unknown error"
+            // DEBUG: print raw HTTP response so we can see the exact status + body
+            // from the function (not just the wrapped error message)
+            print("[askAIDebug] HTTP status=\((response as? HTTPURLResponse)?.statusCode ?? -1) body=\(raw) tokenPresent=\(!accessToken.isEmpty)")
             throw NSError(domain: "AIChat", code: 1, userInfo: [NSLocalizedDescriptionKey: "API error: \(raw)"])
         }
 
@@ -346,7 +349,8 @@ struct AIChatView: View {
             )
             messages.append(ChatMessage(role: .model, text: reply))
         } catch {
-            errorMessage = "Couldn't reach the assistant. Check your proxy is deployed."
+            // DEBUG: surface the actual error so we can see whether it's auth/quota/key/parse/network.
+            errorMessage = "Couldn't reach the assistant. \(error.localizedDescription)"
         }
         isSending = false
     }

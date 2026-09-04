@@ -243,6 +243,9 @@
     "By continuing, you agree to our" : {
 
     },
+    "Bypasses RevenueCat entirely for this session. DEBUG builds only — never ships." : {
+
+    },
     "Cancel" : {
       "comment" : "Button title indicating that the operation should be cancelled",
       "localizations" : {
@@ -382,6 +385,15 @@
         }
       }
     },
+    "Delete account" : {
+
+    },
+    "Delete Account" : {
+
+    },
+    "Delete your account?" : {
+
+    },
     "Deposit day" : {
 
     },
@@ -455,6 +467,9 @@
 
     },
     "Floor" : {
+
+    },
+    "Force Pro unlocked" : {
 
     },
     "Forgot password?" : {
@@ -745,6 +760,9 @@
     "Reset Password" : {
 
     },
+    "Reset test account" : {
+
+    },
     "Resetting the password for %@" : {
 
     },
@@ -951,6 +969,9 @@
     "This screen renders live from your RevenueCat Offering. Add an Offering with Packages in the RevenueCat dashboard (and matching products in App Store Connect), then this screen will populate automatically." : {
 
     },
+    "This will permanently delete all your goals, savings history, and account data. This cannot be undone." : {
+
+    },
     "Title" : {
       "comment" : "Label for the item editor form indicating the title of the item",
       "extractionState" : "stale",
@@ -1075,6 +1096,9 @@
 
     },
     "What's on your mind?" : {
+
+    },
+    "You have an active Pro subscription. Cancel it in your device's store settings BEFORE deleting, or you may continue to be charged." : {
 
     },
     "You'll both see every deposit and how close you are together." : {

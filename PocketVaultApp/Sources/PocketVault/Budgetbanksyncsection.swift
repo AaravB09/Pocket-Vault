@@ -46,6 +46,52 @@ struct BudgetBankSyncSection: View {
 
     // MARK: - Pro: real Connect Bank flow
     private var connectedState: some View {
+        // Plaid Link (LinkKit) is iOS-only in this codebase. On Android we
+        // show a "coming soon" placeholder so the section doesn't look like
+        // a broken button. Wiring bank sync on Android means adding Plaid's
+        // Android SDK / Skip package — separate project.
+        connectedStateBody
+        .padding(16.0)
+        #if !SKIP
+        .background(.ultraThinMaterial)
+        #else
+        .background(theme.background.opacity(0.8))
+        #endif
+        .clipShape(RoundedRectangle(cornerRadius: 16.0))
+        .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(theme.cardStroke, lineWidth: 1.0))
+    }
+
+    @ViewBuilder
+    private var connectedStateBody: some View {
+        #if SKIP
+        VStack(spacing: 12.0) {
+            HStack(spacing: 12.0) {
+                Image.platformSymbol("building.columns.fill", android: "house.fill")
+                    .font(theme.font(15.0))
+                    .foregroundStyle(theme.accent)
+                VStack(alignment: HorizontalAlignment.leading, spacing: 2.0) {
+                    Text("BANK SYNC")
+                        .font(theme.font(10.0, weight: Font.Weight.bold))
+                        .tracking(2.0)
+                        .foregroundStyle(theme.textPrimary)
+                    Text("Coming soon to Android — log payments by hand for now.")
+                        .font(theme.font(11.0, weight: Font.Weight.light))
+                        .foregroundStyle(theme.textTertiary)
+                }
+                Spacer()
+            }
+            HStack {
+                Text("COMING SOON")
+                    .font(theme.font(12.0, weight: Font.Weight.bold))
+                    .tracking(2.4)
+            }
+            .frame(maxWidth: CGFloat.infinity)
+            .padding(Edge.Set.vertical, 17.0)
+            .background(theme.accent.opacity(0.4))
+            .foregroundColor(theme.onAccent)
+            .clipShape(Capsule())
+        }
+        #else
         VStack(spacing: 12.0) {
             HStack(spacing: 12.0) {
                 Image.platformSymbol("building.columns.fill", android: "house.fill")
@@ -68,12 +114,9 @@ struct BudgetBankSyncSection: View {
                     if plaid.isConnected {
                         await plaid.syncTransactions(accessToken: authManager.accessToken, into: budgetManager)
                     } else {
-                        // 2. Hide the Apple-only presentation logic from Android
-                        #if !SKIP
                         await plaid.startConnection(accessToken: authManager.accessToken) { config in
                             linkPresenter.present(config: config)
                         }
-                        #endif
                     }
                 }
             }) {
@@ -105,14 +148,7 @@ struct BudgetBankSyncSection: View {
                     .multilineTextAlignment(TextAlignment.center)
             }
         }
-        .padding(16.0)
-        #if !SKIP
-        .background(.ultraThinMaterial)
-        #else
-        .background(theme.background.opacity(0.8))
         #endif
-        .clipShape(RoundedRectangle(cornerRadius: 16.0))
-        .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(theme.cardStroke, lineWidth: 1.0))
     }
 
     // MARK: - Free/guest: upsell card, no Plaid session possible
