@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct LoginView: View {
+public struct LoginView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var theme: ThemeManager
 
@@ -45,11 +45,11 @@ struct LoginView: View {
         })
     ]
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             RadialGradient(
-                colors: [theme.textPrimary.opacity(0.08), .clear],
-                center: .top, startRadius: 10, endRadius: 320
+                colors: [theme.textPrimary.opacity(0.08), Color.clear],
+                center: UnitPoint.top, startRadius: 10, endRadius: 320
             )
             .ignoresSafeArea()
             .allowsHitTesting(false)
@@ -58,13 +58,13 @@ struct LoginView: View {
                 VStack(spacing: 30) {
                     VStack(spacing: 8) {
                         Text("POCKET VAULT")
-                            .font(theme.font(11, weight: .bold))
+                            .font(theme.font(11, weight: Font.Weight.bold))
                             .tracking(4)
                             .foregroundStyle(theme.accent)
                         Text(isSignUpMode ? "Create Your Vault" : "Welcome Back")
-                            .font(theme.font(26, weight: .light))
+                            .font(theme.font(26, weight: Font.Weight.light))
                             #if !SKIP
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(Color.primary)
                             #else
                             // Android-only: SkipUI doesn't resolve the environment-based
                             // .primary ShapeStyle the way real SwiftUI does here, so this was
@@ -73,7 +73,7 @@ struct LoginView: View {
                             #endif
                         if hideGuestOption {
                             Text("Create a free account to continue")
-                                .font(theme.font(12, weight: .light))
+                                .font(theme.font(12, weight: Font.Weight.light))
                                 #if !SKIP
                                 .foregroundStyle(.secondary)
                                 #else
@@ -90,18 +90,18 @@ struct LoginView: View {
                     // "Welcome Back" title on Android than the equivalent gap
                     // on iOS.
                     #if !SKIP
-                    .padding(.top, 110)
+                    .padding(Edge.Set.top, 110)
                     #else
-                    .padding(.top, 40)
+                    .padding(Edge.Set.top, 40)
                     #endif
 
                     VStack(spacing: 16) {
                         TextField("", text: $email, prompt: Text("Email").foregroundColor(theme.textTertiary))
-                            .textInputAutocapitalization(.never)
+                            .textInputAutocapitalization(TextInputAutocapitalization.never)
                             .autocorrectionDisabled()
-                            .keyboardType(.emailAddress)
+                            .keyboardType(UIKeyboardType.emailAddress)
                             #if !SKIP
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(Color.primary)
                             #else
                             // Android-only: SkipUI doesn't resolve the environment-based
                             // .primary ShapeStyle the way real SwiftUI does here, so this was
@@ -123,18 +123,18 @@ struct LoginView: View {
                             #endif
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
 
-                        ZStack(alignment: .trailing) {
+                        ZStack(alignment: Alignment.trailing) {
                             Group {
                                 if isPasswordVisible {
                                     TextField("", text: $password, prompt: Text("Password (6+ characters)").foregroundColor(theme.textTertiary))
-                                        .textInputAutocapitalization(.never)
+                                        .textInputAutocapitalization(TextInputAutocapitalization.never)
                                         .autocorrectionDisabled()
                                 } else {
                                     SecureField("", text: $password, prompt: Text("Password (6+ characters)").foregroundColor(theme.textTertiary))
                                 }
                             }
                             #if !SKIP
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(Color.primary)
                             #else
                             // Android-only: SkipUI doesn't resolve the environment-based
                             // .primary ShapeStyle the way real SwiftUI does here, so this was
@@ -143,7 +143,7 @@ struct LoginView: View {
                             #endif
                             .tint(theme.accent)
                             .padding(16)
-                            .padding(.trailing, 40)
+                            .padding(Edge.Set.trailing, 40)
                             #if !SKIP
                             .background(.ultraThinMaterial)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -158,7 +158,7 @@ struct LoginView: View {
                                     .font(theme.font(14))
                                     .foregroundStyle(theme.textTertiary)
                             }
-                            .padding(.trailing, 16)
+                            .padding(Edge.Set.trailing, 16)
                         }
 
                         if !isSignUpMode {
@@ -170,14 +170,14 @@ struct LoginView: View {
                                     showForgotPassword = true
                                 }) {
                                     Text("Forgot password?")
-                                        .font(theme.font(12, weight: .light))
+                                        .font(theme.font(12, weight: Font.Weight.light))
                                         .foregroundStyle(theme.accent)
                                 }
                             }
                         }
 
                         if isSignUpMode {
-                            VStack(alignment: .leading, spacing: 8) {
+                            VStack(alignment: HorizontalAlignment.leading, spacing: 8) {
                                 ForEach(passwordRequirements) { requirement in
                                     let met = requirement.isMet(password)
                                     HStack(spacing: 8) {
@@ -185,28 +185,28 @@ struct LoginView: View {
                                             .font(theme.font(13))
                                             .foregroundStyle(met ? theme.accent : theme.textTertiary)
                                         Text(requirement.label)
-                                            .font(theme.font(12, weight: .light))
+                                            .font(theme.font(12, weight: Font.Weight.light))
                                             .foregroundStyle(met ? theme.textPrimary.opacity(0.8) : theme.textTertiary)
                                     }
                                 }
                             }
-                            .padding(.horizontal, 4)
-                            .padding(.top, 2)
-                            .transition(.opacity)
+                            .padding(Edge.Set.horizontal, 4)
+                            .padding(Edge.Set.top, 2)
+                            .transition(AnyTransition.opacity)
                         }
                     }
-                    .padding(.horizontal, Layout.pageMargin)
-                    .animation(.easeInOut(duration: 0.2), value: isSignUpMode)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
+                    .animation(Animation.easeInOut(duration: 0.2), value: isSignUpMode)
 
                     if awaitingEmailConfirmation {
                         VStack(spacing: 10) {
                             Image.platformSymbol("envelope.badge.fill", android: "envelope.fill")
-                                .font(theme.font(20, weight: .semibold))
+                                .font(theme.font(20, weight: Font.Weight.semibold))
                                 .foregroundStyle(theme.accent)
                             Text("Check your email")
-                                .font(theme.font(13, weight: .semibold))
+                                .font(theme.font(13, weight: Font.Weight.semibold))
                                 #if !SKIP
-                                .foregroundStyle(.primary)
+                                .foregroundStyle(Color.primary)
                                 #else
                                 // Android-only: SkipUI doesn't resolve the environment-based
                                 // .primary ShapeStyle the way real SwiftUI does here, so this was
@@ -214,7 +214,7 @@ struct LoginView: View {
                                 .foregroundStyle(theme.textPrimary)
                                 #endif
                             Text("We sent a confirmation link to \(email). Tap it, then come back and sign in.")
-                                .font(theme.font(12, weight: .light))
+                                .font(theme.font(12, weight: Font.Weight.light))
                                 #if !SKIP
                                 .foregroundStyle(.secondary)
                                 #else
@@ -223,7 +223,7 @@ struct LoginView: View {
                                 // rendering as plain black text instead of following the theme.
                                 .foregroundStyle(theme.textSecondary)
                                 #endif
-                                .multilineTextAlignment(.center)
+                                .multilineTextAlignment(TextAlignment.center)
                         }
                         .padding(16)
                         #if !SKIP
@@ -234,26 +234,26 @@ struct LoginView: View {
                         .cornerRadius(14)
                         #endif
                         .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.accent.opacity(0.3), lineWidth: 1))
-                        .padding(.horizontal, Layout.pageMargin)
+                        .padding(Edge.Set.horizontal, Layout.pageMargin)
                     } else if let errorMessage = authManager.errorMessage {
                         Text(errorMessage)
-                            .font(theme.font(12, weight: .light))
+                            .font(theme.font(12, weight: Font.Weight.light))
                             .foregroundStyle(theme.danger.opacity(0.9))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, Layout.pageMargin)
+                            .multilineTextAlignment(TextAlignment.center)
+                            .padding(Edge.Set.horizontal, Layout.pageMargin)
                     }
 
                     SocialSignInButtons()
-                        .padding(.horizontal, Layout.pageMargin)
+                        .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     HStack(spacing: 10) {
                         Rectangle().fill(theme.cardStroke).frame(height: 1)
                         Text("or")
-                            .font(theme.font(11, weight: .medium))
+                            .font(theme.font(11, weight: Font.Weight.medium))
                             .foregroundStyle(theme.textTertiary)
                         Rectangle().fill(theme.cardStroke).frame(height: 1)
                     }
-                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     // Routed through PrimaryCTAButton (see ThemeManager.swift)
                     // instead of a bespoke Button — gets the full default /
@@ -284,7 +284,7 @@ struct LoginView: View {
                         Text(isSignUpMode ? "Create account" : "Sign in")
                     }
                     .disabled(!isValid)
-                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     Button(action: {
                         isSignUpMode.toggle()
@@ -292,7 +292,7 @@ struct LoginView: View {
                         awaitingEmailConfirmation = false
                     }) {
                         Text(isSignUpMode ? "Already have an account? Sign in" : "New here? Create an account")
-                            .font(theme.font(12, weight: .light))
+                            .font(theme.font(12, weight: Font.Weight.light))
                             #if !SKIP
                             .foregroundStyle(.secondary)
                             #else
@@ -302,7 +302,7 @@ struct LoginView: View {
                             .foregroundStyle(theme.textSecondary)
                             #endif
                     }
-                    .padding(.top, 4)
+                    .padding(Edge.Set.top, 4)
 
                     if !hideGuestOption {
                         Button(action: {
@@ -312,16 +312,16 @@ struct LoginView: View {
                             authManager.continueAsGuest()
                         }) {
                             Text("Continue as Guest — try it free")
-                                .font(theme.font(12, weight: .semibold))
+                                .font(theme.font(12, weight: Font.Weight.semibold))
                                 .foregroundStyle(theme.accent)
                         }
-                        .padding(.top, 12)
+                        .padding(Edge.Set.top, 12)
                     }
 
                     Spacer(minLength: 24)
 
                     LegalFinePrint()
-                        .padding(.horizontal, Layout.pageMargin)
+                        .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     Spacer(minLength: 40)
                 }
@@ -340,10 +340,10 @@ struct LoginView: View {
 }
 
 // MARK: - Forgot Password Sheet
-private struct ForgotPasswordSheet: View {
+public struct ForgotPasswordSheet: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var theme: ThemeManager
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var email: String
 
     @State private var isSending: Bool = false
@@ -352,29 +352,29 @@ private struct ForgotPasswordSheet: View {
 
     private var isValidEmail: Bool { email.contains("@") }
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             VStack(spacing: 24) {
                 HStack {
                     Spacer()
                     Button(action: { dismiss() }) {
                         Image.platformSymbol("xmark.circle.fill", android: "xmark")
-                            .font(theme.font(22, weight: .bold))
+                            .font(theme.font(22, weight: Font.Weight.bold))
                             .foregroundStyle(theme.textTertiary)
                     }
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
+                .padding(Edge.Set.horizontal, 20)
+                .padding(Edge.Set.top, 20)
 
                 VStack(spacing: 6) {
                     Text("POCKET VAULT")
-                        .font(theme.font(11, weight: .bold))
+                        .font(theme.font(11, weight: Font.Weight.bold))
                         .tracking(4)
                         .foregroundStyle(theme.accent)
                     Text("Reset Password")
-                        .font(theme.font(22, weight: .light))
+                        .font(theme.font(22, weight: Font.Weight.light))
                         #if !SKIP
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(Color.primary)
                         #else
                         // Android-only: SkipUI doesn't resolve the environment-based
                         // .primary ShapeStyle the way real SwiftUI does here, so this was
@@ -384,7 +384,7 @@ private struct ForgotPasswordSheet: View {
                 }
 
                 Text("Enter your account email and we'll send you a link to reset your password.")
-                    .font(theme.font(13, weight: .light))
+                    .font(theme.font(13, weight: Font.Weight.light))
                     #if !SKIP
                     .foregroundStyle(.secondary)
                     #else
@@ -393,15 +393,15 @@ private struct ForgotPasswordSheet: View {
                     // rendering as plain black text instead of following the theme.
                     .foregroundStyle(theme.textSecondary)
                     #endif
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, Layout.pageMargin)
+                    .multilineTextAlignment(TextAlignment.center)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                 TextField("", text: $email, prompt: Text("Email").foregroundColor(theme.textTertiary))
-                    .textInputAutocapitalization(.never)
+                    .textInputAutocapitalization(TextInputAutocapitalization.never)
                     .autocorrectionDisabled()
-                    .keyboardType(.emailAddress)
+                    .keyboardType(UIKeyboardType.emailAddress)
                     #if !SKIP
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(Color.primary)
                     #else
                     // Android-only: SkipUI doesn't resolve the environment-based
                     // .primary ShapeStyle the way real SwiftUI does here, so this was
@@ -418,20 +418,20 @@ private struct ForgotPasswordSheet: View {
                     .cornerRadius(14)
                     #endif
                     .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
-                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                 if let sentMessage {
                     Text(sentMessage)
-                        .font(theme.font(12, weight: .light))
+                        .font(theme.font(12, weight: Font.Weight.light))
                         .foregroundStyle(theme.accent)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, Layout.pageMargin)
+                        .multilineTextAlignment(TextAlignment.center)
+                        .padding(Edge.Set.horizontal, Layout.pageMargin)
                 } else if let errorText {
                     Text(errorText)
-                        .font(theme.font(12, weight: .light))
+                        .font(theme.font(12, weight: Font.Weight.light))
                         .foregroundStyle(theme.danger.opacity(0.9))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, Layout.pageMargin)
+                        .multilineTextAlignment(TextAlignment.center)
+                        .padding(Edge.Set.horizontal, Layout.pageMargin)
                 }
 
                 // FIX: `PrimaryCTAButtonStyle(...)` no longer exists as a
@@ -456,7 +456,7 @@ private struct ForgotPasswordSheet: View {
                     Text("Send reset link")
                 }
                 .disabled(!isValidEmail)
-                .padding(.horizontal, Layout.pageMargin)
+                .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                 Spacer()
             }

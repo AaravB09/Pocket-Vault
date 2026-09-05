@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct CalendarView: View {
+public struct CalendarView: View {
     @EnvironmentObject var streakManager: StreakManager
     @EnvironmentObject var theme: ThemeManager
     @StateObject private var calendarSync = CalendarSyncManager()
@@ -40,7 +40,7 @@ struct CalendarView: View {
         let safeStreakDays = streakDays > 1.0 ? streakDays : 1.0
         let dailyPace = currentSavings / safeStreakDays
         let daysLeft = dailyPace > 0 ? Int(ceil(remainingAmount / dailyPace)) : 30
-        return calendar.date(byAdding: .day, value: daysLeft, to: Date())
+        return calendar.date(byAdding: Calendar.Component.day, value: daysLeft, to: Date())
     }
 
     var estimatedCompletionDate: String {
@@ -50,7 +50,7 @@ struct CalendarView: View {
         return formatter.string(from: date)
     }
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24) {
@@ -71,9 +71,9 @@ struct CalendarView: View {
                     // Android instead of touching the shared 40 value keeps
                     // iOS's spacing exactly as it was.
                     #if !SKIP
-                    .padding(.top, 40)
+                    .padding(Edge.Set.top, 40)
                     #else
-                    .padding(.top, 12)
+                    .padding(Edge.Set.top, 12)
                     #endif
 
                     // MARK: - Streak Stats Grid
@@ -87,10 +87,10 @@ struct CalendarView: View {
                             }
 
                             Text("\(streakManager.currentStreak) days")
-                                .font(theme.font(22, weight: .semibold))
+                                .font(theme.font(22, weight: Font.Weight.semibold))
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
+                        .frame(maxWidth: CGFloat.infinity)
+                        .padding(Edge.Set.vertical, 18)
                         // NOTE(skip): .ultraThinMaterial has no Android
                         // equivalent — was cascading into the .clipShape
                         // right below it too.
@@ -107,21 +107,21 @@ struct CalendarView: View {
                             }
 
                             Text("\(streakManager.longestStreak) days")
-                                .font(theme.font(22, weight: .semibold))
+                                .font(theme.font(22, weight: Font.Weight.semibold))
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 18)
+                        .frame(maxWidth: CGFloat.infinity)
+                        .padding(Edge.Set.vertical, 18)
                         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                         .clipShape(RoundedRectangle(cornerRadius: 16))
                         .overlay(RoundedRectangle(cornerRadius: 16).stroke(theme.cardStroke, lineWidth: 1))
                     }
-                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     // MARK: - Monthly Deposit Activity Grid
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: HorizontalAlignment.leading, spacing: 16) {
                         HStack {
                             Text(currentMonthYearString)
-                                .font(theme.font(15, weight: .semibold))
+                                .font(theme.font(15, weight: Font.Weight.semibold))
                                 .foregroundStyle(theme.accent)
 
                             Spacer()
@@ -131,8 +131,8 @@ struct CalendarView: View {
                                     .fill(theme.accent)
                                     .frame(width: 6, height: 6)
                                 Text("Deposit day")
-                                    .font(theme.font(11, weight: .medium))
-                                    .foregroundStyle(.secondary) // was .tertiary
+                                    .font(theme.font(11, weight: Font.Weight.medium))
+                                    .foregroundStyle(Color.secondary) // was .tertiary
                             }
                         }
 
@@ -140,9 +140,9 @@ struct CalendarView: View {
                         HStack {
                             ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
                                 Text(day)
-                                    .font(theme.font(10, weight: .bold))
-                                    .foregroundStyle(.secondary) // was .tertiary
-                                    .frame(maxWidth: .infinity)
+                                    .font(theme.font(10, weight: Font.Weight.bold))
+                                    .foregroundStyle(Color.secondary) // was .tertiary
+                                    .frame(maxWidth: CGFloat.infinity)
                             }
                         }
 
@@ -158,7 +158,7 @@ struct CalendarView: View {
                         // crashes the moment this screen renders. Keying by
                         // the array's own index instead guarantees every
                         // cell has a unique id on both platforms.
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 10) {
+                        LazyVGrid(columns: Array(repeating: GridItem(GridItem.Flexibility.flexible), count: 7), spacing: 10) {
                             ForEach(Array(daysInCurrentMonth().enumerated()), id: \.offset) { _, date in
                                 if let date = date {
                                     DayCell(date: date, isDepositDay: isDepositMadeOn(date: date))
@@ -173,24 +173,24 @@ struct CalendarView: View {
                     .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                     .clipShape(RoundedRectangle(cornerRadius: 20))
                     .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
-                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     // MARK: - Goal Forecast Summary
                     VStack(spacing: 12) {
                         HStack {
-                            VStack(alignment: .leading, spacing: 4) {
+                            VStack(alignment: HorizontalAlignment.leading, spacing: 4) {
                                 SectionLabel("Target goal")
 
                                 Text(goalTitle.isEmpty ? "Current goal" : goalTitle)
-                                    .font(theme.font(14, weight: .semibold))
+                                    .font(theme.font(14, weight: Font.Weight.semibold))
                             }
                             Spacer()
 
-                            VStack(alignment: .trailing, spacing: 4) {
+                            VStack(alignment: HorizontalAlignment.trailing, spacing: 4) {
                                 SectionLabel("Estimated completion")
 
                                 Text(estimatedCompletionDate)
-                                    .font(theme.font(14, weight: .semibold))
+                                    .font(theme.font(14, weight: Font.Weight.semibold))
                             }
                         }
 
@@ -205,7 +205,7 @@ struct CalendarView: View {
                             Spacer()
 
                             Text("$\(Int(remainingAmount))")
-                                .font(theme.font(14, weight: .semibold))
+                                .font(theme.font(14, weight: Font.Weight.semibold))
                                 .foregroundStyle(theme.accent)
                         }
 
@@ -228,31 +228,31 @@ struct CalendarView: View {
                                     Image.platformSymbol("calendar.badge.plus", android: "calendar")
                                 }
                                 Text(calendarSync.isSyncing ? "Syncing…" : "Add to Apple Calendar")
-                                    .font(theme.font(14, weight: .semibold))
+                                    .font(theme.font(14, weight: Font.Weight.semibold))
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
+                            .frame(maxWidth: CGFloat.infinity)
+                            .padding(Edge.Set.vertical, 14)
                             .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06))
                             .foregroundStyle(theme.accent)
                             .clipShape(Capsule())
                             .overlay(Capsule().stroke(theme.accent.opacity(0.4), lineWidth: 1))
                         }
                         .disabled(calendarSync.isSyncing || estimatedCompletionDateValue == nil)
-                        .padding(.top, 6)
+                        .padding(Edge.Set.top, 6)
 
                         if let message = calendarSync.lastResultMessage {
                             Text(message)
                                 .font(theme.font(11))
                                 .foregroundStyle(calendarSync.lastSyncSucceeded ? theme.accent : theme.danger.opacity(0.9))
-                                .multilineTextAlignment(.center)
+                                .multilineTextAlignment(TextAlignment.center)
                         }
                     }
                     .padding(20)
                     .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                     .clipShape(RoundedRectangle(cornerRadius: 20))
                     .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
-                    .padding(.horizontal, Layout.pageMargin)
-                    .padding(.bottom, 120)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.bottom, 120)
                 }
             }
         }
@@ -278,12 +278,12 @@ struct CalendarView: View {
     }
 
     private func daysInCurrentMonth() -> [Date?] {
-        guard let monthInterval = calendar.dateInterval(of: .month, for: Date()),
-              let firstDay = calendar.date(from: calendar.dateComponents([.year, .month], from: monthInterval.start)) else {
+        guard let monthInterval = calendar.dateInterval(of: Calendar.Component.month, for: Date()),
+              let firstDay = calendar.date(from: calendar.dateComponents([Calendar.Component.year, Calendar.Component.month], from: monthInterval.start)) else {
             return []
         }
 
-        let firstWeekday = calendar.component(.weekday, from: firstDay) - 1
+        let firstWeekday = calendar.component(Calendar.Component.weekday, from: firstDay) - 1
 
         // FIX: `calendar.range(of: .day, in: .month, for: Date())` hits
         // "None of the following candidates is applicable" — Skip's
@@ -293,15 +293,15 @@ struct CalendarView: View {
         // — with `date(byAdding:)` and `dateComponents(_:from:to:)` —
         // instead of relying on `range(of:in:for:)`.
         let numberOfDays: Int = {
-            guard let nextMonthStart = calendar.date(byAdding: .month, value: 1, to: firstDay) else { return 30 }
-            let diff = calendar.dateComponents([.day], from: firstDay, to: nextMonthStart)
+            guard let nextMonthStart = calendar.date(byAdding: Calendar.Component.month, value: 1, to: firstDay) else { return 30 }
+            let diff = calendar.dateComponents([Calendar.Component.day], from: firstDay, to: nextMonthStart)
             return diff.day ?? 30
         }()
 
         var days: [Date?] = Array(repeating: nil, count: firstWeekday)
 
         for day in 0..<numberOfDays {
-            if let date = calendar.date(byAdding: .day, value: day, to: firstDay) {
+            if let date = calendar.date(byAdding: Calendar.Component.day, value: day, to: firstDay) {
                 days.append(date)
             }
         }
@@ -317,7 +317,7 @@ struct CalendarView: View {
 }
 
 // MARK: - Day Cell View
-struct DayCell: View {
+public struct DayCell: View {
     @EnvironmentObject var theme: ThemeManager
     let date: Date
     let isDepositDay: Bool
@@ -332,7 +332,7 @@ struct DayCell: View {
         return formatter.string(from: date)
     }
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             if isDepositDay {
                 Circle()
@@ -340,12 +340,12 @@ struct DayCell: View {
                     .frame(width: 30, height: 30)
             } else if isToday {
                 Circle()
-                    .stroke(.primary.opacity(0.4), lineWidth: 1)
+                    .stroke(Color.primary.opacity(0.4), lineWidth: 1)
                     .frame(width: 30, height: 30)
             }
 
             Text(dayNumber)
-                .font(theme.font(11, weight: isToday || isDepositDay ? .bold : .regular))
+                .font(theme.font(11, weight: isToday || isDepositDay ? Font.Weight.bold : Font.Weight.regular))
                 .foregroundStyle(isDepositDay ? theme.onAccent : (isToday ? theme.textPrimary : theme.textSecondary))
         }
         .frame(height: 36)
