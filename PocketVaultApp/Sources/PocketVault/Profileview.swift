@@ -17,8 +17,8 @@ import PhotosUI
 // toggle is hidden in the UI even if the code path is still present.
 // ────────────────────────────────────────────────────────────────
 
-struct ProfileView: View {
-    @Environment(\.dismiss) var dismiss
+public struct ProfileView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var leaderboardManager: LeaderboardManager
     @EnvironmentObject var streakManager: StreakManager
@@ -63,7 +63,7 @@ struct ProfileView: View {
 
     private var profileImageKey: String { "pv_profileImage_\(leaderboardManager.myUserID)" }
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             ScrollView {
                 VStack(spacing: 26) {
@@ -71,13 +71,13 @@ struct ProfileView: View {
                         ShareLink(item: "Join me on Pocket Vault and let's save together! Add me with friend code \(leaderboardManager.myFriendCode).") {
                             HStack(spacing: 6) {
                                 Image.platformSymbol("person.badge.plus", android: "plus.circle.fill")
-                                    .font(theme.font(12, weight: .semibold))
+                                    .font(theme.font(12, weight: Font.Weight.semibold))
                                 Text("Invite friends")
-                                    .font(theme.font(13, weight: .semibold))
+                                    .font(theme.font(13, weight: Font.Weight.semibold))
                             }
                             .foregroundStyle(theme.textPrimary)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 10)
+                            .padding(Edge.Set.horizontal, 14)
+                            .padding(Edge.Set.vertical, 10)
                             // Unified cross-platform styling
                             .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                             .cornerRadius(100)
@@ -85,18 +85,18 @@ struct ProfileView: View {
                                 Capsule().stroke(
                                     LinearGradient(
                                         colors: [theme.accent.opacity(0.7), theme.textPrimary.opacity(0.15)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
+                                        startPoint: UnitPoint.topLeading,
+                                        endPoint: UnitPoint.bottomTrailing
                                     ),
                                     lineWidth: 1
                                 )
                             )
-                            .shadow(color: .black.opacity(0.25), radius: 10, y: 4)
+                            .shadow(color: Color.black.opacity(0.25), radius: 10, y: 4)
                         }
 
                         Button(action: { showLeaderboard = true }) {
                             Image.platformSymbol("trophy.fill", android: "star.fill")
-                                .font(theme.font(13, weight: .semibold))
+                                .font(theme.font(13, weight: Font.Weight.semibold))
                                 .foregroundStyle(theme.accent)
                                 .frame(width: 38, height: 38)
                                 .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
@@ -108,12 +108,12 @@ struct ProfileView: View {
 
                         Button(action: { dismiss() }) {
                             Image.platformSymbol("xmark.circle.fill", android: "xmark")
-                                .font(theme.font(22, weight: .bold))
+                                .font(theme.font(22, weight: Font.Weight.bold))
                                 .foregroundStyle(theme.textTertiary)
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
+                    .padding(Edge.Set.horizontal, 20)
+                    .padding(Edge.Set.top, 20)
 
                     // Profile Header & Avatar Picker
                     VStack(spacing: 12) {
@@ -134,21 +134,21 @@ struct ProfileView: View {
                         #endif
 
                         Text("Your vault")
-                            .font(theme.font(15, weight: .semibold))
+                            .font(theme.font(15, weight: Font.Weight.semibold))
                             .foregroundStyle(theme.accent)
 
                         Text(authManager.userEmail ?? "No email on file")
-                            .font(theme.font(15, weight: .light))
+                            .font(theme.font(15, weight: Font.Weight.light))
                             .foregroundStyle(theme.textPrimary.opacity(0.8))
                     }
 
                     // Display name
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: Alignment.leading, spacing: 8) {
                         SectionLabel("Display name")
 
                         HStack {
                             TextField("Saver", text: $displayName)
-                                .textInputAutocapitalization(.words)
+                                .textInputAutocapitalization(TextInputAutocapitalization.words)
                                 .autocorrectionDisabled()
                                 .foregroundStyle(theme.textPrimary)
                                 .padding(14)
@@ -158,32 +158,32 @@ struct ProfileView: View {
 
                             Button(action: saveDisplayName) {
                                 Text("Save")
-                                    .font(theme.font(14, weight: .semibold))
-                                    .padding(.horizontal, 18)
-                                    .padding(.vertical, 14)
+                                    .font(theme.font(14, weight: Font.Weight.semibold))
+                                    .padding(Edge.Set.horizontal, 18)
+                                    .padding(Edge.Set.vertical, 14)
                                     .background(theme.accent)
                                     .foregroundColor(theme.onAccent)
                                     .cornerRadius(Layout.controlRadius)
                             }
-                            .disabled(displayName.trimmingCharacters(in: .whitespaces).isEmpty)
+                            .disabled(displayName.trimmingCharacters(in: CharacterSet.whitespaces).isEmpty)
                         }
                     }
-                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     // Friend code
                     VStack(spacing: 8) {
                         SectionLabel("Friend code")
                         Text(leaderboardManager.myFriendCode)
-                            .font(theme.font(20, weight: .semibold))
+                            .font(theme.font(20, weight: Font.Weight.semibold))
                             .tracking(3)
                             .foregroundStyle(theme.textPrimary)
                     }
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: CGFloat.infinity)
                     .padding(18)
                     .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                     .cornerRadius(16)
                     .overlay(RoundedRectangle(cornerRadius: 16).stroke(theme.cardStroke, lineWidth: 1))
-                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     privacyAndDataSection
                     ThemePickerSection()
@@ -193,7 +193,7 @@ struct ProfileView: View {
                     }
 
                     LegalFinePrint()
-                        .padding(.top, 4)
+                        .padding(Edge.Set.top, 4)
 
                     Button(action: { showFeedback = true }) {
                         HStack(spacing: 10) {
@@ -202,21 +202,21 @@ struct ProfileView: View {
                         }
                     }
                     .secondaryCTA(accent: theme.accent)
-                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     Button(action: { showSignOutConfirm = true }) {
                         Text("Sign out")
                     }
                     .secondaryCTA(accent: theme.danger)
-                    .padding(.horizontal, Layout.pageMargin)
-                    .padding(.top, 8)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.top, 8)
 
                     Button(action: { showDeleteAccountConfirm = true }) {
                         Text("Delete account")
                     }
                     .secondaryCTA(accent: Color.red.opacity(0.85))
-                    .padding(.horizontal, Layout.pageMargin)
-                    .padding(.top, 6)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.top, 6)
 
                     Spacer(minLength: 40)
                 }
@@ -241,22 +241,22 @@ struct ProfileView: View {
         .confirmationDialog(
             "Sign out of Pocket Vault?",
             isPresented: $showSignOutConfirm,
-            titleVisibility: .visible
+            titleVisibility: Visibility.visible
         ) {
-            Button("Sign Out", role: .destructive) {
+            Button("Sign Out", role: ButtonRole.destructive) {
                 Task {
                     await authManager.signOut()
                     dismiss()
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            Button("Cancel", role: ButtonRole.cancel) {}
         }
         .confirmationDialog(
             "Delete your account?",
             isPresented: $showDeleteAccountConfirm,
-            titleVisibility: .visible
+            titleVisibility: Visibility.visible
         ) {
-            Button("Delete Account", role: .destructive) {
+            Button("Delete Account", role: ButtonRole.destructive) {
                 Task {
                     do {
                         try await authManager.deleteAccount()
@@ -266,7 +266,7 @@ struct ProfileView: View {
                     }
                 }
             }
-            Button("Cancel", role: .cancel) {}
+            Button("Cancel", role: ButtonRole.cancel) {}
         } message: {
             if EntitlementManager.isPro {
                 Text("You have an active Pro subscription. Cancel it in your device's store settings BEFORE deleting, or you may continue to be charged.")
@@ -296,7 +296,7 @@ struct ProfileView: View {
                     .fill(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                     .frame(width: 80, height: 80)
                 Image(systemName: "person.fill")
-                    .font(theme.font(30, weight: .light))
+                    .font(theme.font(30, weight: Font.Weight.light))
                     .foregroundStyle(theme.accent)
             }
 
@@ -306,7 +306,7 @@ struct ProfileView: View {
 
             #if !SKIP
             Image.platformSymbol("camera.fill", android: "pencil")
-                .font(theme.font(10, weight: .bold))
+                .font(theme.font(10, weight: Font.Weight.bold))
                 .foregroundStyle(theme.onAccent)
                 .padding(6)
                 .background(theme.accent)
@@ -317,7 +317,7 @@ struct ProfileView: View {
     }
 
     private func saveDisplayName() {
-        let trimmed = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = displayName.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         leaderboardManager.myDisplayName = trimmed
         
@@ -351,16 +351,16 @@ struct ProfileView: View {
     // The `devSection` is left outside any `#if DEBUG` so Skip's transpile
     // doesn't strip it (Skip only respects `#if SKIP`, not `#if DEBUG`).
     private var devSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: Alignment.leading, spacing: 12) {
             SectionLabel("Dev tools")
 
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: Alignment.leading, spacing: 4) {
                     Text("Force Pro unlocked")
-                        .font(theme.font(13, weight: .medium))
+                        .font(theme.font(13, weight: Font.Weight.medium))
                         .foregroundStyle(theme.textPrimary)
                     Text("Bypasses RevenueCat entirely for this session. DEBUG builds only — never ships.")
-                        .font(theme.font(10, weight: .light))
+                        .font(theme.font(10, weight: Font.Weight.light))
                         .foregroundStyle(theme.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -383,7 +383,7 @@ struct ProfileView: View {
                     Image(systemName: "arrow.counterclockwise")
                     Text("Reset test account")
                 }
-                .font(theme.font(12, weight: .medium))
+                .font(theme.font(12, weight: Font.Weight.medium))
                 .foregroundStyle(theme.danger)
             }
         }
@@ -391,7 +391,7 @@ struct ProfileView: View {
         .background(theme.danger.opacity(0.08))
         .cornerRadius(20)
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.danger.opacity(0.3), lineWidth: 1))
-        .padding(.horizontal, Layout.pageMargin)
+        .padding(Edge.Set.horizontal, Layout.pageMargin)
         // Sync local @State from static EntitlementManager.forceProOverride on appear.
         .task { isForceProOverride = EntitlementManager.forceProOverride }
         // Push local @State changes back into EntitlementManager.forceProOverride.
@@ -400,16 +400,16 @@ struct ProfileView: View {
 
     // MARK: - Privacy & Data
     private var privacyAndDataSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: Alignment.leading, spacing: 16) {
             SectionLabel("Privacy & data")
 
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: Alignment.leading, spacing: 4) {
                     Text("Privacy Mode")
-                        .font(theme.font(13, weight: .medium))
+                        .font(theme.font(13, weight: Font.Weight.medium))
                         .foregroundStyle(theme.textPrimary)
                     Text("Blurs balances until you tap to reveal — handy with people around.")
-                        .font(theme.font(10, weight: .light))
+                        .font(theme.font(10, weight: Font.Weight.light))
                         .foregroundStyle(theme.textTertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -423,13 +423,13 @@ struct ProfileView: View {
             .cornerRadius(14)
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
 
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: Alignment.leading, spacing: 10) {
                 Picker("Format", selection: $exportFormat) {
                     ForEach(ExportFormat.allCases) { format in
                         Text(format.rawValue).tag(format)
                     }
                 }
-                .pickerStyle(.segmented)
+                .pickerStyle(PickerStyle.segmented)
                 .onChange(of: exportFormat) { _ in exportURLs = nil }
 
                 if let exportURLs, !exportURLs.isEmpty {
@@ -463,7 +463,7 @@ struct ProfileView: View {
                 }
 
                 Text("Exports your goals, savings history, and transactions as plain \(exportFormat.rawValue) files — a format any spreadsheet or other app can open. Nothing leaves your device unless you choose to share it.")
-                    .font(theme.font(10, weight: .light))
+                    .font(theme.font(10, weight: Font.Weight.light))
                     .foregroundStyle(theme.textTertiary)
             }
         }
@@ -471,7 +471,7 @@ struct ProfileView: View {
         .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
         .cornerRadius(20)
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
-        .padding(.horizontal, Layout.pageMargin)
+        .padding(Edge.Set.horizontal, Layout.pageMargin)
     }
 
     private func prepareExport() {
@@ -503,15 +503,15 @@ struct ProfileView: View {
 
 // MARK: - App Button Styles
 
-struct SecondaryCTAStyleModifier: ViewModifier {
+public struct SecondaryCTAStyleModifier: ViewModifier {
     var accent: Color
     
     func body(content: Content) -> some View {
         content
-            .font(.system(size: 15, weight: .semibold))
-            .padding(.vertical, 14)
-            .padding(.horizontal, 16)
-            .frame(maxWidth: .infinity)
+            .font(Font.system(size: 15, weight: Font.Weight.semibold))
+            .padding(Edge.Set.vertical, 14)
+            .padding(Edge.Set.horizontal, 16)
+            .frame(maxWidth: CGFloat.infinity)
             .background(accent.opacity(0.12))
             .foregroundColor(accent)
             .cornerRadius(12)
