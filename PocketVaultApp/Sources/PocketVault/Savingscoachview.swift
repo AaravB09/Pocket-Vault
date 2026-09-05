@@ -3,7 +3,7 @@ import SwiftUI
 /// Calls YOUR backend proxy (never Google directly) to generate a
 /// tailored savings plan via Gemini. The caller's Supabase JWT, not a
 /// reusable app secret, authorizes this request.
-enum SavingsCoachService {
+public enum SavingsCoachService {
     static let proxyURL = URL(string: "https://hbbyrgmckacgbqqtteaq.supabase.co/functions/v1/coach")!
 
     struct PlanRequest {
@@ -16,9 +16,9 @@ enum SavingsCoachService {
 
     static func generatePlan(_ request: PlanRequest, accessToken: String) async throws -> String {
         let remaining = max(request.targetAmount - request.currentSavings, 0)
-        let days = max(Calendar.current.dateComponents([.day], from: Date(), to: request.targetDate).day ?? 30, 1)
+        let days = max(Calendar.current.dateComponents([Calendar.Component.day], from: Date(), to: request.targetDate).day ?? 30, 1)
         let formatter = DateFormatter()
-        formatter.dateStyle = .medium
+        formatter.dateStyle = DateFormatter.Style.medium
 
         let prompt = """
         You are a warm, encouraging savings coach inside a budgeting app called Pocket Vault.
@@ -48,7 +48,7 @@ enum SavingsCoachService {
         let (data, response) = try await URLSession.shared.data(for: apiRequest)
 
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            let raw = String(data: data, encoding: .utf8) ?? "unknown error"
+            let raw = String(data: data, encoding: String.Encoding.utf8) ?? "unknown error"
             throw NSError(domain: "SavingsCoach", code: 1, userInfo: [NSLocalizedDescriptionKey: "API error: \(raw)"])
         }
 
@@ -62,12 +62,12 @@ enum SavingsCoachService {
             throw NSError(domain: "SavingsCoach", code: 2, userInfo: [NSLocalizedDescriptionKey: "Couldn't parse response"])
         }
 
-        return text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
     }
 }
 
-struct SavingsCoachView: View {
-    @Environment(\.dismiss) var dismiss
+public struct SavingsCoachView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var streakManager: StreakManager
     @EnvironmentObject var theme: ThemeManager
     @EnvironmentObject var authManager: AuthManager
@@ -100,36 +100,36 @@ struct SavingsCoachView: View {
                         Spacer()
                         Button(action: { dismiss() }) {
                             Image.platformSymbol("xmark.circle.fill", android: "xmark")
-                                .font(theme.font(22, weight: .bold))
+                                .font(theme.font(22, weight: Font.Weight.bold))
                                 .foregroundStyle(theme.textTertiary)
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
+                    .padding(Edge.Set.horizontal, 20)
+                    .padding(Edge.Set.top, 20)
 
                     VStack(spacing: 4) {
                         Text("SAVINGS COACH")
-                            .font(theme.font(10, weight: .bold))
+                            .font(theme.font(10, weight: Font.Weight.bold))
                             .tracking(3)
                             .foregroundStyle(theme.accent)
                         Text("Welcome to Pro")
-                            .font(theme.font(22, weight: .light))
+                            .font(theme.font(22, weight: Font.Weight.light))
                             .foregroundStyle(theme.textPrimary)
                     }
 
                     if plan == nil {
                         VStack(spacing: 18) {
                             Text("Tell me when you want to hit your goal and I'll build a tailored plan to get you there.")
-                                .font(theme.font(13, weight: .light))
+                                .font(theme.font(13, weight: Font.Weight.light))
                                 .foregroundStyle(theme.textSecondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 30)
+                                .multilineTextAlignment(TextAlignment.center)
+                                .padding(Edge.Set.horizontal, 30)
 
                             // Fix: Explicitly typing `DatePickerComponents.date`
                             DatePicker("Target date", selection: $targetDate, in: Date()...Date.distantFuture, displayedComponents: DatePickerComponents.date)
-                                .datePickerStyle(.compact)
+                                .datePickerStyle(DatePickerStyle.compact)
                                 .tint(theme.accent)
-                                .colorScheme(theme.isLight ? .light : .dark)
+                                .colorScheme(theme.isLight ? ColorScheme.light : ColorScheme.dark)
                                 .padding(16)
                                 // NOTE(skip): `.ultraThinMaterial` and `.clipShape`
                                 // aren't resolved by Skip's SwiftUI shim — iOS keeps
@@ -143,17 +143,17 @@ struct SavingsCoachView: View {
                                 .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                                 .cornerRadius(16)
                                 #endif
-                                .padding(.horizontal, 24)
+                                .padding(Edge.Set.horizontal, 24)
 
                             Button(action: { Task { await requestPlan() } }) {
                                 HStack {
                                     if isLoading { ProgressView().tint(theme.onAccent) }
                                     Text(isLoading ? "BUILDING YOUR PLAN…" : "GENERATE MY PLAN")
-                                        .font(theme.font(13, weight: .bold))
+                                        .font(theme.font(13, weight: Font.Weight.bold))
                                         .tracking(2.8)
                                 }
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 19)
+                                .frame(maxWidth: CGFloat.infinity)
+                                .padding(Edge.Set.vertical, 19)
                                 .background(theme.accent)
                                 .foregroundColor(theme.onAccent)
                                 // NOTE(skip): background here is already
@@ -167,14 +167,14 @@ struct SavingsCoachView: View {
                                 .shadow(color: theme.accent.opacity(0.5), radius: 18, y: 8)
                             }
                             .disabled(isLoading)
-                            .padding(.horizontal, 30)
+                            .padding(Edge.Set.horizontal, 30)
 
                             if let errorMessage {
                                 Text(errorMessage)
                                     .font(theme.font(11))
                                     .foregroundStyle(theme.danger.opacity(0.9))
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 30)
+                                    .multilineTextAlignment(TextAlignment.center)
+                                    .padding(Edge.Set.horizontal, 30)
                             }
                         }
                     } else {
@@ -189,18 +189,18 @@ struct SavingsCoachView: View {
     }
 
     private var planCard: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: Alignment.leading, spacing: 16) {
             HStack(spacing: 8) {
                 Image.platformSymbol("sparkles", android: "star.fill")
                     .foregroundStyle(theme.accent)
                 Text("YOUR TAILORED PLAN")
-                    .font(theme.font(10, weight: .bold))
+                    .font(theme.font(10, weight: Font.Weight.bold))
                     .tracking(2)
                     .foregroundStyle(theme.accent)
             }
 
             Text(plan ?? "")
-                .font(theme.font(14, weight: .light))
+                .font(theme.font(14, weight: Font.Weight.light))
                 .foregroundStyle(theme.textPrimary.opacity(0.85))
                 .lineSpacing(6)
 
@@ -209,10 +209,10 @@ struct SavingsCoachView: View {
                 selectedTab = 4 // jump to Ask AI, where the plan now lives
             }) {
                 Text("START SAVING")
-                    .font(theme.font(11, weight: .bold))
+                    .font(theme.font(11, weight: Font.Weight.bold))
                     .tracking(2)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
+                    .frame(maxWidth: CGFloat.infinity)
+                    .padding(Edge.Set.vertical, 16)
                     .background(theme.textPrimary)
                     .foregroundColor(theme.background)
                     // NOTE(skip): same clipShape-only fix as the
@@ -224,7 +224,7 @@ struct SavingsCoachView: View {
                     .cornerRadius(100)
                     #endif
             }
-            .padding(.top, 8)
+            .padding(Edge.Set.top, 8)
         }
         .padding(20)
         #if !SKIP
@@ -235,7 +235,7 @@ struct SavingsCoachView: View {
         .cornerRadius(20)
         #endif
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
-        .padding(.horizontal, 24)
+        .padding(Edge.Set.horizontal, 24)
     }
 
     private func requestPlan() async {

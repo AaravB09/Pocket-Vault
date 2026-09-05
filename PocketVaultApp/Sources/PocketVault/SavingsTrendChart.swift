@@ -6,7 +6,7 @@ import Charts
 /// Time window for the trend chart. Mirrors the range picker pattern from
 /// portfolio-tracking apps (1W/1M/3M/6M/ALL) — a fixed set of zoom levels
 /// over the same underlying history rather than a free-form date picker.
-enum TrendRange: String, CaseIterable, Identifiable {
+public enum TrendRange: String, CaseIterable, Identifiable {
     case week = "1W"
     case month = "1M"
     case threeMonth = "3M"
@@ -31,7 +31,7 @@ enum TrendRange: String, CaseIterable, Identifiable {
 /// exact balance and date at that point, the same interaction pattern
 /// Wealthfolio's net-worth chart uses. Reads straight from `Goal.history`,
 /// so it stays in sync automatically as deposits come in.
-struct SavingsTrendChart: View {
+public struct SavingsTrendChart: View {
     @EnvironmentObject var theme: ThemeManager
     @EnvironmentObject var privacy: PrivacyManager
     let history: [SavingsSnapshot]
@@ -46,7 +46,7 @@ struct SavingsTrendChart: View {
 
     private var visiblePoints: [SavingsSnapshot] {
         guard let days = selectedRange.days,
-              let cutoff = Calendar.current.date(byAdding: .day, value: -days, to: Date()) else {
+              let cutoff = Calendar.current.date(byAdding: Calendar.Component.day, value: -days, to: Date()) else {
             return sortedHistory
         }
         let inWindow = sortedHistory.filter { $0.date >= cutoff }
@@ -88,7 +88,7 @@ struct SavingsTrendChart: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: Alignment.leading, spacing: 16) {
             header
 
             if visiblePoints.count >= 2 {
@@ -124,7 +124,7 @@ struct SavingsTrendChart: View {
         .cornerRadius(Layout.cardRadius)
         #endif
         .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1))
-        .padding(.horizontal, Layout.pageMargin)
+        .padding(Edge.Set.horizontal, Layout.pageMargin)
         // NOTE(skip): `.blur` isn't implemented under Skip at all. The
         // PrivacyRevealOverlay below already covers the content when
         // masked, so Android just skips the blur and goes straight to
@@ -135,7 +135,7 @@ struct SavingsTrendChart: View {
         .overlay {
             if privacy.shouldMask {
                 PrivacyRevealOverlay()
-                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
             }
         }
     }
@@ -143,23 +143,23 @@ struct SavingsTrendChart: View {
     // MARK: - Header
 
     private var header: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(alignment: Alignment.top) {
+            VStack(alignment: Alignment.leading, spacing: 4) {
                 Text("Savings trend")
-                    .font(theme.font(12, weight: .semibold))
+                    .font(theme.font(12, weight: Font.Weight.semibold))
                     .foregroundStyle(theme.textTertiary)
 
                 Text("$\(Int(displayPoint?.amount ?? 0))")
-                    .font(theme.font(26, weight: .light))
-                    .foregroundStyle(.primary)
+                    .font(theme.font(26, weight: Font.Weight.light))
+                    .foregroundStyle(Color.primary)
                     #if !SKIP
                     .contentTransition(.numericText())
                     #endif
-                    .animation(.easeOut(duration: 0.15), value: displayPoint?.amount)
+                    .animation(Animation.easeOut(duration: 0.15), value: displayPoint?.amount)
 
                 if let date = displayPoint?.date {
                     Text(scrubbedPoint == nil ? "Today" : formatted(date))
-                        .font(theme.font(11, weight: .medium))
+                        .font(theme.font(11, weight: Font.Weight.medium))
                         .foregroundStyle(theme.textTertiary)
                 }
             }
@@ -169,13 +169,13 @@ struct SavingsTrendChart: View {
             if visiblePoints.count >= 2 {
                 HStack(spacing: 4) {
                     Image(systemName: isPositive ? "arrow.up.right" : "arrow.down.right")
-                        .font(theme.font(10, weight: .bold))
+                        .font(theme.font(10, weight: Font.Weight.bold))
                     Text("\(isPositive ? "+" : "-")$\(Int(abs(windowDelta)))")
-                        .font(theme.font(12, weight: .semibold))
+                        .font(theme.font(12, weight: Font.Weight.semibold))
                 }
                 .foregroundStyle(isPositive ? theme.success : theme.danger)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
+                .padding(Edge.Set.horizontal, 10)
+                .padding(Edge.Set.vertical, 6)
                 .background((isPositive ? theme.success : theme.danger).opacity(0.14))
                 // NOTE(skip): same clipShape-only fix as the main card —
                 // background here is already theme-agnostic.
@@ -207,7 +207,7 @@ struct SavingsTrendChart: View {
                             theme.accent.opacity(0.10),
                             theme.accent.opacity(0.0)
                         ],
-                        startPoint: .top, endPoint: .bottom
+                        startPoint: UnitPoint.top, endPoint: UnitPoint.bottom
                     )
                 )
 
@@ -224,16 +224,16 @@ struct SavingsTrendChart: View {
                 // real values, the same "no fake bumps" approach
                 // Wealthfolio's net-worth chart uses.
                 .interpolationMethod(.monotone)
-                .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                .lineStyle(StrokeStyle(lineWidth: 2.5, lineCap: CGLineCap.round, lineJoin: CGLineJoin.round))
                 .foregroundStyle(theme.accent)
             }
 
             RuleMark(y: .value("Target", targetAmount))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [4.0, 4.0]))
                 .foregroundStyle(theme.textTertiary.opacity(0.6))
-                .annotation(position: .top, alignment: .trailing) {
+                .annotation(position: .top, alignment: Alignment.trailing) {
                     Text("Goal")
-                        .font(theme.font(10, weight: .semibold))
+                        .font(theme.font(10, weight: Font.Weight.semibold))
                         .foregroundStyle(theme.textTertiary)
                 }
 
@@ -285,7 +285,7 @@ struct SavingsTrendChart: View {
                                 updateScrub(at: value.location, proxy: proxy, geo: geo)
                             }
                             .onEnded { _ in
-                                withAnimation(.easeOut(duration: 0.2)) { scrubbedPoint = nil }
+                                withAnimation(Animation.easeOut(duration: 0.2)) { scrubbedPoint = nil }
                             }
                     )
             }
@@ -366,7 +366,7 @@ struct SavingsTrendChart: View {
                                 theme.accent.opacity(0.10),
                                 theme.accent.opacity(0.0)
                             ],
-                            startPoint: .top, endPoint: .bottom
+                            startPoint: UnitPoint.top, endPoint: UnitPoint.bottom
                         )
                     )
 
@@ -377,7 +377,7 @@ struct SavingsTrendChart: View {
                             path.addLine(to: CGPoint(x: xPos(point), y: yPos(point.amount)))
                         }
                     }
-                    .stroke(theme.accent, style: StrokeStyle(lineWidth: 2.5, lineCap: .round, lineJoin: .round))
+                    .stroke(theme.accent, style: StrokeStyle(lineWidth: 2.5, lineCap: CGLineCap.round, lineJoin: CGLineJoin.round))
 
                     // Target goal rule
                     Path { path in
@@ -388,7 +388,7 @@ struct SavingsTrendChart: View {
                     .stroke(theme.textTertiary.opacity(0.6), style: StrokeStyle(lineWidth: 1, dash: [4.0, 4.0]))
 
                     Text("Goal")
-                        .font(theme.font(10, weight: .semibold))
+                        .font(theme.font(10, weight: Font.Weight.semibold))
                         .foregroundStyle(theme.textTertiary)
                         .position(x: size.width - 18, y: max(yPos(targetAmount) - 10, 10))
 
@@ -423,7 +423,7 @@ struct SavingsTrendChart: View {
                                 updateScrubAndroid(at: value.location, points: points, xPos: xPos)
                             }
                             .onEnded { _ in
-                                withAnimation(.easeOut(duration: 0.2)) { scrubbedPoint = nil }
+                                withAnimation(Animation.easeOut(duration: 0.2)) { scrubbedPoint = nil }
                             }
                     )
             }
@@ -452,16 +452,16 @@ struct SavingsTrendChart: View {
                     #if !SKIP
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     #endif
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                    withAnimation(Animation.spring(response: 0.3, dampingFraction: 0.75)) {
                         selectedRange = range
                     }
                 }) {
                     Text(range.rawValue)
-                        .font(theme.font(10, weight: .bold))
+                        .font(theme.font(10, weight: Font.Weight.bold))
                         .tracking(0.5)
                         .foregroundStyle(selectedRange == range ? theme.onAccent : theme.textSecondary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
+                        .frame(maxWidth: CGFloat.infinity)
+                        .padding(Edge.Set.vertical, 8)
                         .background(selectedRange == range ? theme.accent : Color.clear)
                         // NOTE(skip): same clipShape-only fix as elsewhere
                         // in this file — background is already
@@ -484,12 +484,12 @@ struct SavingsTrendChart: View {
                 .font(theme.font(20))
                 .foregroundStyle(theme.textTertiary)
             Text("Make a couple deposits to see your trend take shape.")
-                .font(theme.font(11, weight: .medium))
+                .font(theme.font(11, weight: Font.Weight.medium))
                 .foregroundStyle(theme.textTertiary)
-                .multilineTextAlignment(.center)
+                .multilineTextAlignment(TextAlignment.center)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
+        .frame(maxWidth: CGFloat.infinity)
+        .padding(Edge.Set.vertical, 24)
     }
 
     private func formatted(_ date: Date) -> String {

@@ -1,12 +1,12 @@
 import SwiftUI
 
-struct LeaderboardView: View {
+public struct LeaderboardView: View {
     @EnvironmentObject var leaderboardManager: LeaderboardManager
     @EnvironmentObject var streakManager: StreakManager
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var theme: ThemeManager
     @ObservedObject var goalStore: GoalStore
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.dismiss) var dismiss: DismissAction
 
     @State private var friendCodeInput: String = ""
     @State private var showCopiedToast: Bool = false
@@ -33,20 +33,20 @@ struct LeaderboardView: View {
                         Spacer()
                         Button(action: { dismiss() }) {
                             Image.platformSymbol("xmark.circle.fill", android: "xmark")
-                                .font(theme.font(22, weight: .bold))
+                                .font(theme.font(22, weight: Font.Weight.bold))
                                 .foregroundStyle(theme.textTertiary)
                         }
                     }
-                    .padding(.horizontal, Layout.pageMargin)
-                    .padding(.top, 20)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.top, 20)
 
                     VStack(spacing: 6) {
                         SectionLabel("Social")
                         Text("Friends & Streaks")
-                            .font(theme.font(20, weight: .light))
+                            .font(theme.font(20, weight: Font.Weight.light))
                             .foregroundStyle(theme.textPrimary)
                     }
-                    .padding(.top, 4)
+                    .padding(Edge.Set.top, 4)
 
                     // My friend code
                     VStack(spacing: 10) {
@@ -54,7 +54,7 @@ struct LeaderboardView: View {
 
                         HStack(spacing: 10) {
                             Text(leaderboardManager.myFriendCode)
-                                .font(theme.font(26, weight: .semibold))
+                                .font(theme.font(26, weight: Font.Weight.semibold))
                                 .tracking(4)
                                 .foregroundStyle(theme.textPrimary)
 
@@ -73,7 +73,7 @@ struct LeaderboardView: View {
                             .foregroundStyle(showCopiedToast ? theme.accent : theme.textTertiary)
                     }
                     .padding(Layout.cardPadding)
-                    .frame(maxWidth: .infinity)
+                    .frame(maxWidth: CGFloat.infinity)
                     // NOTE(skip): `.ultraThinMaterial` and `.clipShape` aren't
                     // resolved by Skip's SwiftUI shim — iOS keeps the real
                     // material + shape clip, Android gets a plain tinted
@@ -86,7 +86,7 @@ struct LeaderboardView: View {
                     .cornerRadius(Layout.cardRadius)
                     #endif
                     .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1))
-                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     // Shared Budget entry — reuses the same friend-code
                     // pattern above, but for saving toward one goal together.
@@ -98,17 +98,17 @@ struct LeaderboardView: View {
                                     .font(theme.font(15))
                                     .foregroundStyle(theme.accent)
                             }
-                            VStack(alignment: .leading, spacing: 2) {
+                            VStack(alignment: Alignment.leading, spacing: 2) {
                                 Text("Shared budget")
-                                    .font(theme.font(13, weight: .semibold))
+                                    .font(theme.font(13, weight: Font.Weight.semibold))
                                     .foregroundStyle(theme.textPrimary)
                                 Text("Save toward one goal together")
-                                    .font(theme.font(11, weight: .light))
+                                    .font(theme.font(11, weight: Font.Weight.light))
                                     .foregroundStyle(theme.textTertiary)
                             }
                             Spacer()
                             Image(systemName: "chevron.right")
-                                .font(theme.font(11, weight: .bold))
+                                .font(theme.font(11, weight: Font.Weight.bold))
                                 .foregroundStyle(theme.textTertiary)
                         }
                         .padding(16)
@@ -121,12 +121,12 @@ struct LeaderboardView: View {
                         #endif
                         .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius).stroke(theme.cardStroke, lineWidth: 1))
                     }
-                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     // Add a friend
                     HStack(spacing: 10) {
                         TextField("Enter a friend's code", text: $friendCodeInput)
-                            .textInputAutocapitalization(.characters)
+                            .textInputAutocapitalization(TextInputAutocapitalization.characters)
                             .autocorrectionDisabled()
                             .padding(14)
                             #if !SKIP
@@ -145,9 +145,9 @@ struct LeaderboardView: View {
                             }
                         }) {
                             Text("Add")
-                                .font(theme.font(14, weight: .semibold))
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 16)
+                                .font(theme.font(14, weight: Font.Weight.semibold))
+                                .padding(Edge.Set.horizontal, 20)
+                                .padding(Edge.Set.vertical, 16)
                                 .background(theme.accent)
                                 .foregroundColor(theme.onAccent)
                                 // NOTE(skip): `.clipShape` isn't resolved by Skip's
@@ -159,16 +159,16 @@ struct LeaderboardView: View {
                                 .cornerRadius(Layout.controlRadius)
                                 #endif
                         }
-                        .disabled(friendCodeInput.trimmingCharacters(in: .whitespaces).isEmpty || leaderboardManager.isLoading)
+                        .disabled(friendCodeInput.trimmingCharacters(in: CharacterSet.whitespaces).isEmpty || leaderboardManager.isLoading)
                     }
-                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     if let errorMessage = leaderboardManager.errorMessage {
                         Text(errorMessage)
                             .font(theme.font(11))
                             .foregroundStyle(theme.danger.opacity(0.9))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, Layout.pageMargin)
+                            .multilineTextAlignment(TextAlignment.center)
+                            .padding(Edge.Set.horizontal, Layout.pageMargin)
                     }
 
                     // Leaderboard
@@ -178,26 +178,26 @@ struct LeaderboardView: View {
                             Spacer()
                             if leaderboardManager.isLoading { ProgressView().tint(theme.accent) }
                         }
-                        .padding(.horizontal, Layout.pageMargin)
+                        .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                         let ranked = rankedEntries()
                         if ranked.isEmpty && !leaderboardManager.isLoading {
                             Text("Add a friend's code above to start comparing streaks.")
-                                .font(theme.font(13, weight: .light))
+                                .font(theme.font(13, weight: Font.Weight.light))
                                 .foregroundStyle(theme.textTertiary)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, Layout.pageMargin)
-                                .padding(.top, 20)
+                                .multilineTextAlignment(TextAlignment.center)
+                                .padding(Edge.Set.horizontal, Layout.pageMargin)
+                                .padding(Edge.Set.top, 20)
                         } else {
                             VStack(spacing: 10) {
                                 ForEach(Array(ranked.enumerated()), id: \.element.id) { index, entry in
                                     leaderboardRow(rank: index + 1, entry: entry, isMe: entry.id == identityID)
                                 }
                             }
-                            .padding(.horizontal, Layout.pageMargin)
+                            .padding(Edge.Set.horizontal, Layout.pageMargin)
                         }
                     }
-                    .padding(.bottom, 120)
+                    .padding(Edge.Set.bottom, 120)
                 }
             }
         }
@@ -224,12 +224,12 @@ struct LeaderboardView: View {
     private func leaderboardRow(rank: Int, entry: LeaderboardEntry, isMe: Bool) -> some View {
         HStack(spacing: 14) {
             Text("#\(rank)")
-                .font(theme.font(12, weight: .bold))
+                .font(theme.font(12, weight: Font.Weight.bold))
                 .foregroundStyle(rank == 1 ? theme.accent : theme.textTertiary)
-                .frame(width: 28, alignment: .leading)
+                .frame(width: 28, alignment: Alignment.leading)
 
             Text(isMe ? "You" : entry.display_name)
-                .font(theme.font(13, weight: isMe ? .bold : .regular))
+                .font(theme.font(13, weight: isMe ? Font.Weight.bold : Font.Weight.regular))
                 .foregroundStyle(theme.textPrimary)
 
             Spacer()
@@ -237,12 +237,12 @@ struct LeaderboardView: View {
             HStack(spacing: 4) {
                 Image.platformSymbol("flame.fill", android: "heart.fill").font(theme.font(11)).foregroundStyle(theme.accent)
                 Text("\(entry.current_streak)")
-                    .font(theme.font(13, weight: .semibold))
+                    .font(theme.font(13, weight: Font.Weight.semibold))
                     .foregroundStyle(theme.textPrimary)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(Edge.Set.horizontal, 16)
+        .padding(Edge.Set.vertical, 14)
         .background(isMe ? (theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06)) : Color.clear)
         #if !SKIP
         .clipShape(RoundedRectangle(cornerRadius: 14))
