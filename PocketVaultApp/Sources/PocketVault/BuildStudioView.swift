@@ -3,7 +3,7 @@ import SwiftUI
 import RealityKit
 #endif
 
-struct BuildStudioView: View {
+public struct BuildStudioView: View {
     @EnvironmentObject var theme: ThemeManager
     @Binding var goalTitle: String
     @Binding var goalKindRaw: String
@@ -129,7 +129,7 @@ struct BuildStudioView: View {
     // Nothing here pretends any money has been saved; it's purely "you
     // started" momentum.
     private var unlockedCount: Int {
-        let earned = Int((progressRatio * Double(cachedVoxels.count)).rounded(.down))
+        let earned = Int((progressRatio * Double(cachedVoxels.count)).rounded(FloatingPointRoundingRule.down))
         return min(cachedVoxels.count, max(earned, 1))
     }
 
@@ -147,7 +147,7 @@ struct BuildStudioView: View {
 
     private var isComplete: Bool { unlockedCount >= cachedVoxels.count }
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             sculptureView
 
@@ -157,21 +157,21 @@ struct BuildStudioView: View {
             VStack {
                 VStack(spacing: 4) {
                     Text("BUILD STUDIO")
-                        .font(theme.font(10, weight: .bold))
+                        .font(theme.font(10, weight: Font.Weight.bold))
                         .tracking(3)
                         .foregroundStyle(theme.accent)
 
                     Text(goalTitle.isEmpty ? "MODEL STAGE" : goalTitle.uppercased())
-                        .font(theme.font(14, weight: .light))
-                        .foregroundStyle(.primary.opacity(0.8))
+                        .font(theme.font(14, weight: Font.Weight.light))
+                        .foregroundStyle(Color.primary.opacity(0.8))
 
                     Text(currentSavings > 0.0
                         ? "\(unlockedCount) OF \(cachedVoxels.count) PIECES PLACED"
                         : "1 OF \(cachedVoxels.count) PIECES PLACED · STARTER PIECE")
-                        .font(theme.font(9, weight: .semibold))
+                        .font(theme.font(9, weight: Font.Weight.semibold))
                         .tracking(2)
-                        .foregroundStyle(.secondary) // was .tertiary — unsupported by Skip
-                        .padding(.top, 2)
+                        .foregroundStyle(Color.secondary) // was .tertiary — unsupported by Skip
+                        .padding(Edge.Set.top, 2)
                 }
                 // Android-only: see the matching note in CalenderView.swift
                 // / ContentView.swift — this fixed 60pt sat on top of the
@@ -180,9 +180,9 @@ struct BuildStudioView: View {
                 // further (24pt -> 10pt) since that first pass still read
                 // as too much header space here.
                 #if !SKIP
-                .padding(.top, 60)
+                .padding(Edge.Set.top, 60)
                 #else
-                .padding(.top, 10)
+                .padding(Edge.Set.top, 10)
                 #endif
 
                 Spacer()
@@ -196,24 +196,24 @@ struct BuildStudioView: View {
                             Image.platformSymbol("checkmark.seal.fill", android: "checkmark.circle.fill")
                             Text("SCULPTURE COMPLETE")
                         }
-                        .font(theme.font(10, weight: .bold))
+                        .font(theme.font(10, weight: Font.Weight.bold))
                         .tracking(2)
                         .foregroundStyle(theme.accent)
 
                         Text(completedModelName)
-                            .font(theme.font(16, weight: .light))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 30)
+                            .font(theme.font(16, weight: Font.Weight.light))
+                            .multilineTextAlignment(TextAlignment.center)
+                            .padding(Edge.Set.horizontal, 30)
                     }
-                    .padding(.horizontal, 22)
-                    .padding(.vertical, 14)
+                    .padding(Edge.Set.horizontal, 22)
+                    .padding(Edge.Set.vertical, 14)
                     // NOTE(skip): .ultraThinMaterial has no Android/Compose
                     // equivalent and was unresolved, cascading into the
                     // .clipShape right below it.
                     .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                     .clipShape(RoundedRectangle(cornerRadius: 18))
                     .overlay(RoundedRectangle(cornerRadius: 18).stroke(theme.accent.opacity(0.4), lineWidth: 1))
-                    .padding(.bottom, 110)
+                    .padding(Edge.Set.bottom, 110)
                 }
             }
         }
@@ -715,7 +715,7 @@ struct BuildStudioView: View {
         }
         .frame(width: width, height: height)
         .opacity(1.0 - haze * 0.5)
-        .shadow(color: .black.opacity(0.35), radius: 3.0 * scale, x: 2.0 * scale, y: 3.0 * scale)
+        .shadow(color: Color.black.opacity(0.35), radius: 3.0 * scale, x: 2.0 * scale, y: 3.0 * scale)
     }
 
     @ViewBuilder
@@ -759,7 +759,7 @@ struct BuildStudioView: View {
         }
         .frame(width: width, height: height)
         .opacity(1.0 - haze * 0.5)
-        .shadow(color: .black.opacity(0.35), radius: 3.0 * scale, x: 2.0 * scale, y: 3.0 * scale)
+        .shadow(color: Color.black.opacity(0.35), radius: 3.0 * scale, x: 2.0 * scale, y: 3.0 * scale)
     }
 
     /// Faux-3D voxel: instead of a single flat fill, each piece is drawn
@@ -773,8 +773,8 @@ struct BuildStudioView: View {
     private func voxelChip(_ unit: VoxelUnit, depthT: CGFloat) -> some View {
         let tilt = chipTilt(for: unit.orientation)
         voxelChipFace(unit, depthT: depthT)
-            .scaleEffect(x: 1.0, y: tilt.squash, anchor: .center)
-            .rotationEffect(.degrees(tilt.rollDegrees))
+            .scaleEffect(x: 1.0, y: tilt.squash, anchor: UnitPoint.center)
+            .rotationEffect(Angle.degrees(tilt.rollDegrees))
     }
 
     @ViewBuilder
@@ -818,7 +818,7 @@ struct BuildStudioView: View {
             }
             .frame(width: width, height: height)
             .opacity(1.0 - haze * 0.5)
-            .shadow(color: .black.opacity(0.3), radius: 2.0 * scale, x: 1.0 * scale, y: 2.0 * scale)
+            .shadow(color: Color.black.opacity(0.3), radius: 2.0 * scale, x: 1.0 * scale, y: 2.0 * scale)
 
         case .cube:
             let s: CGFloat = 21.0 * scale
@@ -840,7 +840,7 @@ struct BuildStudioView: View {
                     RoundedRectangle(cornerRadius: 1.0)
                         .fill(Color.white.opacity(0.55 - haze * 0.6))
                         .frame(width: s * 0.22, height: s * 0.85)
-                        .rotationEffect(.degrees(28))
+                        .rotationEffect(Angle.degrees(28))
                         .offset(x: s * 0.12, y: -s * 0.05)
                         .frame(width: s, height: s)
                         .clipShape(RoundedRectangle(cornerRadius: 2.5))
@@ -869,12 +869,12 @@ struct BuildStudioView: View {
                 RoundedRectangle(cornerRadius: 2.0)
                     .fill(Color.white.opacity(0.3 - haze))
                     .frame(width: s * 1.02, height: s * 0.4)
-                    .rotationEffect(.degrees(8))
+                    .rotationEffect(Angle.degrees(8))
                     .offset(y: -s * 0.34)
             }
             .frame(width: s, height: s)
             .opacity(1.0 - haze * 0.5)
-            .shadow(color: .black.opacity(0.35), radius: 3.0 * scale, x: 2.0 * scale, y: 3.0 * scale)
+            .shadow(color: Color.black.opacity(0.35), radius: 3.0 * scale, x: 2.0 * scale, y: 3.0 * scale)
         }
     }
 
@@ -925,14 +925,14 @@ struct BuildStudioView: View {
                 // same bigger, more deliberate presentation.
                 RadialGradient(
                     colors: [theme.accent.opacity(0.22), Color.clear],
-                    center: .center, startRadius: 8, endRadius: 170
+                    center: UnitPoint.center, startRadius: 8, endRadius: 170
                 )
                 .frame(width: 340, height: 340)
                 .position(x: center.x, y: center.y - 6)
 
                 RadialGradient(
                     colors: [Color.white.opacity(0.12), Color.clear],
-                    center: .center, startRadius: 4, endRadius: 140
+                    center: UnitPoint.center, startRadius: 4, endRadius: 140
                 )
                 .frame(width: 290, height: 290)
                 .position(x: center.x, y: center.y - 10)
@@ -953,7 +953,7 @@ struct BuildStudioView: View {
                     .fill(
                         LinearGradient(
                             colors: [Color(white: 0.24), Color(white: 0.12)],
-                            startPoint: .top, endPoint: .bottom
+                            startPoint: UnitPoint.top, endPoint: UnitPoint.bottom
                         )
                     )
                     .frame(width: 119.0, height: 32.0)
@@ -1010,7 +1010,7 @@ struct BuildStudioView: View {
                     // scroll view or the reference clips' card/sheet
                     // transitions, instead of the sculpture just halting.
                     let flingDistance = dragVelocity * Float(9.0)
-                    withAnimation(.spring(response: 0.7, dampingFraction: 0.9)) {
+                    withAnimation(Animation.spring(response: 0.7, dampingFraction: 0.9)) {
                         rotationY += flingDistance
                     }
                     dragVelocity = Float(0.0)

@@ -4,7 +4,7 @@ import SwiftUI
 /// you make them, and get a clear alert as you approach or blow past
 /// the limit. Reuses the theme system so it matches whatever
 /// color/appearance the user has picked in Profile.
-struct BudgetTrackerView: View {
+public struct BudgetTrackerView: View {
     @EnvironmentObject var budgetManager: BudgetManager
     @EnvironmentObject var theme: ThemeManager
     @EnvironmentObject var privacy: PrivacyManager
@@ -13,7 +13,7 @@ struct BudgetTrackerView: View {
     @State private var showLimitEditor: Bool = false
     @State private var limitInput: String = ""
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 22) {
@@ -29,13 +29,13 @@ struct BudgetTrackerView: View {
                     // Plaid instead of logging every payment by hand.
                     // (Free/guest users see an upsell card instead.)
                     BudgetBankSyncSection(budgetManager: budgetManager)
-                        .padding(.horizontal, Layout.pageMargin)
+                        .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     categoryBreakdown
 
                     transactionHistory
                 }
-                .padding(.bottom, 130)
+                .padding(Edge.Set.bottom, 130)
             }
         }
         // FIX: themedSurface() no longer takes `theme` as a parameter —
@@ -72,9 +72,9 @@ struct BudgetTrackerView: View {
         // safe-area inset, and read as too much empty space specifically on
         // Android. iOS keeps the original 40.
         #if !SKIP
-        .padding(.top, 40)
+        .padding(Edge.Set.top, 40)
         #else
-        .padding(.top, 12)
+        .padding(Edge.Set.top, 12)
         #endif
     }
 
@@ -110,16 +110,16 @@ struct BudgetTrackerView: View {
 
         return HStack(spacing: 12) {
             Image(systemName: icon)
-                .font(theme.font(16, weight: .bold))
+                .font(theme.font(16, weight: Font.Weight.bold))
                 .foregroundStyle(color)
             Text(message)
-                .font(theme.font(12, weight: .semibold))
-                .foregroundStyle(.primary)
+                .font(theme.font(12, weight: Font.Weight.semibold))
+                .foregroundStyle(Color.primary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer()
             Button(action: { withAnimation { budgetManager.justCrossedThreshold = nil } }) {
                 Image(systemName: "xmark")
-                    .font(theme.font(11, weight: .bold))
+                    .font(theme.font(11, weight: Font.Weight.bold))
                     .foregroundStyle(Color.gray.opacity(0.5))
             }
         }
@@ -128,8 +128,8 @@ struct BudgetTrackerView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16))
         // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
         .overlay(RoundedRectangle(cornerRadius: 16).stroke(color.opacity(0.5), lineWidth: 1.2))
-        .padding(.horizontal, Layout.pageMargin)
-        .transition(.move(edge: .top).combined(with: .opacity))
+        .padding(Edge.Set.horizontal, Layout.pageMargin)
+        .transition(AnyTransition.move(edge: Edge.top).combined(with: AnyTransition.opacity))
     }
 
     // MARK: - Progress card
@@ -145,22 +145,22 @@ struct BudgetTrackerView: View {
     private var progressCard: some View {
         VStack(spacing: 18) {
             HStack {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: Alignment.leading, spacing: 4) {
                     SectionLabel("Spent this month")
                     Text("$\(Int(budgetManager.totalSpentThisMonth))")
-                        .font(theme.font(34, weight: .light))
-                        .foregroundStyle(.primary)
+                        .font(theme.font(34, weight: Font.Weight.light))
+                        .foregroundStyle(Color.primary)
                 }
                 Spacer()
                 Button(action: { showLimitEditor = true }) {
-                    VStack(alignment: .trailing, spacing: 4) {
+                    VStack(alignment: HorizontalAlignment.trailing, spacing: 4) {
                         SectionLabel("Limit")
                         HStack(spacing: 4) {
                             Text("$\(Int(budgetManager.monthlyLimit))")
-                                .font(theme.font(16, weight: .semibold))
+                                .font(theme.font(16, weight: Font.Weight.semibold))
                                 .foregroundStyle(theme.accent)
                             Image(systemName: "pencil")
-                                .font(theme.font(10, weight: .bold))
+                                .font(theme.font(10, weight: Font.Weight.bold))
                                 .foregroundStyle(theme.accent)
                         }
                     }
@@ -183,7 +183,7 @@ struct BudgetTrackerView: View {
             }
 
             GeometryReader { geo in
-                ZStack(alignment: .leading) {
+                ZStack(alignment: Alignment.leading) {
                     Capsule().fill(theme.hairline)
                     Capsule()
                         .fill(statusColor)
@@ -202,12 +202,12 @@ struct BudgetTrackerView: View {
             HStack {
                 // FIX: same generic-min issue as above.
                 Text("\(Int((budgetManager.percentUsed > 1.5 ? 1.5 : budgetManager.percentUsed) * 100.0))% used")
-                    .font(theme.font(11, weight: .semibold))
+                    .font(theme.font(11, weight: Font.Weight.semibold))
                     .foregroundStyle(statusColor)
                 Spacer()
                 Text(budgetManager.status == .over ? "Over by $\(Int(budgetManager.totalSpentThisMonth - budgetManager.monthlyLimit))" : "$\(Int(budgetManager.remaining)) left")
-                    .font(theme.font(13, weight: .semibold))
-                    .foregroundStyle(.secondary) // was .tertiary — unsupported by Skip
+                    .font(theme.font(13, weight: Font.Weight.semibold))
+                    .foregroundStyle(Color.secondary) // was .tertiary — unsupported by Skip
             }
             .blur(radius: privacy.shouldMask ? 6.0 : 0.0)
 
@@ -219,7 +219,7 @@ struct BudgetTrackerView: View {
             }
             // FIX: Replaced custom style with a standard style to resolve "Cannot find in scope".
             // Replace `.borderedProminent` with your specific button style struct once you locate it.
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(ButtonStyle.borderedProminent)
         }
         .padding(20)
         // NOTE(skip): .ultraThinMaterial has no Android/Compose equivalent
@@ -229,7 +229,7 @@ struct BudgetTrackerView: View {
         .clipShape(RoundedRectangle(cornerRadius: 20))
         // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
         .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
-        .padding(.horizontal, Layout.pageMargin)
+        .padding(Edge.Set.horizontal, Layout.pageMargin)
     }
 
     // MARK: - Category breakdown
@@ -242,9 +242,9 @@ struct BudgetTrackerView: View {
 
         return Group {
             if !nonZero.isEmpty {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: Alignment.leading, spacing: 12) {
                     SectionLabel("By category")
-                        .padding(.horizontal, Layout.pageMargin)
+                        .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     VStack(spacing: 10) {
                         ForEach(nonZero, id: \.0) { category, amount in
@@ -254,20 +254,20 @@ struct BudgetTrackerView: View {
                                     .foregroundStyle(theme.accent)
                                     .frame(width: 26)
                                 Text(category.displayName)
-                                    .font(theme.font(12, weight: .medium))
-                                    .foregroundStyle(.primary)
+                                    .font(theme.font(12, weight: Font.Weight.medium))
+                                    .foregroundStyle(Color.primary)
                                 Spacer()
                                 Text("$\(Int(amount))")
-                                    .font(theme.font(13, weight: .semibold))
-                                    .foregroundStyle(.primary)
+                                    .font(theme.font(13, weight: Font.Weight.semibold))
+                                    .foregroundStyle(Color.primary)
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
+                            .padding(Edge.Set.horizontal, 16)
+                            .padding(Edge.Set.vertical, 12)
                             .background(theme.isLight ? Color.black.opacity(0.03) : Color.white.opacity(0.05))
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                         }
                     }
-                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
                 }
             }
         }
@@ -279,19 +279,19 @@ struct BudgetTrackerView: View {
         Group {
             if budgetManager.transactionsThisMonth.isEmpty {
                 Text("No payments logged yet this month. Tap \u{201C}Log a Payment\u{201D} above to start tracking.")
-                    .font(theme.font(13, weight: .light))
-                    .foregroundStyle(.secondary) // was .tertiary
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-                    .padding(.top, 20)
+                    .font(theme.font(13, weight: Font.Weight.light))
+                    .foregroundStyle(Color.secondary) // was .tertiary
+                    .multilineTextAlignment(TextAlignment.center)
+                    .padding(Edge.Set.horizontal, 40)
+                    .padding(Edge.Set.top, 20)
             } else {
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: Alignment.leading, spacing: 18) {
                     ForEach(budgetManager.transactionsByDay, id: \.date) { day in
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: Alignment.leading, spacing: 8) {
                             Text(dayLabel(day.date))
-                                .font(theme.font(12, weight: .semibold))
-                                .foregroundStyle(.secondary) // was .tertiary
-                                .padding(.horizontal, Layout.pageMargin)
+                                .font(theme.font(12, weight: Font.Weight.semibold))
+                                .foregroundStyle(Color.secondary) // was .tertiary
+                                .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                             VStack(spacing: 8) {
                                 ForEach(day.items) { item in
@@ -300,7 +300,7 @@ struct BudgetTrackerView: View {
                                     })
                                 }
                             }
-                            .padding(.horizontal, Layout.pageMargin)
+                            .padding(Edge.Set.horizontal, Layout.pageMargin)
                         }
                     }
                 }
@@ -313,7 +313,7 @@ struct BudgetTrackerView: View {
         #if !SKIP
         if Calendar.current.isDateInYesterday(date) { return "Yesterday" }
         #else
-        if let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date()),
+        if let yesterday = Calendar.current.date(byAdding: Calendar.Component.day, value: -1, to: Date()),
            Calendar.current.isDate(date, inSameDayAs: yesterday) {
             return "Yesterday"
         }
@@ -330,7 +330,7 @@ struct BudgetTrackerView: View {
 /// `View` (rather than a plain function like the other row builders in
 /// this file) because it needs private `@State` per-row to track its own
 /// swipe offset independently of every other row.
-private struct TransactionRow: View {
+public struct TransactionRow: View {
     @EnvironmentObject var theme: ThemeManager
     let item: SpendTransaction
     let onDelete: () -> Void
@@ -341,17 +341,17 @@ private struct TransactionRow: View {
     private let revealWidth: CGFloat = 74.0
     private let deleteThreshold: CGFloat = 150.0
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             // Delete button revealed behind the row as it's dragged left.
             HStack {
                 Spacer()
                 Button(action: {
-                    withAnimation(.easeOut(duration: 0.2)) { onDelete() }
+                    withAnimation(Animation.easeOut(duration: 0.2)) { onDelete() }
                 }) {
                     Image(systemName: "trash.fill")
-                        .font(theme.font(15, weight: .semibold))
-                        .foregroundStyle(.white)
+                        .font(theme.font(15, weight: Font.Weight.semibold))
+                        .foregroundStyle(Color.white)
                         .frame(width: revealWidth, height: 44)
                         .background(theme.danger)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -380,11 +380,11 @@ private struct TransactionRow: View {
                         .onEnded { _ in
                             dragStartOffset = nil
                             if offset < -deleteThreshold {
-                                withAnimation(.easeOut(duration: 0.2)) { onDelete() }
+                                withAnimation(Animation.easeOut(duration: 0.2)) { onDelete() }
                             } else if offset < -revealWidth / 2.0 {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { offset = -revealWidth }
+                                withAnimation(Animation.spring(response: 0.3, dampingFraction: 0.8)) { offset = -revealWidth }
                             } else {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { offset = 0.0 }
+                                withAnimation(Animation.spring(response: 0.3, dampingFraction: 0.8)) { offset = 0.0 }
                             }
                         }
                 )
@@ -399,11 +399,11 @@ private struct TransactionRow: View {
                     .font(theme.font(13))
                     .foregroundStyle(theme.accent)
             }
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: Alignment.leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(item.note.isEmpty ? item.category.displayName : item.note)
-                        .font(theme.font(13, weight: .medium))
-                        .foregroundStyle(.primary)
+                        .font(theme.font(13, weight: Font.Weight.medium))
+                        .foregroundStyle(Color.primary)
                         .lineLimit(1)
                     if item.isAutoImported {
                         Image.platformSymbol("building.columns.fill", android: "house.fill")
@@ -412,16 +412,16 @@ private struct TransactionRow: View {
                     }
                 }
                 Text(timeLabel(item.date))
-                    .font(theme.font(10, weight: .light))
-                    .foregroundStyle(.secondary) // was .tertiary
+                    .font(theme.font(10, weight: Font.Weight.light))
+                    .foregroundStyle(Color.secondary) // was .tertiary
             }
             Spacer()
             Text("-$\(Int(item.amount))")
-                .font(theme.font(13, weight: .semibold))
-                .foregroundStyle(.primary)
+                .font(theme.font(13, weight: Font.Weight.semibold))
+                .foregroundStyle(Color.primary)
         }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 14)
+        .padding(Edge.Set.vertical, 10)
+        .padding(Edge.Set.horizontal, 14)
         // NOTE(skip): same Material swap as progressCard above.
         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
         .clipShape(RoundedRectangle(cornerRadius: 14))
@@ -438,10 +438,10 @@ private struct TransactionRow: View {
 
 // MARK: - Add Payment Sheet
 
-private struct AddPaymentSheet: View {
+public struct AddPaymentSheet: View {
     @EnvironmentObject var budgetManager: BudgetManager
     @EnvironmentObject var theme: ThemeManager
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.dismiss) var dismiss: DismissAction
 
     @State private var amountText: String = ""
     @State private var selectedCategory: SpendCategory = .food
@@ -452,7 +452,7 @@ private struct AddPaymentSheet: View {
         return value > 0.0
     }
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             ScrollView {
                 VStack(spacing: 24) {
@@ -460,45 +460,45 @@ private struct AddPaymentSheet: View {
                         Spacer()
                         Button(action: { dismiss() }) {
                             Image.platformSymbol("xmark.circle.fill", android: "xmark")
-                                .font(theme.font(22, weight: .bold))
-                                .foregroundStyle(.secondary) // was .tertiary
+                                .font(theme.font(22, weight: Font.Weight.bold))
+                                .foregroundStyle(Color.secondary) // was .tertiary
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 20)
+                    .padding(Edge.Set.horizontal, 20)
+                    .padding(Edge.Set.top, 20)
 
                     VStack(spacing: 4) {
                         SectionLabel("Log payment")
                         Text("What did you spend?")
-                            .font(theme.font(22, weight: .semibold))
-                            .foregroundStyle(.primary)
+                            .font(theme.font(22, weight: Font.Weight.semibold))
+                            .foregroundStyle(Color.primary)
                     }
 
                     VStack(spacing: 6) {
                         SectionLabel("Amount ($)")
                         TextField("0", text: $amountText)
-                            .keyboardType(.decimalPad)
-                            .multilineTextAlignment(.center)
-                            .font(theme.font(44, weight: .light))
-                            .foregroundStyle(.primary)
+                            .keyboardType(UIKeyboardType.decimalPad)
+                            .multilineTextAlignment(TextAlignment.center)
+                            .font(theme.font(44, weight: Font.Weight.light))
+                            .foregroundStyle(Color.primary)
                     }
 
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: Alignment.leading, spacing: 10) {
                         SectionLabel("Category")
-                            .padding(.horizontal, Layout.pageMargin)
+                            .padding(Edge.Set.horizontal, Layout.pageMargin)
 
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 96))], spacing: 10) {
+                        LazyVGrid(columns: [GridItem(GridItem.Adaptive(minimum: 96))], spacing: 10) {
                             ForEach(SpendCategory.allCases) { category in
                                 Button(action: { selectedCategory = category }) {
                                     VStack(spacing: 6) {
                                         Image(systemName: category.icon)
                                             .font(theme.font(16))
                                         Text(category.displayName)
-                                            .font(theme.font(12, weight: .medium))
+                                            .font(theme.font(12, weight: Font.Weight.medium))
                                     }
                                     .foregroundStyle(selectedCategory == category ? theme.onAccent : theme.textPrimary)
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 14)
+                                    .frame(maxWidth: CGFloat.infinity)
+                                    .padding(Edge.Set.vertical, 14)
                                     .background(selectedCategory == category ? theme.accent : (theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06)))
                                     .clipShape(RoundedRectangle(cornerRadius: 14))
                                     // FIX: Pass Double(0) explicitly so Skip's Kotlin codegen doesn't mix up Int and Double
@@ -506,14 +506,14 @@ private struct AddPaymentSheet: View {
                                 }
                             }
                         }
-                        .padding(.horizontal, Layout.pageMargin)
+                        .padding(Edge.Set.horizontal, Layout.pageMargin)
                     }
 
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: Alignment.leading, spacing: 8) {
                         SectionLabel("Note (optional)")
 
                         TextField("e.g. Grocery run", text: $note)
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(Color.primary)
                             .padding(14)
                             // NOTE(skip): same Material swap.
                             .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
@@ -521,7 +521,7 @@ private struct AddPaymentSheet: View {
                             // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
                     }
-                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     Button(action: {
                         guard let amount = Double(amountText) else { return }
@@ -535,11 +535,11 @@ private struct AddPaymentSheet: View {
                     }
                     // FIX: Replaced custom style with a standard style to resolve "Cannot find in scope".
                     // Replace `.borderedProminent` with your specific button style struct once you locate it.
-                    .buttonStyle(.borderedProminent)
+                    .buttonStyle(ButtonStyle.borderedProminent)
                     .disabled(!isValid)
                     .opacity(isValid ? 1.0 : 0.4)
-                    .padding(.horizontal, Layout.pageMargin)
-                    .padding(.bottom, 50)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.bottom, 50)
                 }
             }
         }
@@ -551,10 +551,10 @@ private struct AddPaymentSheet: View {
 
 // MARK: - Limit Editor Sheet
 
-private struct LimitEditorSheet: View {
+public struct LimitEditorSheet: View {
     @EnvironmentObject var budgetManager: BudgetManager
     @EnvironmentObject var theme: ThemeManager
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.dismiss) var dismiss: DismissAction
     @Binding var limitInput: String
 
     private var isValid: Bool {
@@ -562,38 +562,38 @@ private struct LimitEditorSheet: View {
         return value >= 0.0
     }
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             VStack(spacing: 24) {
                 HStack {
                     Spacer()
                     Button(action: { dismiss() }) {
                         Image.platformSymbol("xmark.circle.fill", android: "xmark")
-                            .font(theme.font(22, weight: .bold))
-                            .foregroundStyle(.secondary) // was .tertiary
+                            .font(theme.font(22, weight: Font.Weight.bold))
+                            .foregroundStyle(Color.secondary) // was .tertiary
                     }
                 }
-                .padding(.horizontal, Layout.pageMargin)
-                .padding(.top, 20)
+                .padding(Edge.Set.horizontal, Layout.pageMargin)
+                .padding(Edge.Set.top, 20)
 
                 VStack(spacing: 4) {
                     SectionLabel("Monthly limit")
                     Text("Set your spending cap")
-                        .font(theme.font(22, weight: .semibold))
-                        .foregroundStyle(.primary)
+                        .font(theme.font(22, weight: Font.Weight.semibold))
+                        .foregroundStyle(Color.primary)
                 }
 
                 TextField("500", text: $limitInput)
-                    .keyboardType(.numberPad)
-                    .multilineTextAlignment(.center)
-                    .font(theme.font(52, weight: .light))
-                    .foregroundStyle(.primary)
+                    .keyboardType(UIKeyboardType.numberPad)
+                    .multilineTextAlignment(TextAlignment.center)
+                    .font(theme.font(52, weight: Font.Weight.light))
+                    .foregroundStyle(Color.primary)
 
                 Text("You'll get an alert here once you cross 80% and again if you go over.")
-                    .font(theme.font(12, weight: .light))
-                    .foregroundStyle(.secondary) // was .tertiary
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
+                    .font(theme.font(12, weight: Font.Weight.light))
+                    .foregroundStyle(Color.secondary) // was .tertiary
+                    .multilineTextAlignment(TextAlignment.center)
+                    .padding(Edge.Set.horizontal, 40)
 
                 Spacer()
 
@@ -606,11 +606,11 @@ private struct LimitEditorSheet: View {
                 }
                 // FIX: Replaced custom style with a standard style to resolve "Cannot find in scope".
                 // Replace `.borderedProminent` with your specific button style struct once you locate it.
-                .buttonStyle(.borderedProminent)
+                .buttonStyle(ButtonStyle.borderedProminent)
                 .disabled(!isValid)
                 .opacity(isValid ? 1.0 : 0.4)
-                .padding(.horizontal, Layout.pageMargin)
-                .padding(.bottom, 50)
+                .padding(Edge.Set.horizontal, Layout.pageMargin)
+                .padding(Edge.Set.bottom, 50)
             }
         }
         // FIX: see the note in BudgetTrackerView.body above — themedSurface()
