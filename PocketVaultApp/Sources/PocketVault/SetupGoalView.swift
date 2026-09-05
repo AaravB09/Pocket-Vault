@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct GoalPreset: Identifiable {
+public struct GoalPreset: Identifiable {
     let id = UUID()
     let name: String
     let icon: String
@@ -22,12 +22,12 @@ struct GoalPreset: Identifiable {
 /// Pro features like calendar sync and AI coaching pace — not something
 /// worth a whole onboarding screen for every user. It stays editable
 /// later from wherever goal details are shown.
-private enum SetupStep: Int, CaseIterable {
+public enum SetupStep: Int, CaseIterable {
     case goal, amount
 }
 
-struct SetupGoalView: View {
-    @Environment(\.dismiss) var dismiss
+public struct SetupGoalView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: ThemeManager
     @EnvironmentObject var authManager: AuthManager
 
@@ -120,7 +120,7 @@ struct SetupGoalView: View {
         }
     }
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             VStack(spacing: 0) {
                 header
@@ -132,8 +132,8 @@ struct SetupGoalView: View {
                         case .amount: amountStepContent
                         }
                     }
-                    .padding(.top, 20)
-                    .padding(.bottom, isOnboarding ? 140.0 : 220.0) // FIXED TYPE INFERENCE HERE
+                    .padding(Edge.Set.top, 20)
+                    .padding(Edge.Set.bottom, isOnboarding ? 140.0 : 220.0) // FIXED TYPE INFERENCE HERE
                 }
             }
 
@@ -166,8 +166,8 @@ struct SetupGoalView: View {
         HStack(spacing: 14) {
             Button(action: goBack) {
                 Image(systemName: "chevron.left")
-                    .font(theme.font(14, weight: .semibold))
-                    .foregroundStyle(.primary)
+                    .font(theme.font(14, weight: Font.Weight.semibold))
+                    .foregroundStyle(Color.primary)
                     .frame(width: 34, height: 34)
                     .background(theme.isLight ? Color.black.opacity(0.05) : Color.white.opacity(0.08))
                     // NOTE(skip): `.clipShape` isn't resolved by Skip's
@@ -190,12 +190,12 @@ struct SetupGoalView: View {
 
             Button(action: goNext) {
                 Text("Skip")
-                    .font(theme.font(14, weight: .medium))
+                    .font(theme.font(14, weight: Font.Weight.medium))
                     .foregroundStyle(theme.textSecondary)
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 16)
+        .padding(Edge.Set.horizontal, 20)
+        .padding(Edge.Set.top, 16)
     }
 
     // MARK: - Pinned CTA
@@ -213,7 +213,7 @@ struct SetupGoalView: View {
 
     private var pinnedCTA: some View {
         VStack(spacing: 0) {
-            LinearGradient(colors: [theme.background.opacity(0), theme.background], startPoint: .top, endPoint: .bottom)
+            LinearGradient(colors: [theme.background.opacity(0), theme.background], startPoint: UnitPoint.top, endPoint: UnitPoint.bottom)
                 .frame(height: 36)
                 .allowsHitTesting(false)
 
@@ -238,9 +238,9 @@ struct SetupGoalView: View {
                 }
             }
             .disabled(!isStepValid)
-            .animation(.easeInOut(duration: 0.2), value: isStepValid)
-            .padding(.horizontal, Layout.pageMargin)
-            .padding(.bottom, ctaBottomPadding)
+            .animation(Animation.easeInOut(duration: 0.2), value: isStepValid)
+            .padding(Edge.Set.horizontal, Layout.pageMargin)
+            .padding(Edge.Set.bottom, ctaBottomPadding)
             .background(theme.background)
         }
     }
@@ -257,7 +257,7 @@ struct SetupGoalView: View {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         #endif
         if let idx = SetupStep.allCases.firstIndex(of: step), idx < totalSteps - 1 {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+            withAnimation(Animation.spring(response: 0.35, dampingFraction: 0.85)) {
                 step = SetupStep.allCases[idx + 1]
             }
         } else {
@@ -270,7 +270,7 @@ struct SetupGoalView: View {
         UIImpactFeedbackGenerator(style: .light).impactOccurred()
         #endif
         if let idx = SetupStep.allCases.firstIndex(of: step), idx > 0 {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+            withAnimation(Animation.spring(response: 0.35, dampingFraction: 0.85)) {
                 step = SetupStep.allCases[idx - 1]
             }
         } else {
@@ -286,22 +286,22 @@ struct SetupGoalView: View {
                 SectionLabel(isOnboarding ? "Choose your destination" : "Update journey")
 
                 Text("What are you building toward?")
-                    .font(theme.font(22, weight: .semibold))
-                    .foregroundStyle(.primary)
+                    .font(theme.font(22, weight: Font.Weight.semibold))
+                    .foregroundStyle(Color.primary)
             }
 
             aiGoalCard
-                .padding(.horizontal, Layout.pageMargin)
+                .padding(Edge.Set.horizontal, Layout.pageMargin)
 
             HStack {
                 Rectangle().fill(theme.hairline).frame(height: 1)
                 Text("or pick a quick preset")
-                    .font(theme.font(12, weight: .medium))
+                    .font(theme.font(12, weight: Font.Weight.medium))
                     .foregroundStyle(theme.textTertiary)
                     .fixedSize()
                 Rectangle().fill(theme.hairline).frame(height: 1)
             }
-            .padding(.horizontal, Layout.pageMargin)
+            .padding(Edge.Set.horizontal, Layout.pageMargin)
 
             VStack(spacing: 12) {
                 ForEach(presets) { preset in
@@ -315,30 +315,30 @@ struct SetupGoalView: View {
                         resolvedVoxelBlueprintJSON = nil
                         // Smart default: seed a realistic target date for this
                         // kind of goal instead of leaving "today" selected.
-                        targetDate = Calendar.current.date(byAdding: .month, value: preset.defaultMonths, to: Date()) ?? targetDate
+                        targetDate = Calendar.current.date(byAdding: Calendar.Component.month, value: preset.defaultMonths, to: Date()) ?? targetDate
                         #if !SKIP
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                         #endif
                     }) {
                         HStack(spacing: 14) {
                             Image.platformSymbol(preset.icon, android: preset.androidIcon)
-                                .font(theme.font(16, weight: .light))
+                                .font(theme.font(16, weight: Font.Weight.light))
                                 .foregroundStyle(isSelected ? theme.onAccent : theme.textTertiary)
 
                             Text(preset.name)
-                                .font(theme.font(15, weight: .semibold))
+                                .font(theme.font(15, weight: Font.Weight.semibold))
                                 .foregroundStyle(isSelected ? theme.onAccent : .primary)
 
                             Spacer()
 
                             if isSelected {
                                 Image(systemName: "checkmark")
-                                    .font(theme.font(12, weight: .bold))
+                                    .font(theme.font(12, weight: Font.Weight.bold))
                                     .foregroundStyle(theme.onAccent)
                             }
                         }
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
+                        .padding(Edge.Set.horizontal, 20)
+                        .padding(Edge.Set.vertical, 16)
                         .background(
                             Capsule()
                                 .fill(isSelected ? theme.accent : (theme.isLight ? Color.black.opacity(0.03) : Color.white.opacity(0.03)))
@@ -356,15 +356,15 @@ struct SetupGoalView: View {
                     // own (dark/black) container OVER this Button's actual
                     // content instead of just wrapping it. Every other
                     // custom button in the app already carries
-                    // `.buttonStyle(.plain)` for exactly this reason; this
+                    // `.buttonStyle(PrimitiveButtonStyle.plain)` for exactly this reason; this
                     // preset row was the one Button left without it, which
                     // is why tapping any goal option here turned solid
                     // black on Android instead of showing the theme's
                     // accent color.
-                    .buttonStyle(.plain)
+                    .buttonStyle(PrimitiveButtonStyle.plain)
                 }
             }
-            .padding(.horizontal, Layout.pageMargin)
+            .padding(Edge.Set.horizontal, Layout.pageMargin)
         }
     }
 
@@ -375,13 +375,13 @@ struct SetupGoalView: View {
             SectionLabel("Target value")
 
             Text("How much are you aiming for?")
-                .font(theme.font(22, weight: .semibold))
-                .foregroundStyle(.primary)
-                .padding(.bottom, 24)
+                .font(theme.font(22, weight: Font.Weight.semibold))
+                .foregroundStyle(Color.primary)
+                .padding(Edge.Set.bottom, 24)
 
             AmountScrubPicker(amount: amountBinding)
         }
-        .padding(.horizontal, Layout.pageMargin)
+        .padding(Edge.Set.horizontal, Layout.pageMargin)
     }
 
     // MARK: - AI Goal Card
@@ -391,18 +391,18 @@ struct SetupGoalView: View {
                 Image.platformSymbol("sparkles", android: "star.fill")
                     .foregroundStyle(theme.accent)
                 Text("Describe your own goal")
-                    .font(theme.font(14, weight: .semibold))
+                    .font(theme.font(14, weight: Font.Weight.semibold))
                     .foregroundStyle(theme.accent)
             }
 
             Text("A weekend trip, a gift, a goal just for this week — say it in your own words.")
-                .font(theme.font(12, weight: .light))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
+                .font(theme.font(12, weight: Font.Weight.light))
+                .foregroundStyle(Color.secondary)
+                .multilineTextAlignment(TextAlignment.center)
 
-            TextField("", text: $customGoalDescription, prompt: Text("e.g. \"a weekend trip to Tahoe\"").foregroundColor(theme.textTertiary), axis: .vertical)
-                .foregroundStyle(.primary)
-                .font(theme.font(14, weight: .light))
+            TextField("", text: $customGoalDescription, prompt: Text("e.g. \"a weekend trip to Tahoe\"").foregroundColor(theme.textTertiary), axis: Axis.vertical)
+                .foregroundStyle(Color.primary)
+                .font(theme.font(14, weight: Font.Weight.light))
                 .padding(14)
                 // NOTE(skip): `.ultraThinMaterial` and `.clipShape` aren't
                 // resolved by Skip's SwiftUI shim — iOS keeps the real
@@ -430,13 +430,13 @@ struct SetupGoalView: View {
             ) {
                 Text("Generate with AI")
             }
-            .disabled(customGoalDescription.trimmingCharacters(in: .whitespaces).isEmpty)
+            .disabled(customGoalDescription.trimmingCharacters(in: CharacterSet.whitespaces).isEmpty)
 
             if let aiErrorMessage {
                 Text(aiErrorMessage)
                     .font(theme.font(11))
                     .foregroundStyle(theme.danger.opacity(0.9))
-                    .multilineTextAlignment(.center)
+                    .multilineTextAlignment(TextAlignment.center)
             }
 
             if let aiSuggestion {
@@ -460,28 +460,28 @@ struct SetupGoalView: View {
         return VStack(spacing: 10) {
             HStack {
                 Text(suggestion.title)
-                    .font(theme.font(15, weight: .semibold))
-                    .foregroundStyle(.primary)
+                    .font(theme.font(15, weight: Font.Weight.semibold))
+                    .foregroundStyle(Color.primary)
                 Spacer()
                 Text("$\(Int(suggestion.suggestedAmount))")
-                    .font(theme.font(14, weight: .semibold))
+                    .font(theme.font(14, weight: Font.Weight.semibold))
                     .foregroundStyle(theme.accent)
             }
 
             Text(suggestion.rationale)
-                .font(theme.font(11, weight: .light))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .font(theme.font(11, weight: Font.Weight.light))
+                .foregroundStyle(Color.secondary)
+                .multilineTextAlignment(TextAlignment.leading)
+                .frame(maxWidth: CGFloat.infinity, alignment: Alignment.leading)
 
             Button(action: applySuggestion) {
                 HStack(spacing: 6) {
                     Image(systemName: isApplied ? "checkmark.circle.fill" : "arrow.turn.right.down")
                     Text(isApplied ? "Applied" : "Use this goal")
                 }
-                .font(theme.font(14, weight: .semibold))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                .font(theme.font(14, weight: Font.Weight.semibold))
+                .frame(maxWidth: CGFloat.infinity)
+                .padding(Edge.Set.vertical, 12)
                 .background(isApplied ? theme.hairline : theme.accent.opacity(0.15))
                 .foregroundColor(isApplied ? theme.accent : theme.textPrimary)
                 // NOTE(skip): background here is already theme-agnostic,
@@ -525,7 +525,7 @@ struct SetupGoalView: View {
         guard let aiSuggestion else { return }
         selectedPresetName = aiSuggestion.title
         amountText = "\(Int(aiSuggestion.suggestedAmount.rounded()))"
-        targetDate = Calendar.current.date(byAdding: .day, value: aiSuggestion.suggestedTimeframeDays, to: Date()) ?? targetDate
+        targetDate = Calendar.current.date(byAdding: Calendar.Component.day, value: aiSuggestion.suggestedTimeframeDays, to: Date()) ?? targetDate
         resolvedGoalKind = aiSuggestion.goalKind
         resolvedVoxelBlueprintJSON = aiSuggestion.voxelBlueprintJSON
         #if !SKIP
