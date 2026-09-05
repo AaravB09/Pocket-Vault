@@ -1,18 +1,9 @@
 import SwiftUI
 #if !SKIP
 import AuthenticationServices
-import CryptoKit
 #endif
 
-/// "Continue with Apple" / "Continue with Google" for LoginView.
-///
-/// Apple: real native `SignInWithAppleButton` on iOS — required once an
-/// app offers any third-party sign-in (App Store guideline 4.8), and
-/// gives the Face ID sheet instead of a browser tab. There's no
-/// equivalent native Apple API on Android, so Android falls back to the
-/// same Supabase-hosted OAuth page Google uses everywhere — that only
-/// works if you also add an Apple provider config in Supabase using an
-/// Apple *Services ID* (a separate thing from your app's Bundle ID).
+/// "Continue with Google" for LoginView.
 ///
 /// Google: Supabase's hosted OAuth page on both platforms, NOT the
 /// separate GoogleSignIn SDK — avoids a Google Cloud OAuth client,
@@ -26,31 +17,34 @@ struct SocialSignInButtons: View {
     @Environment(\.openURL) var openURL
 
     #if !SKIP
-    @State private var currentNonce: String?
     @State private var webAuthSession: ASWebAuthenticationSession?
     @State private var presentationProvider = WebAuthPresentationContextProvider()
     #endif
 
     var body: some View {
         VStack(spacing: 12) {
-            #if !SKIP
-            SignInWithAppleButton(.continue, onRequest: configureAppleRequest, onCompletion: handleAppleCompletion)
-                .signInWithAppleButtonStyle(theme.isLight ? .black : .white)
-                .frame(height: 50)
-                .cornerRadius(Layout.controlRadius)
-            #else
-            SocialOAuthButton(title: "Continue with Apple") { startOAuth(provider: "apple") }
-            #endif
-
-            SocialOAuthButton(title: "Continue with Google") { startOAuth(provider: "google") }
+SocialOAuthButton(title: "Continue with Google") { startOAuth(provider: "google") }
         }
     }
 
     private func startOAuth(provider: String) {
-        guard let url = authManager.oauthAuthorizeURL(provider: provider) else { return }
+        print("[SocialSignInButtons] startOAuth tapped — provider=\(provider)")
+        guard let url = authManager.oauthAuthorizeURL(provider: provider) else {
+            print("[SocialSignInButtons] ERROR: oauthAuthorizeURL returned nil for provider=\(provider) (SupabaseConfig.projectURL = \(SupabaseConfig.projectURL.absoluteString))")
+            return
+        }
+        print("[SocialSignInButtons] OAuth URL constructed: \(url.absoluteString)")
         #if !SKIP
         let session = ASWebAuthenticationSession(url: url, callbackURLScheme: "pocketvault") { callbackURL, error in
-            guard let callbackURL, error == nil else { return }
+            if let error {
+                print("[SocialSignInButtons] ASWebAuthenticationSession error for provider=\(provider): \(error.localizedDescription)")
+                return
+            }
+            guard let callbackURL else {
+                print("[SocialSignInButtons] ASWebAuthenticationSession returned nil callback URL for provider=\(provider)")
+                return
+            }
+            print("[SocialSignInButtons] ASWebAuthenticationSession callback received for provider=\(provider): \(callbackURL.absoluteString)")
             Task { await authManager.handleAuthCallback(url: callbackURL) }
         }
         session.presentationContextProvider = presentationProvider
@@ -62,39 +56,11 @@ struct SocialSignInButtons: View {
         // opens the system browser directly. onOpenURL (Pocket_VaultApp.swift)
         // catches the "pocketvault://auth-callback#access_token=..." redirect
         // the same way it already does for magic links.
+        print("[SocialSignInButtons] Android: calling openURL(url) for provider=" + provider)
         openURL(url)
         #endif
     }
 
-    #if !SKIP
-    private func configureAppleRequest(_ request: ASAuthorizationAppleIDRequest) {
-        let nonce = Self.randomNonceString()
-        currentNonce = nonce
-        request.requestedScopes = [.email]
-        request.nonce = Self.sha256(nonce)
-    }
-
-    private func handleAppleCompletion(_ result: Result<ASAuthorization, Error>) {
-        guard case .success(let authorization) = result,
-              let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
-              let tokenData = credential.identityToken,
-              let identityToken = String(data: tokenData, encoding: .utf8),
-              let nonce = currentNonce
-        else { return }
-        Task { await authManager.signInWithApple(identityToken: identityToken, rawNonce: nonce) }
-    }
-
-    private static func randomNonceString(length: Int = 32) -> String {
-        var randomBytes = [UInt8](repeating: 0, count: length)
-        _ = SecRandomCopyBytes(kSecRandomDefault, length, &randomBytes)
-        let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
-        return String(randomBytes.map { charset[Int($0) % charset.count] })
-    }
-
-    private static func sha256(_ input: String) -> String {
-        SHA256.hash(data: Data(input.utf8)).compactMap { String(format: "%02x", $0) }.joined()
-    }
-    #endif
 }
 
 #if !SKIP
@@ -145,7 +111,11 @@ private struct SocialOAuthButton: View {
 
     var body: some View {
         Button(action: {
-            guard isEnabled else { return }
+            guard isEnabled else {
+                print("[SocialOAuthButton] '\(title)' tapped but isEnabled=false — button is disabled")
+                return
+            }
+            print("[SocialOAuthButton] '\(title)' tapped — calling action()")
             ctaHapticTick()
             action()
         }) {
