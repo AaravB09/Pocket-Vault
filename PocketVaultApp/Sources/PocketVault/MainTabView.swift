@@ -4,7 +4,7 @@ import SwiftUI
 /// bubble (in the shared "tourOverlay" coordinate space) so
 /// `FeatureTourOverlay` can point its arrow at the actual element instead
 /// of guessing its position from hardcoded screen-height math.
-struct TourAnchorPreferenceKey: PreferenceKey {
+public struct TourAnchorPreferenceKey: PreferenceKey {
     static let defaultValue: [Int: CGRect] = [:]
     static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
         for (key, rect) in nextValue() {
@@ -13,7 +13,7 @@ struct TourAnchorPreferenceKey: PreferenceKey {
     }
 }
 
-struct MainTabView: View {
+public struct MainTabView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
     @AppStorage("hasSeenFeatureTour") private var hasSeenFeatureTour: Bool = false
 
@@ -139,7 +139,7 @@ struct MainTabView: View {
                 #if !SKIP
                 .preference(key: TourAnchorPreferenceKey.self, value: [key: g.frame(in: .named("tourOverlay"))])
                 #else
-                .preference(key: TourAnchorPreferenceKey.self, value: [key: g.frame(in: .global)])
+                .preference(key: TourAnchorPreferenceKey.self, value: [key: g.frame(in: CoordinateSpace.global)])
                 #endif
         }
     }
@@ -148,7 +148,7 @@ struct MainTabView: View {
     @State private var onboardingDraftKindRaw: String = GoalKind.flight.rawValue
     @State private var onboardingDraftTarget: Double = 1200
     @State private var onboardingDraftSavings: Double = 0
-    @State private var onboardingDraftDate: Date = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
+    @State private var onboardingDraftDate: Date = Calendar.current.date(byAdding: Calendar.Component.month, value: 3, to: Date()) ?? Date()
     @State private var onboardingDraftVoxelBlueprintJSON: String? = nil
 
     private let totalTabs = 9
@@ -202,7 +202,7 @@ struct MainTabView: View {
 
     private var targetDateBinding: Binding<Date> {
         Binding(
-            get: { goalStore.activeGoal?.targetDate ?? Calendar.current.date(byAdding: .month, value: 3, to: Date())! },
+            get: { goalStore.activeGoal?.targetDate ?? Calendar.current.date(byAdding: Calendar.Component.month, value: 3, to: Date())! },
             set: { newValue in goalStore.mutateActive { $0.targetDate = newValue } }
         )
     }
@@ -293,7 +293,7 @@ struct MainTabView: View {
                     }
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: CGFloat.infinity, maxHeight: CGFloat.infinity)
             // FIX (Android "butter smooth" ask): each tab is still a
             // completely separate view under this `switch` — that's not
             // changing in this pass, since rewriting the whole tab system
@@ -307,8 +307,8 @@ struct MainTabView: View {
             // though the underlying view is still being rebuilt.
             #if !SKIP
             .id(selectedTab)
-            .transition(.opacity)
-            .animation(.easeInOut(duration: 0.18), value: selectedTab)
+            .transition(AnyTransition.opacity)
+            .animation(Animation.easeInOut(duration: 0.18), value: selectedTab)
             #endif
     }
 
@@ -353,12 +353,12 @@ struct MainTabView: View {
                         selectedTab = 8
                     }
                     .background(tourAnchorReporter(key: 8))
-                    .transition(.scale.combined(with: .opacity))
+                    .transition(AnyTransition.scale.combined(with: AnyTransition.opacity))
                 }
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .animation(.spring(response: 0.4, dampingFraction: 0.75), value: hasActiveSharedBudget)
+            .padding(Edge.Set.horizontal, 12)
+            .padding(Edge.Set.vertical, 10)
+            .animation(Animation.spring(response: 0.4, dampingFraction: 0.75), value: hasActiveSharedBudget)
             .background(tabBarBlurBackground)
             .clipShape(Capsule())
             .overlay(
@@ -379,11 +379,11 @@ struct MainTabView: View {
             #else
             .shadow(color: Color.black.opacity(0.25), radius: 6, x: 0, y: 3)
             #endif
-            .padding(.horizontal, Layout.pageMargin)
+            .padding(Edge.Set.horizontal, Layout.pageMargin)
     }
 
-    var body: some View {
-        ZStack(alignment: .bottom) {
+    public var body: some View {
+        ZStack(alignment: Alignment.bottom) {
             #if !SKIP
             // The tab bar is handed to `.safeAreaInset` rather than kept
             // as a `.position()`-ed sibling — SwiftUI computes its
@@ -395,7 +395,7 @@ struct MainTabView: View {
             // above wherever the bar actually is instead of at another
             // independently-computed absolute point.
             mainTabContent
-                .overlay(alignment: .bottomTrailing) {
+                .overlay(alignment: Alignment.bottomTrailing) {
                     // Only float here on tabs other than Vault — Vault
                     // already has its own inline AskAIButton docked
                     // under the savings chart (see ContentView), so
@@ -426,8 +426,8 @@ struct MainTabView: View {
                     // same dark surface as the rest of the app instead of a
                     // leftover system-default white rectangle.
                     tabBarView
-                        .frame(maxWidth: .infinity)
-                        .background(themeManager.background.ignoresSafeArea(edges: .bottom))
+                        .frame(maxWidth: CGFloat.infinity)
+                        .background(themeManager.background.ignoresSafeArea(edges: Edge.Set.bottom))
                 }
             #else
             // RealityView (and therefore this whole class of bug) is
@@ -440,7 +440,7 @@ struct MainTabView: View {
             // above) so content has the same clearance iOS gets for
             // free from `.safeAreaInset`.
             mainTabContent
-                .padding(.bottom, androidTabBarHeight)
+                .padding(Edge.Set.bottom, androidTabBarHeight)
                 .background(
                     GeometryReader { g in
                         Color.clear
@@ -467,8 +467,8 @@ struct MainTabView: View {
                             }
                     }
                 )
-                .padding(.bottom, fixedBottomSafeInset + 2.0)
-                .ignoresSafeArea(.container, edges: .bottom)
+                .padding(Edge.Set.bottom, fixedBottomSafeInset + 2.0)
+                .ignoresSafeArea(SwiftUI.Scene.container, edges: Edge.Set.bottom)
 
             if selectedTab != 0 {
                 AskAIBubble(selectedTab: $selectedTab, isPro: entitlementManager.isPro, extraBottomInset: fixedBottomSafeInset)
@@ -484,7 +484,7 @@ struct MainTabView: View {
                     moreTabOrder: [],
                     tourFrames: tourFrames
                 )
-                .transition(.opacity)
+                .transition(AnyTransition.opacity)
                 .zIndex(10)
                 .onChange(of: showFeatureTour) { isShowing in
                     if !isShowing {
@@ -508,15 +508,15 @@ struct MainTabView: View {
         .environmentObject(privacyManager)
         .environmentObject(goalStore)
         .environmentObject(networkMonitor)
-        .overlay(alignment: .top) {
+        .overlay(alignment: Alignment.top) {
             if !networkMonitor.isOnline {
                 OfflineBanner()
-                    .padding(.top, 54)
+                    .padding(Edge.Set.top, 54)
                     // Added explicit Edge type for Skip compiler
-                    .transition(.move(edge: Edge.top).combined(with: .opacity))
+                    .transition(AnyTransition.move(edge: Edge.top).combined(with: AnyTransition.opacity))
             }
         }
-        .animation(.spring(response: 0.35, dampingFraction: 0.8), value: networkMonitor.isOnline)
+        .animation(Animation.spring(response: 0.35, dampingFraction: 0.8), value: networkMonitor.isOnline)
         .onAppear {
             // `fixedBottomSafeInset` no longer needs seeding here on iOS
             // — `.safeAreaInset` (see `body`) reads the real layout
@@ -592,16 +592,16 @@ struct MainTabView: View {
 // alongside it (collapsing to icon-only after the first few sessions)
 // so it's clear what tapping it actually does, instead of a bare glyph
 // asking to be decoded.
-struct AskAIBubble: View {
+public struct AskAIBubble: View {
     @Binding var selectedTab: Int
     let isPro: Bool
     // Only consulted on Android now — see `body`'s `#else` branch below
     // and the note by `MainTabView.fixedBottomSafeInset`.
     var extraBottomInset: CGFloat = 0
 
-    var body: some View {
+    public var body: some View {
         #if !SKIP
-        // Placed via `.overlay(alignment: .bottomTrailing)` by the
+        // Placed via `.overlay(alignment: Alignment.bottomTrailing)` by the
         // caller (`MainTabView.body`), so it just needs its own margin
         // from that corner — no absolute screen math or frozen-size
         // capture needed anymore.
@@ -612,8 +612,8 @@ struct AskAIBubble: View {
                         .preference(key: TourAnchorPreferenceKey.self, value: [4: g.frame(in: .named("tourOverlay"))])
                 }
             )
-            .padding(.trailing, Layout.pageMargin)
-            .padding(.bottom, 12)
+            .padding(Edge.Set.trailing, Layout.pageMargin)
+            .padding(Edge.Set.bottom, 12)
             .allowsHitTesting(true)
         #else
         // RealityView (and therefore this whole class of bug) is
@@ -627,14 +627,14 @@ struct AskAIBubble: View {
                     .background(
                         GeometryReader { g in
                             Color.clear
-                                .preference(key: TourAnchorPreferenceKey.self, value: [4: g.frame(in: .global)])
+                                .preference(key: TourAnchorPreferenceKey.self, value: [4: g.frame(in: CoordinateSpace.global)])
                         }
                     )
-                    .padding(.trailing, Layout.pageMargin)
-                    .padding(.bottom, 142.0 + extraBottomInset)
+                    .padding(Edge.Set.trailing, Layout.pageMargin)
+                    .padding(Edge.Set.bottom, 142.0 + extraBottomInset)
             }
         }
-        .ignoresSafeArea(.container, edges: .bottom)
+        .ignoresSafeArea(SwiftUI.Scene.container, edges: Edge.Set.bottom)
         .allowsHitTesting(true)
         #endif
     }
@@ -646,7 +646,7 @@ struct AskAIBubble: View {
 /// except Vault; and docked inline under the savings chart on the Vault
 /// tab (see ContentView), where a fixed floating bubble would always
 /// overlap either the chart or the Deposit button.
-struct AskAIButton: View {
+public struct AskAIButton: View {
     @EnvironmentObject var themeManager: ThemeManager
     @Binding var selectedTab: Int
     let isPro: Bool
@@ -654,7 +654,7 @@ struct AskAIButton: View {
     @AppStorage("pv_askAIBubbleTapCount") private var tapCount: Int = 0
     private var showsLabel: Bool { tapCount < 3 }
 
-    var body: some View {
+    public var body: some View {
         Button(action: {
             #if !SKIP
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -664,24 +664,24 @@ struct AskAIButton: View {
         }) {
             HStack(spacing: 8) {
                 Image.platformSymbol("sparkles", android: "star.fill")
-                    .font(themeManager.font(16, weight: .semibold))
+                    .font(themeManager.font(16, weight: Font.Weight.semibold))
                 if showsLabel {
                     Text("Ask AI")
-                        .font(themeManager.font(14, weight: .semibold))
+                        .font(themeManager.font(14, weight: Font.Weight.semibold))
                 }
             }
             .foregroundStyle(themeManager.onAccent)
-            .padding(.vertical, 13)
-            .padding(.horizontal, showsLabel ? 16.0 : 13.0)
+            .padding(Edge.Set.vertical, 13)
+            .padding(Edge.Set.horizontal, showsLabel ? 16.0 : 13.0)
             .background(themeManager.accent)
             .clipShape(Capsule())
             .overlay(
                 Capsule().stroke(themeManager.onAccent.opacity(0.14), lineWidth: 1)
             )
-            .overlay(alignment: .topTrailing) {
+            .overlay(alignment: Alignment.topTrailing) {
                 if !isPro {
                     Image(systemName: "lock.fill")
-                        .font(themeManager.font(8, weight: .bold))
+                        .font(themeManager.font(8, weight: Font.Weight.bold))
                         .foregroundStyle(themeManager.accent)
                         .padding(4)
                         .background(themeManager.onAccent)
@@ -695,12 +695,12 @@ struct AskAIButton: View {
             // recomposition, not just once. Smaller radius on Android,
             // iOS unchanged.
             #if !SKIP
-            .shadow(color: .black.opacity(0.22), radius: 10, y: 5)
+            .shadow(color: Color.black.opacity(0.22), radius: 10, y: 5)
             #else
-            .shadow(color: .black.opacity(0.22), radius: 4, y: 2)
+            .shadow(color: Color.black.opacity(0.22), radius: 4, y: 2)
             #endif
         }
-        .animation(.spring(response: 0.3, dampingFraction: 0.75), value: showsLabel)
+        .animation(Animation.spring(response: 0.3, dampingFraction: 0.75), value: showsLabel)
     }
 }
 
@@ -713,7 +713,7 @@ struct AskAIButton: View {
 // several first-party iOS apps do it: it still confirms where you are,
 // without every other icon needing its own all-caps caption fighting
 // for attention.
-struct LiquidTabButton: View {
+public struct LiquidTabButton: View {
     @EnvironmentObject var themeManager: ThemeManager
     let icon: String
     // None of "cube.fill", "hammer.fill", "target", "chart.pie.fill", or
@@ -724,7 +724,7 @@ struct LiquidTabButton: View {
     let isSelected: Bool
     let action: () -> Void
 
-    var body: some View {
+    public var body: some View {
         Button(action: {
             #if !SKIP
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
@@ -733,30 +733,30 @@ struct LiquidTabButton: View {
         }) {
             HStack(spacing: 6) {
                 Image.platformSymbol(icon, android: androidIcon)
-                    .font(themeManager.font(17, weight: isSelected ? .semibold : .regular))
+                    .font(themeManager.font(17, weight: isSelected ? Font.Weight.semibold : Font.Weight.regular))
                     .foregroundStyle(isSelected ? themeManager.onAccent : themeManager.textSecondary)
 
                 if isSelected {
                     Text(label)
-                        .font(themeManager.font(13, weight: .semibold))
+                        .font(themeManager.font(13, weight: Font.Weight.semibold))
                         .foregroundStyle(themeManager.onAccent)
                         .fixedSize()
                         // Added explicit UnitPoint type for Skip compiler
                         #if !SKIP
-                        .transition(.opacity.combined(with: .scale(scale: 0.9, anchor: UnitPoint.leading)))
+                        .transition(AnyTransition.opacity.combined(with: AnyTransition.scale(scale: 0.9, anchor: UnitPoint.leading)))
                         #else
-                        .transition(.opacity)
+                        .transition(AnyTransition.opacity)
                         #endif
                 }
             }
-            .padding(.vertical, 10)
-            .padding(.horizontal, isSelected ? 14.0 : 12.0)
+            .padding(Edge.Set.vertical, 10)
+            .padding(Edge.Set.horizontal, isSelected ? 14.0 : 12.0)
             .frame(minWidth: 44)
             .background(isSelected ? themeManager.accent : Color.clear)
             .clipShape(Capsule())
-            .animation(.spring(response: 0.35, dampingFraction: 0.75), value: isSelected)
+            .animation(Animation.spring(response: 0.35, dampingFraction: 0.75), value: isSelected)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: CGFloat.infinity)
     }
 }
 
@@ -767,7 +767,7 @@ struct LiquidTabButton: View {
 // (.ultraThinMaterial etc.) everywhere else for this same frosted-glass
 // look, so Android just uses that directly instead of this UIKit bridge.
 #if !SKIP
-struct BlurView: UIViewRepresentable {
+public struct BlurView: UIViewRepresentable {
     var style: UIBlurEffect.Style
 
     func makeUIView(context: Context) -> UIVisualEffectView {
