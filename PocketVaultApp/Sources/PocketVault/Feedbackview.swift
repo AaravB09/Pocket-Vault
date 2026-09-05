@@ -3,8 +3,8 @@ import SwiftUI
 /// In-app feedback form, styled to match the rest of Pocket Vault, so
 /// testers never leave the app or drop into an external browser/Mail
 /// app just to send a thought.
-struct FeedbackView: View {
-    @Environment(\.dismiss) var dismiss
+public struct FeedbackView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var leaderboardManager: LeaderboardManager
     @EnvironmentObject var theme: ThemeManager
@@ -14,10 +14,10 @@ struct FeedbackView: View {
     @FocusState private var isFocused: Bool
 
     private var isValid: Bool {
-        !message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !message.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).isEmpty
     }
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             if feedbackManager.didSubmitSuccessfully {
                 confirmationState
@@ -36,34 +36,34 @@ struct FeedbackView: View {
                     Spacer()
                     Button(action: { dismiss() }) {
                         Image.platformSymbol("xmark.circle.fill", android: "xmark")
-                            .font(theme.font(22, weight: .bold))
+                            .font(theme.font(22, weight: Font.Weight.bold))
                             .foregroundStyle(theme.textTertiary)
                     }
                 }
-                .padding(.horizontal, Layout.pageMargin)
-                .padding(.top, 20)
+                .padding(Edge.Set.horizontal, Layout.pageMargin)
+                .padding(Edge.Set.top, 20)
 
                 VStack(spacing: 6) {
                     SectionLabel("We're listening")
                     Text("Send Feedback")
-                        .font(theme.font(22, weight: .light))
+                        .font(theme.font(22, weight: Font.Weight.light))
                         .foregroundStyle(theme.textPrimary)
                 }
 
                 Text("Bugs, ideas, anything at all — it goes straight to the team.")
-                    .font(theme.font(13, weight: .light))
+                    .font(theme.font(13, weight: Font.Weight.light))
                     .foregroundStyle(theme.textSecondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, Layout.pageMargin)
+                    .multilineTextAlignment(TextAlignment.center)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: HorizontalAlignment.leading, spacing: 8) {
                     SectionLabel("Your message")
 
                     TextEditor(text: $message)
                         .focused($isFocused)
-                        .scrollContentBackground(.hidden)
+                        .scrollContentBackground(Visibility.hidden)
                         .foregroundStyle(theme.textPrimary)
-                        .font(theme.font(14, weight: .light))
+                        .font(theme.font(14, weight: Font.Weight.light))
                         .frame(height: 160)
                         .padding(12)
                         // NOTE(skip): .ultraThinMaterial has no Android
@@ -72,25 +72,25 @@ struct FeedbackView: View {
                         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                         .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
-                        .overlay(alignment: .topLeading) {
+                        .overlay(alignment: Alignment.topLeading) {
                             if message.isEmpty {
                                 Text("What's on your mind?")
-                                    .font(theme.font(14, weight: .light))
+                                    .font(theme.font(14, weight: Font.Weight.light))
                                     .foregroundStyle(theme.textTertiary)
-                                    .padding(.horizontal, 18)
-                                    .padding(.vertical, 20)
+                                    .padding(Edge.Set.horizontal, 18)
+                                    .padding(Edge.Set.vertical, 20)
                                     .allowsHitTesting(false)
                             }
                         }
                 }
-                .padding(.horizontal, Layout.pageMargin)
+                .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                 if let errorMessage = feedbackManager.errorMessage {
                     Text(errorMessage)
                         .font(theme.font(11))
                         .foregroundStyle(theme.danger.opacity(0.9))
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, Layout.pageMargin)
+                        .multilineTextAlignment(TextAlignment.center)
+                        .padding(Edge.Set.horizontal, Layout.pageMargin)
                 }
 
                 // FIX: `.buttonStyle(.primaryCTA(theme))` referenced a
@@ -116,7 +116,7 @@ struct FeedbackView: View {
                     }
                 }
                 .disabled(!isValid || feedbackManager.isSubmitting)
-                .padding(.horizontal, Layout.pageMargin)
+                .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                 Spacer(minLength: 40)
             }
@@ -126,21 +126,21 @@ struct FeedbackView: View {
     private var confirmationState: some View {
         VStack(spacing: 20) {
             Image.platformSymbol("checkmark.seal.fill", android: "checkmark.circle.fill")
-                .font(theme.font(40, weight: .light))
+                .font(theme.font(40, weight: Font.Weight.light))
                 .foregroundStyle(theme.accent)
 
             VStack(spacing: 6) {
                 SectionLabel("Thank you")
                 Text("Feedback sent")
-                    .font(theme.font(20, weight: .light))
+                    .font(theme.font(20, weight: Font.Weight.light))
                     .foregroundStyle(theme.textPrimary)
             }
 
             Text("We read every message — appreciate you taking the time.")
-                .font(theme.font(13, weight: .light))
+                .font(theme.font(13, weight: Font.Weight.light))
                 .foregroundStyle(theme.textSecondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
+                .multilineTextAlignment(TextAlignment.center)
+                .padding(Edge.Set.horizontal, 40)
 
             // FIX: same leftover-ButtonStyle pattern as above, using the
             // secondary variant. SecondaryCTAButton has no onAccent
@@ -150,8 +150,8 @@ struct FeedbackView: View {
             SecondaryCTAButton(accent: theme.accent, action: { dismiss() }) {
                 Text("Done")
             }
-            .padding(.horizontal, 40)
-            .padding(.top, 8)
+            .padding(Edge.Set.horizontal, 40)
+            .padding(Edge.Set.top, 8)
         }
     }
 }

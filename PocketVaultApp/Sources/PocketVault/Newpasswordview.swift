@@ -6,10 +6,10 @@ import SwiftUI
 /// password. This is the missing step: it uses the one-time recovery
 /// token AuthManager captured from the link to actually set a new
 /// password, then signs the person in.
-struct NewPasswordView: View {
+public struct NewPasswordView: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var theme: ThemeManager
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.dismiss) var dismiss: DismissAction
 
     @State private var newPassword: String = ""
     @State private var confirmPassword: String = ""
@@ -40,31 +40,31 @@ struct NewPasswordView: View {
         requirements.allSatisfy { $0.isMet(newPassword) } && newPassword == confirmPassword
     }
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             ScrollView {
                 VStack(spacing: 24) {
                     VStack(spacing: 6) {
                         Text("POCKET VAULT")
-                            .font(theme.font(11, weight: .bold))
+                            .font(theme.font(11, weight: Font.Weight.bold))
                             .tracking(4)
                             .foregroundStyle(theme.accent)
                         Text("Choose a New Password")
-                            .font(theme.font(22, weight: .light))
+                            .font(theme.font(22, weight: Font.Weight.light))
                             .foregroundStyle(theme.textPrimary)
                     }
-                    .padding(.top, 90)
+                    .padding(Edge.Set.top, 90)
 
                     if let email = authManager.userEmail {
                         Text("Resetting the password for \(email)")
-                            .font(theme.font(12, weight: .light))
+                            .font(theme.font(12, weight: Font.Weight.light))
                             .foregroundStyle(theme.textSecondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, Layout.pageMargin)
+                            .multilineTextAlignment(TextAlignment.center)
+                            .padding(Edge.Set.horizontal, Layout.pageMargin)
                     }
 
                     VStack(spacing: 14) {
-                        ZStack(alignment: .trailing) {
+                        ZStack(alignment: Alignment.trailing) {
                             Group {
                                 if isPasswordVisible {
                                     TextField("", text: $newPassword, prompt: Text("New password").foregroundColor(theme.textTertiary))
@@ -72,12 +72,12 @@ struct NewPasswordView: View {
                                     SecureField("", text: $newPassword, prompt: Text("New password").foregroundColor(theme.textTertiary))
                                 }
                             }
-                            .textInputAutocapitalization(.never)
+                            .textInputAutocapitalization(TextInputAutocapitalization.never)
                             .autocorrectionDisabled()
                             .foregroundStyle(theme.textPrimary)
                             .tint(theme.accent)
                             .padding(16)
-                            .padding(.trailing, 40)
+                            .padding(Edge.Set.trailing, 40)
                             // NOTE(skip): .ultraThinMaterial has no Android
                             // equivalent and was unresolved, cascading into
                             // the .clipShape right below it too.
@@ -94,11 +94,11 @@ struct NewPasswordView: View {
                                     .font(theme.font(14))
                                     .foregroundStyle(theme.textTertiary)
                             }
-                            .padding(.trailing, 16)
+                            .padding(Edge.Set.trailing, 16)
                         }
 
                         SecureField("", text: $confirmPassword, prompt: Text("Confirm new password").foregroundColor(theme.textTertiary))
-                            .textInputAutocapitalization(.never)
+                            .textInputAutocapitalization(TextInputAutocapitalization.never)
                             .autocorrectionDisabled()
                             .foregroundStyle(theme.textPrimary)
                             .tint(theme.accent)
@@ -111,7 +111,7 @@ struct NewPasswordView: View {
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                             .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
 
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: HorizontalAlignment.leading, spacing: 8) {
                             ForEach(requirements) { requirement in
                                 let met = requirement.isMet(newPassword)
                                 HStack(spacing: 8) {
@@ -119,7 +119,7 @@ struct NewPasswordView: View {
                                         .font(theme.font(13))
                                         .foregroundStyle(met ? theme.accent : theme.textTertiary)
                                     Text(requirement.label)
-                                        .font(theme.font(12, weight: .light))
+                                        .font(theme.font(12, weight: Font.Weight.light))
                                         .foregroundStyle(met ? theme.textPrimary.opacity(0.8) : theme.textTertiary)
                                 }
                             }
@@ -129,21 +129,21 @@ struct NewPasswordView: View {
                                         .font(theme.font(13))
                                         .foregroundStyle(newPassword == confirmPassword ? theme.accent : theme.textTertiary)
                                     Text("Passwords match")
-                                        .font(theme.font(12, weight: .light))
+                                        .font(theme.font(12, weight: Font.Weight.light))
                                         .foregroundStyle(newPassword == confirmPassword ? theme.textPrimary.opacity(0.8) : theme.textTertiary)
                                 }
                             }
                         }
-                        .padding(.horizontal, 4)
+                        .padding(Edge.Set.horizontal, 4)
                     }
-                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     if let errorText {
                         Text(errorText)
-                            .font(theme.font(12, weight: .light))
+                            .font(theme.font(12, weight: Font.Weight.light))
                             .foregroundStyle(theme.danger.opacity(0.9))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, Layout.pageMargin)
+                            .multilineTextAlignment(TextAlignment.center)
+                            .padding(Edge.Set.horizontal, Layout.pageMargin)
                     }
 
                     Button(action: save) {
@@ -151,15 +151,15 @@ struct NewPasswordView: View {
                             if isSaving { ProgressView().tint(theme.background) }
                             Text(isSaving ? "Saving…" : "Save new password")
                         }
-                        .font(theme.font(16, weight: .semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 17)
+                        .font(theme.font(16, weight: Font.Weight.semibold))
+                        .frame(maxWidth: CGFloat.infinity)
+                        .padding(Edge.Set.vertical, 17)
                         .background(isValid ? theme.textPrimary : theme.textPrimary.opacity(0.25))
                         .foregroundColor(theme.background)
                         .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius))
                     }
                     .disabled(!isValid || isSaving)
-                    .padding(.horizontal, Layout.pageMargin)
+                    .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     Spacer(minLength: 40)
                 }
