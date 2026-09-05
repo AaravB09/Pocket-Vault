@@ -1,10 +1,10 @@
 import SwiftUI
 
 /// Elegant watercolor / ink brush stroke shape with dynamic curve points
-struct BrushStrokeShape: Shape {
+public struct BrushStrokeShape: Shape {
     var progress: CGFloat
 
-    var animatableData: CGFloat {
+    public var animatableData: CGFloat {
         get { progress }
         set { progress = newValue }
     }
@@ -31,18 +31,18 @@ struct BrushStrokeShape: Shape {
 }
 
 /// Floating ambient ink particle effect
-struct AtmosphericParticles: View {
+public struct AtmosphericParticles: View {
     @State private var animate = false
 
-    var body: some View {
+    public var body: some View {
         GeometryReader { geo in
             ZStack {
                 ForEach(0..<12, id: \.self) { i in
                     Circle()
                         .fill(
                             RadialGradient(
-                                colors: [Color(red: 0.4, green: 0.8, blue: 0.95).opacity(0.3), .clear],
-                                center: .center, startRadius: 1, endRadius: 15
+                                colors: [Color(red: 0.4, green: 0.8, blue: 0.95).opacity(0.3), Color.clear],
+                                center: UnitPoint.center, startRadius: 1, endRadius: 15
                             )
                         )
                         // NOTE(skip): `.random(in:)` bounds below used bare

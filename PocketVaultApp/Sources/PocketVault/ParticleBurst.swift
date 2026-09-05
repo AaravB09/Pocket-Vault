@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Gold particle burst fired on successful deposit. Self-dismissing —
 /// just toggle `isActive` to true and it plays once and resets.
-struct ParticleBurstView: View {
+public struct ParticleBurstView: View {
     @EnvironmentObject var theme: ThemeManager
     @Binding var isActive: Bool
 
@@ -17,7 +17,7 @@ struct ParticleBurstView: View {
 
     @State private var particles: [Particle] = []
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             ForEach(particles) { particle in
                 Image(systemName: ["diamond.fill", "sparkle", "circle.fill"].randomElement()!)
@@ -25,7 +25,7 @@ struct ParticleBurstView: View {
                     .foregroundStyle(theme.accent)
                     .scaleEffect(particle.scale)
                     .opacity(particle.opacity)
-                    .rotationEffect(.degrees(particle.rotation))
+                    .rotationEffect(Angle.degrees(particle.rotation))
                     .offset(
                         x: CGFloat(cos(particle.angle)) * particle.distance,
                         y: CGFloat(sin(particle.angle)) * particle.distance
@@ -58,7 +58,7 @@ struct ParticleBurstView: View {
             )
         }
 
-        withAnimation(.easeOut(duration: 0.9)) {
+        withAnimation(Animation.easeOut(duration: 0.9)) {
             for i in particles.indices {
                 // NOTE(skip): same bare-Int-range issue as `rotation`
                 // above, here against CGFloat.random(in:).

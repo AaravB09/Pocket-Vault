@@ -10,7 +10,7 @@ import SwiftUI
 /// account — same visual language as the Pro paywall lock, since this is
 /// the same "you need X to continue" pattern, just for account status
 /// instead of subscription status.
-struct AccountRequiredGateView: View {
+public struct AccountRequiredGateView: View {
     @EnvironmentObject var theme: ThemeManager
     let featureName: String
     let message: String
@@ -22,7 +22,7 @@ struct AccountRequiredGateView: View {
         self.message = message ?? "Sign in with a free account to use \(featureName) — it needs a verified identity so the data stays private between you and the people you choose."
     }
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             VStack(spacing: 22.0) {
                 Spacer()
