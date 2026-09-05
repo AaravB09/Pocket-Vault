@@ -1,12 +1,12 @@
 import SwiftUI
 
-struct SharedBudgetView: View {
+public struct SharedBudgetView: View {
     @EnvironmentObject var sharedBudgetManager: SharedBudgetManager
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var leaderboardManager: LeaderboardManager
     @EnvironmentObject var theme: ThemeManager
     @ObservedObject var goalStore: GoalStore
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.dismiss) var dismiss: DismissAction
 
     /// Set when this view is shown as its own permanent tab (see
     /// MainTabView) rather than pushed as a sheet from LeaderboardView.
@@ -48,12 +48,12 @@ struct SharedBudgetView: View {
                             Spacer()
                             Button(action: { dismiss() }) {
                                 Image.platformSymbol("xmark.circle.fill", android: "xmark")
-                                    .font(theme.font(22, weight: .bold))
+                                    .font(theme.font(22, weight: Font.Weight.bold))
                                     .foregroundStyle(theme.textTertiary)
                             }
                         }
-                        .padding(.horizontal, Layout.pageMargin)
-                        .padding(.top, 20)
+                        .padding(Edge.Set.horizontal, Layout.pageMargin)
+                        .padding(Edge.Set.top, 20)
                     } else {
                         Color.clear.frame(height: 8)
                     }
@@ -61,7 +61,7 @@ struct SharedBudgetView: View {
                     VStack(spacing: 6) {
                         SectionLabel("Shared budget")
                         Text("Save Together")
-                            .font(theme.font(22, weight: .light))
+                            .font(theme.font(22, weight: Font.Weight.light))
                             .foregroundStyle(theme.textPrimary)
                     }
 
@@ -71,10 +71,10 @@ struct SharedBudgetView: View {
                         shareThisGoalCard(goal: goal)
                     } else {
                         Text("Create a goal first, then come back to share it.")
-                            .font(theme.font(13, weight: .light))
+                            .font(theme.font(13, weight: Font.Weight.light))
                             .foregroundStyle(theme.textTertiary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, Layout.pageMargin)
+                            .multilineTextAlignment(TextAlignment.center)
+                            .padding(Edge.Set.horizontal, Layout.pageMargin)
                     }
 
                     joinCard
@@ -83,8 +83,8 @@ struct SharedBudgetView: View {
                         Text(errorMessage)
                             .font(theme.font(11))
                             .foregroundStyle(theme.danger.opacity(0.9))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, Layout.pageMargin)
+                            .multilineTextAlignment(TextAlignment.center)
+                            .padding(Edge.Set.horizontal, Layout.pageMargin)
                     }
 
                     Spacer(minLength: 40)
@@ -109,18 +109,18 @@ struct SharedBudgetView: View {
     private func shareThisGoalCard(goal: Goal) -> some View {
         VStack(spacing: 14) {
             Image.platformSymbol("person.2.fill", android: "person.fill")
-                .font(theme.font(26, weight: .light))
+                .font(theme.font(26, weight: Font.Weight.light))
                 .foregroundStyle(theme.accent)
 
             Text("Share “\(goal.title)” with a partner")
-                .font(theme.font(14, weight: .light))
+                .font(theme.font(14, weight: Font.Weight.light))
                 .foregroundStyle(theme.textPrimary.opacity(0.7))
-                .multilineTextAlignment(.center)
+                .multilineTextAlignment(TextAlignment.center)
 
             Text("You'll both see every deposit and how close you are together.")
-                .font(theme.font(12, weight: .light))
+                .font(theme.font(12, weight: Font.Weight.light))
                 .foregroundStyle(theme.textTertiary)
-                .multilineTextAlignment(.center)
+                .multilineTextAlignment(TextAlignment.center)
 
             PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: {
                 Task {
@@ -147,7 +147,7 @@ struct SharedBudgetView: View {
         .background(cardFill)
         .cornerRadius(Layout.cardRadius)
         .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1))
-        .padding(.horizontal, Layout.pageMargin)
+        .padding(Edge.Set.horizontal, Layout.pageMargin)
     }
 
     // MARK: - Already shared: split-avatar card
@@ -166,7 +166,7 @@ struct SharedBudgetView: View {
                 Image.platformSymbol("arrow.left.arrow.right", android: "arrow.clockwise.circle")
                     .font(theme.font(12))
                     .foregroundStyle(theme.accent.opacity(0.6))
-                    .padding(.horizontal, 6)
+                    .padding(Edge.Set.horizontal, 6)
                 contributorAvatar(
                     initial: String(partnerName.prefix(1)).uppercased(),
                     label: partnerName,
@@ -177,7 +177,7 @@ struct SharedBudgetView: View {
 
             VStack(spacing: 10) {
                 GeometryReader { geo in
-                    ZStack(alignment: .leading) {
+                    ZStack(alignment: Alignment.leading) {
                         Rectangle().fill(theme.cardStroke)
                         Rectangle().fill(theme.accent).frame(width: geo.size.width * CGFloat(progress))
                     }
@@ -187,11 +187,11 @@ struct SharedBudgetView: View {
 
                 HStack {
                     Text("$\(Int(combined)) combined")
-                        .font(theme.font(11, weight: .semibold))
+                        .font(theme.font(11, weight: Font.Weight.semibold))
                         .foregroundStyle(theme.textSecondary)
                     Spacer()
                     Text("of $\(Int(goal.targetAmount))")
-                        .font(theme.font(11, weight: .semibold))
+                        .font(theme.font(11, weight: Font.Weight.semibold))
                         .foregroundStyle(theme.textSecondary)
                 }
             }
@@ -202,7 +202,7 @@ struct SharedBudgetView: View {
                     SectionLabel("Share code")
                     HStack(spacing: 8) {
                         Text(code)
-                            .font(theme.font(20, weight: .semibold))
+                            .font(theme.font(20, weight: Font.Weight.semibold))
                             .tracking(3)
                             .foregroundStyle(theme.textPrimary)
                         Button(action: {
@@ -221,18 +221,18 @@ struct SharedBudgetView: View {
 
             if !sharedBudgetManager.deposits.isEmpty {
                 Rectangle().fill(theme.hairline).frame(height: 1)
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: Alignment.leading, spacing: 14) {
                     SectionLabel("Recent deposits")
 
                     VStack(spacing: 10) {
                         ForEach(sharedBudgetManager.deposits.prefix(6)) { deposit in
                             HStack {
                                 Text(deposit.contributor_id == myID ? "You" : deposit.contributor_name)
-                                    .font(theme.font(12, weight: .light))
+                                    .font(theme.font(12, weight: Font.Weight.light))
                                     .foregroundStyle(theme.textPrimary.opacity(0.7))
                                 Spacer()
                                 Text("+$\(Int(deposit.amount))")
-                                    .font(theme.font(12, weight: .semibold))
+                                    .font(theme.font(12, weight: Font.Weight.semibold))
                                     .foregroundStyle(theme.accent)
                             }
                         }
@@ -242,9 +242,9 @@ struct SharedBudgetView: View {
 
             Rectangle().fill(theme.hairline).frame(height: 1)
 
-            Button(role: .destructive, action: { showLeaveConfirm = true }) {
+            Button(role: ButtonRole.destructive, action: { showLeaveConfirm = true }) {
                 Text("Leave this shared budget")
-                    .font(theme.font(13, weight: .semibold))
+                    .font(theme.font(13, weight: Font.Weight.semibold))
                     .foregroundStyle(theme.danger.opacity(0.9))
             }
             .disabled(sharedBudgetManager.isLoading)
@@ -253,14 +253,14 @@ struct SharedBudgetView: View {
         .background(cardFill)
         .cornerRadius(Layout.cardRadius)
         .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1))
-        .padding(.horizontal, Layout.pageMargin)
+        .padding(Edge.Set.horizontal, Layout.pageMargin)
         .confirmationDialog(
             isOwnerOfActiveShare ? "Leave and end this shared budget?" : "Leave this shared budget?",
             isPresented: $showLeaveConfirm,
-            titleVisibility: .visible
+            titleVisibility: Visibility.visible
         ) {
-            Button("Leave", role: .destructive) { leaveSharedBudget(sharedID: sharedID) }
-            Button("Cancel", role: .cancel) {}
+            Button("Leave", role: ButtonRole.destructive) { leaveSharedBudget(sharedID: sharedID) }
+            Button("Cancel", role: ButtonRole.cancel) {}
         } message: {
             Text(isOwnerOfActiveShare
                 ? "Since it's your goal, this ends the shared budget for both of you. Your partner will lose access next time they refresh."
@@ -296,18 +296,18 @@ struct SharedBudgetView: View {
                     .stroke(theme.accent.opacity(isPending ? 0.2 : 0.6), lineWidth: 1.5)
                     .frame(width: 64, height: 64)
                 Text(initial)
-                    .font(theme.font(22, weight: .light))
+                    .font(theme.font(22, weight: Font.Weight.light))
                     .foregroundStyle(isPending ? theme.textTertiary : theme.textPrimary)
             }
             Text(label)
-                .font(theme.font(11, weight: .semibold))
+                .font(theme.font(11, weight: Font.Weight.semibold))
                 .foregroundStyle(theme.textSecondary)
                 .lineLimit(1)
             Text(isPending ? "—" : "$\(Int(amount))")
-                .font(theme.font(15, weight: .semibold))
+                .font(theme.font(15, weight: Font.Weight.semibold))
                 .foregroundStyle(theme.accent)
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: CGFloat.infinity)
     }
 
     // MARK: - Join someone else's shared budget
@@ -317,7 +317,7 @@ struct SharedBudgetView: View {
 
             HStack(spacing: 10) {
                 TextField("Enter their code", text: $joinCodeInput)
-                    .textInputAutocapitalization(.characters)
+                    .textInputAutocapitalization(TextInputAutocapitalization.characters)
                     .autocorrectionDisabled()
                     .padding(14)
                     .background(cardFill)
@@ -331,7 +331,7 @@ struct SharedBudgetView: View {
                                 title: record.goal_title,
                                 kindRaw: GoalKind.custom.rawValue,
                                 targetAmount: record.target_amount,
-                                targetDate: Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
+                                targetDate: Calendar.current.date(byAdding: Calendar.Component.month, value: 3, to: Date()) ?? Date()
                             )
                             goalStore.mutateActive { $0.sharedGoalID = record.id }
                             await sharedBudgetManager.loadShare(id: record.id, accessToken: authManager.accessToken)
@@ -340,16 +340,16 @@ struct SharedBudgetView: View {
                     }
                 }) {
                     Text("Join")
-                        .font(theme.font(14, weight: .semibold))
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
+                        .font(theme.font(14, weight: Font.Weight.semibold))
+                        .padding(Edge.Set.horizontal, 20)
+                        .padding(Edge.Set.vertical, 16)
                         .background(theme.accent)
                         .foregroundColor(theme.onAccent)
                         .cornerRadius(Layout.controlRadius)
                 }
-                .disabled(joinCodeInput.trimmingCharacters(in: .whitespaces).isEmpty || sharedBudgetManager.isLoading)
+                .disabled(joinCodeInput.trimmingCharacters(in: CharacterSet.whitespaces).isEmpty || sharedBudgetManager.isLoading)
             }
         }
-        .padding(.horizontal, Layout.pageMargin)
+        .padding(Edge.Set.horizontal, Layout.pageMargin)
     }
 }

@@ -3,7 +3,7 @@ import SwiftUI
 import RealityKit
 #endif
 
-struct ContentView: View {
+public struct ContentView: View {
     @EnvironmentObject var streakManager: StreakManager
     @EnvironmentObject var leaderboardManager: LeaderboardManager
     @EnvironmentObject var entitlementManager: EntitlementManager
@@ -37,7 +37,7 @@ struct ContentView: View {
     @State private var newGoalKindRaw: String = GoalKind.flight.rawValue
     @State private var newGoalTarget: Double = 1200.0
     @State private var newGoalSavings: Double = 0.0
-    @State private var newGoalDate: Date = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
+    @State private var newGoalDate: Date = Calendar.current.date(byAdding: Calendar.Component.month, value: 3, to: Date()) ?? Date()
     @State private var newGoalVoxelBlueprintJSON: String? = nil
 
     private var goalKind: GoalKind { GoalKind(rawValue: goalKindRaw) ?? .flight }
@@ -64,8 +64,8 @@ struct ContentView: View {
     }
 
     private var greetingText: String {
-        let hour = Calendar.current.component(.hour, from: Date())
-        let name = leaderboardManager.myDisplayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let hour = Calendar.current.component(Calendar.Component.hour, from: Date())
+        let name = leaderboardManager.myDisplayName.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
         let displayName = name.isEmpty ? "User" : name
 
         switch hour {
@@ -84,8 +84,8 @@ struct ContentView: View {
 
             ZStack {
                 RadialGradient(
-                    colors: [theme.textPrimary.opacity(0.1), .clear],
-                    center: .center, startRadius: 10, endRadius: 280
+                    colors: [theme.textPrimary.opacity(0.1), Color.clear],
+                    center: UnitPoint.center, startRadius: 10, endRadius: 280
                 )
                 .offset(y: -40)
                 .allowsHitTesting(false)
@@ -109,7 +109,7 @@ struct ContentView: View {
                                                 .fill(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                                                 .frame(width: 40, height: 40)
                                             Image(systemName: "person.fill")
-                                                .font(theme.font(15, weight: .light))
+                                                .font(theme.font(15, weight: Font.Weight.light))
                                                 .foregroundStyle(theme.accent)
                                         }
                                         Circle()
@@ -122,7 +122,7 @@ struct ContentView: View {
 
                                 if entitlementManager.isPro {
                                     Text(greetingText)
-                                        .font(theme.font(18, weight: .semibold))
+                                        .font(theme.font(18, weight: Font.Weight.semibold))
                                         .foregroundStyle(theme.textPrimary.opacity(0.95))
                                 } else {
                                     VaultButton(
@@ -142,7 +142,7 @@ struct ContentView: View {
                                     PrivacyQuickToggleButton()
                                 }
                             }
-                            .padding(.horizontal, Layout.pageMargin)
+                            .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                             // 2. Row 2: Active Journey Selector Button
                             HStack {
@@ -157,30 +157,30 @@ struct ContentView: View {
                                     label: AnyView(
                                         HStack(spacing: 8) {
                                             Image.platformSymbol(goalKind.displayIcon, android: goalKind.androidDisplayIcon)
-                                                .font(theme.font(13, weight: .medium))
+                                                .font(theme.font(13, weight: Font.Weight.medium))
                                                 .foregroundStyle(theme.accent)
 
                                             Text(goalTitle.isEmpty ? "Choose a journey" : goalTitle)
-                                                .font(theme.font(14, weight: .semibold))
+                                                .font(theme.font(14, weight: Font.Weight.semibold))
                                                 .foregroundStyle(theme.textPrimary.opacity(0.9))
 
                                             Image(systemName: "chevron.down")
-                                                .font(theme.font(10, weight: .semibold))
+                                                .font(theme.font(10, weight: Font.Weight.semibold))
                                                 .foregroundStyle(theme.textTertiary)
                                         }
-                                        .padding(.horizontal, 16)
-                                        .padding(.vertical, 8)
+                                        .padding(Edge.Set.horizontal, 16)
+                                        .padding(Edge.Set.vertical, 8)
                                     )
                                 )
 
                                 Spacer()
                             }
-                            .padding(.horizontal, Layout.pageMargin)
+                            .padding(Edge.Set.horizontal, Layout.pageMargin)
                         }
                         #if !SKIP
-                        .padding(.top, topInset + 25)
+                        .padding(Edge.Set.top, topInset + 25)
                         #else
-                        .padding(.top, 12)
+                        .padding(Edge.Set.top, 12)
                         #endif
 
                         // Goal Picker
@@ -189,49 +189,49 @@ struct ContentView: View {
                             newGoalKindRaw = GoalKind.flight.rawValue
                             newGoalTarget = 1200.0
                             newGoalSavings = 0.0
-                            newGoalDate = Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
+                            newGoalDate = Calendar.current.date(byAdding: Calendar.Component.month, value: 3, to: Date()) ?? Date()
                             newGoalVoxelBlueprintJSON = nil
                             showAddGoalSheet = true
                         }
-                        .padding(.top, 16)
+                        .padding(Edge.Set.top, 16)
 
                         // Editorial Hero Progress Text
                         ZStack {
                             VStack(spacing: 4) {
                                 Text("\(Int(displayProgress * 100))%")
                                     #if !SKIP
-                                    .font(theme.font(92, weight: .ultraLight))
+                                    .font(theme.font(92, weight: Font.Weight.ultraLight))
                                     #else
-                                    .font(theme.font(68, weight: .ultraLight))
+                                    .font(theme.font(68, weight: Font.Weight.ultraLight))
                                     #endif
                                     .tracking(-3)
                                     .foregroundStyle(
                                         LinearGradient(
                                             colors: [theme.textPrimary, theme.textPrimary.opacity(0.75)],
-                                            startPoint: .top, endPoint: .bottom
+                                            startPoint: UnitPoint.top, endPoint: UnitPoint.bottom
                                         )
                                     )
 
                                 HStack(spacing: 8) {
                                     Text("$\(Int(currentSavings))")
-                                        .font(theme.font(16, weight: .medium))
+                                        .font(theme.font(16, weight: Font.Weight.medium))
                                         .foregroundStyle(theme.accent)
 
                                     Text("of $\(Int(targetGoal))")
-                                        .font(theme.font(13, weight: .medium))
-                                        .foregroundStyle(.secondary)
+                                        .font(theme.font(13, weight: Font.Weight.medium))
+                                        .foregroundStyle(Color.secondary)
                                 }
 
                                 if currentSavings == 0.0 {
                                     Text("Head start for creating your goal — deposit to keep it moving")
-                                        .font(theme.font(9, weight: .light))
-                                        .foregroundStyle(.secondary)
-                                        .padding(.top, 2)
+                                        .font(theme.font(9, weight: Font.Weight.light))
+                                        .foregroundStyle(Color.secondary)
+                                        .padding(Edge.Set.top, 2)
                                 }
 
                                 // Minimalist Hairline Progress Line
                                 GeometryReader { geo in
-                                    ZStack(alignment: .leading) {
+                                    ZStack(alignment: Alignment.leading) {
                                         Rectangle()
                                             .fill(theme.hairline)
 
@@ -241,8 +241,8 @@ struct ContentView: View {
                                     }
                                 }
                                 .frame(height: 2)
-                                .padding(.horizontal, 80)
-                                .padding(.top, 12)
+                                .padding(Edge.Set.horizontal, 80)
+                                .padding(Edge.Set.top, 12)
                             }
                             #if !SKIP
                             .blur(radius: privacy.shouldMask ? 14.0 : 0.0)
@@ -257,9 +257,9 @@ struct ContentView: View {
                                 .offset(y: -20)
                         }
                         #if !SKIP
-                        .padding(.top, 20)
+                        .padding(Edge.Set.top, 20)
                         #else
-                        .padding(.top, 12)
+                        .padding(Edge.Set.top, 12)
                         #endif
 
                         SavingsTrendChart(
@@ -267,20 +267,20 @@ struct ContentView: View {
                             targetAmount: targetGoal
                         )
                         #if !SKIP
-                        .padding(.top, 24)
+                        .padding(Edge.Set.top, 24)
                         #else
-                        .padding(.top, 14)
+                        .padding(Edge.Set.top, 14)
                         #endif
 
                         HStack {
                             Spacer()
                             AskAIButton(selectedTab: $selectedTab, isPro: entitlementManager.isPro)
                         }
-                        .padding(.horizontal, Layout.pageMargin)
+                        .padding(Edge.Set.horizontal, Layout.pageMargin)
                         #if !SKIP
-                        .padding(.top, 16)
+                        .padding(Edge.Set.top, 16)
                         #else
-                        .padding(.top, 10)
+                        .padding(Edge.Set.top, 10)
                         #endif
 
                         Spacer()
@@ -288,13 +288,13 @@ struct ContentView: View {
                         PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: { showDepositSheet = true }) {
                             Text("Deposit funds")
                         }
-                        .padding(.horizontal, Layout.pageMargin)
-                        .padding(.bottom, 24)
+                        .padding(Edge.Set.horizontal, Layout.pageMargin)
+                        .padding(Edge.Set.bottom, 24)
                     }
                     .frame(minHeight: rootGeo.size.height)
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: CGFloat.infinity, maxHeight: CGFloat.infinity)
         }
         .onAppear { loadProfileImage() }
         .sheet(isPresented: $showDepositSheet) {
@@ -374,8 +374,8 @@ struct ContentView: View {
 }
 
 // MARK: - Separate Deposit Forge Modal View
-struct AestheticDepositModalView: View {
-    @Environment(\.dismiss) var dismiss
+public struct AestheticDepositModalView: View {
+    @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: ThemeManager
     @Binding var currentSavings: Double
     var onDeposit: (Double) -> Void
@@ -391,16 +391,16 @@ struct AestheticDepositModalView: View {
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
                 .onAppear {
-                    withAnimation(.linear(duration: 8.0).repeatForever(autoreverses: false)) {
+                    withAnimation(Animation.linear(duration: 8.0).repeatForever(autoreverses: false)) {
                         artifactRotation = Float(Double.pi * 2)
                     }
                 }
 
             VStack(spacing: 28) {
                 Text("Add a deposit")
-                    .font(theme.font(22, weight: .bold))
+                    .font(theme.font(22, weight: Font.Weight.bold))
                     .foregroundStyle(theme.textPrimary)
-                    .padding(.top, 40)
+                    .padding(Edge.Set.top, 40)
 
                 // Quick Amount Chips
                 HStack(spacing: 12) {
@@ -426,10 +426,10 @@ struct AestheticDepositModalView: View {
                     SectionLabel("Amount ($)")
 
                     TextField("Amount", text: $customAmount)
-                        .keyboardType(.numberPad)
-                        .multilineTextAlignment(.center)
-                        .font(theme.font(52, weight: .ultraLight))
-                        .foregroundStyle(.primary)
+                        .keyboardType(UIKeyboardType.numberPad)
+                        .multilineTextAlignment(TextAlignment.center)
+                        .font(theme.font(52, weight: Font.Weight.ultraLight))
+                        .foregroundStyle(Color.primary)
                 }
 
                 Spacer()
@@ -442,8 +442,8 @@ struct AestheticDepositModalView: View {
                 }) {
                     Text("Confirm deposit")
                 }
-                .padding(.horizontal, Layout.pageMargin)
-                .padding(.bottom, 44)
+                .padding(Edge.Set.horizontal, Layout.pageMargin)
+                .padding(Edge.Set.bottom, 44)
             }
         }
         .themedSurface(ignoresSafeArea: true)
@@ -484,11 +484,11 @@ struct AestheticDepositModalView: View {
                 .fill(
                     LinearGradient(
                         colors: [theme.accent.opacity(0.35), theme.accent.opacity(0.05)],
-                        startPoint: .topLeading, endPoint: .bottomTrailing
+                        startPoint: UnitPoint.topLeading, endPoint: UnitPoint.bottomTrailing
                     )
                 )
                 .frame(width: 140, height: 140)
-                .rotation3DEffect(.radians(Double(artifactRotation)), axis: (x: 0, y: 1, z: 0))
+                .rotation3DEffect(Angle.radians(Double(artifactRotation)), axis: (x: 0, y: 1, z: 0))
                 .position(x: geo.size.width / 2, y: geo.size.height * 0.32)
                 .blur(radius: 2)
         }
