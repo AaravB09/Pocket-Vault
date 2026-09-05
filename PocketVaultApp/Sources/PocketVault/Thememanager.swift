@@ -3,7 +3,7 @@ import Combine
 
 // MARK: - Color Theme
 
-enum AppColorTheme: String, CaseIterable, Identifiable, Codable {
+public enum AppColorTheme: String, CaseIterable, Identifiable, Codable {
     case champagneGold
     case ivoryWhite
     case obsidianBlack
@@ -102,7 +102,7 @@ enum AppColorTheme: String, CaseIterable, Identifiable, Codable {
 /// its own independent setting — any accent color can be paired with
 /// light, dark, or "follow iOS Settings" — instead of light mode being
 /// tied to one specific color theme (ivoryWhite).
-enum AppAppearanceMode: String, CaseIterable, Identifiable, Codable {
+public enum AppAppearanceMode: String, CaseIterable, Identifiable, Codable {
     case system
     case light
     case dark
@@ -149,7 +149,7 @@ enum AppAppearanceMode: String, CaseIterable, Identifiable, Codable {
 /// `.system(..., design: .serif)` directly. Any view that hardcodes its
 /// own color/font locally will NOT update when the user changes theme.
 @MainActor
-final class ThemeManager: ObservableObject {
+public final class ThemeManager: ObservableObject {
     @Published var colorTheme: AppColorTheme {
         didSet { defaults.set(colorTheme.rawValue, forKey: colorKey) }
     }
@@ -260,7 +260,7 @@ final class ThemeManager: ObservableObject {
 // that ends up in a CGFloat/Double slot in this file is spelled out
 // explicitly (same reasoning applies to every `.padding`, `.frame`,
 // `.cornerRadius`, `theme.font(...)`, spacing, and shadow value below).
-enum Layout {
+public enum Layout {
     /// Standard left/right screen margin. Use this — not a bespoke
     /// number — for page content, section cards, and full-width CTAs so
     /// they all share one edge and visually line up with the dock below.
@@ -325,13 +325,13 @@ enum Layout {
 // hand-rolled OAuth buttons in Socialsigninbuttons.swift also want the
 // same pressed-state haptic tick, so this needs module-internal (the
 // Swift default) rather than file-private visibility.
-func ctaHapticTick() {
-    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+public func ctaHapticTick() {
+    UIImpactFeedbackGenerator(style: UIImpactFeedbackGenerator.FeedbackStyle.light).impactOccurred()
 }
 
-struct PrimaryCTAButton<Label: View>: View {
-    @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+public struct PrimaryCTAButton<Label: View>: View {
+    @Environment(\.isEnabled) private var isEnabled: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion: Bool
     var accent: Color
     var onAccent: Color = .black
     var isLoading: Bool = false
@@ -377,7 +377,7 @@ struct PrimaryCTAButton<Label: View>: View {
 
     private var contentColor: Color { isInteractive ? onAccent : onAccent.opacity(0.45) }
 
-    var body: some View {
+    public var body: some View {
         Button(action: {
             guard isInteractive else { return }
             ctaHapticTick()
@@ -390,8 +390,8 @@ struct PrimaryCTAButton<Label: View>: View {
                 }
             }
             .font(Font.custom("Inter-SemiBold", size: 16.0))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 17.0)
+            .frame(maxWidth: CGFloat.infinity)
+            .padding(Edge.Set.vertical, 17.0)
             .background(fillColor)
             .foregroundColor(contentColor)
             .cornerRadius(Layout.controlRadius)
@@ -421,7 +421,7 @@ struct PrimaryCTAButton<Label: View>: View {
             .scaleEffect(isPressed ? 0.98 : 1.0)
             #endif
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PrimitiveButtonStyle.plain)
         .disabled(!isInteractive)
         .focused($isFocused)
         .simultaneousGesture(
@@ -432,21 +432,21 @@ struct PrimaryCTAButton<Label: View>: View {
                     isPressed = false
                     guard isInteractive, !reduceMotion else { return }
                     flash = true
-                    withAnimation(.easeOut(duration: 0.35)) { flash = false }
+                    withAnimation(Animation.easeOut(duration: 0.35)) { flash = false }
                 }
         )
         #if !SKIP
         .onHover { isHovering = isInteractive && $0 }
         #endif
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
-        .animation(.easeOut(duration: 0.15), value: isEnabled)
-        .animation(.easeOut(duration: 0.2), value: isLoading)
+        .animation(Animation.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
+        .animation(Animation.easeOut(duration: 0.15), value: isEnabled)
+        .animation(Animation.easeOut(duration: 0.2), value: isLoading)
     }
 }
 
-struct SecondaryCTAButton<Label: View>: View {
-    @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+public struct SecondaryCTAButton<Label: View>: View {
+    @Environment(\.isEnabled) private var isEnabled: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion: Bool
     var accent: Color
     var isLoading: Bool = false
     var action: () -> Void
@@ -476,7 +476,7 @@ struct SecondaryCTAButton<Label: View>: View {
     private var borderColor: Color { isInteractive ? accent : Color(white: 0.5).opacity(0.4) }
     private var contentColor: Color { isInteractive ? accent : Color(white: 0.5) }
 
-    var body: some View {
+    public var body: some View {
         Button(action: {
             guard isInteractive else { return }
             ctaHapticTick()
@@ -489,8 +489,8 @@ struct SecondaryCTAButton<Label: View>: View {
                 }
             }
             .font(Font.custom("Inter-SemiBold", size: 15.0))
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 15.0)
+            .frame(maxWidth: CGFloat.infinity)
+            .padding(Edge.Set.vertical, 15.0)
             .background(isInteractive ? accent.opacity(isPressed ? 0.2 : 0.12) : Color(white: 0.5).opacity(0.1))
             .foregroundColor(contentColor)
             .cornerRadius(Layout.controlRadius)
@@ -515,7 +515,7 @@ struct SecondaryCTAButton<Label: View>: View {
             .scaleEffect(isPressed ? 0.98 : 1.0)
             #endif
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PrimitiveButtonStyle.plain)
         .disabled(!isInteractive)
         .focused($isFocused)
         .simultaneousGesture(
@@ -526,15 +526,15 @@ struct SecondaryCTAButton<Label: View>: View {
                     isPressed = false
                     guard isInteractive, !reduceMotion else { return }
                     flash = true
-                    withAnimation(.easeOut(duration: 0.35)) { flash = false }
+                    withAnimation(Animation.easeOut(duration: 0.35)) { flash = false }
                 }
         )
         #if !SKIP
         .onHover { isHovering = isInteractive && $0 }
         #endif
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
-        .animation(.easeOut(duration: 0.15), value: isEnabled)
-        .animation(.easeOut(duration: 0.2), value: isLoading)
+        .animation(Animation.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
+        .animation(Animation.easeOut(duration: 0.15), value: isEnabled)
+        .animation(Animation.easeOut(duration: 0.2), value: isLoading)
     }
 }
 
@@ -544,8 +544,8 @@ struct SecondaryCTAButton<Label: View>: View {
 /// Still gets the same disabled/focus/loading treatment as the two CTAs
 /// above, just expressed through opacity and a trailing spinner instead
 /// of a background fill, since there's no fill here to turn grey.
-struct TertiaryCTAButton<Label: View>: View {
-    @Environment(\.isEnabled) private var isEnabled
+public struct TertiaryCTAButton<Label: View>: View {
+    @Environment(\.isEnabled) private var isEnabled: Bool
     var color: Color
     var isLoading: Bool = false
     var action: () -> Void
@@ -569,7 +569,7 @@ struct TertiaryCTAButton<Label: View>: View {
 
     private var isInteractive: Bool { isEnabled && !isLoading }
 
-    var body: some View {
+    public var body: some View {
         Button(action: {
             guard isInteractive else { return }
             ctaHapticTick()
@@ -590,7 +590,7 @@ struct TertiaryCTAButton<Label: View>: View {
                     .padding(-4.0)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PrimitiveButtonStyle.plain)
         .disabled(!isInteractive)
         .focused($isFocused)
         .simultaneousGesture(
@@ -598,8 +598,8 @@ struct TertiaryCTAButton<Label: View>: View {
                 .onChanged { _ in if isInteractive { isPressed = true } }
                 .onEnded { _ in isPressed = false }
         )
-        .animation(.easeOut(duration: 0.15), value: isPressed)
-        .animation(.easeOut(duration: 0.15), value: isEnabled)
+        .animation(Animation.easeOut(duration: 0.15), value: isPressed)
+        .animation(Animation.easeOut(duration: 0.15), value: isEnabled)
     }
 }
 
@@ -610,7 +610,7 @@ struct TertiaryCTAButton<Label: View>: View {
 // for a settings/profile action on the trailing edge. Screens that skip
 // this are the ones that feel "haphazard" — the eye has nowhere
 // consistent to land first.
-struct ScreenHeader<Trailing: View>: View {
+public struct ScreenHeader<Trailing: View>: View {
     @EnvironmentObject var theme: ThemeManager
     let title: String
     let subtitle: String?
@@ -639,39 +639,39 @@ struct ScreenHeader<Trailing: View>: View {
         self.trailing = trailing()
     }
 
-    var body: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 4.0) {
+    public var body: some View {
+        HStack(alignment: VerticalAlignment.top) {
+            VStack(alignment: HorizontalAlignment.leading, spacing: 4.0) {
                 Text(title)
-                    .font(theme.font(28.0, weight: .bold))
+                    .font(theme.font(28.0, weight: Font.Weight.bold))
                     .foregroundStyle(theme.textPrimary)
                 if let subtitle {
                     Text(subtitle)
-                        .font(theme.font(14.0, weight: .regular))
+                        .font(theme.font(14.0, weight: Font.Weight.regular))
                         .foregroundStyle(theme.textSecondary)
                 }
             }
             Spacer()
             trailing
         }
-        .padding(.horizontal, Layout.pageMargin)
-        .padding(.top, 8.0)
-        .padding(.bottom, 4.0)
+        .padding(Edge.Set.horizontal, Layout.pageMargin)
+        .padding(Edge.Set.top, 8.0)
+        .padding(Edge.Set.bottom, 4.0)
     }
 }
 
 /// Small circular icon button used in a `ScreenHeader`'s trailing slot
 /// (settings, profile, close). Kept as one shared shape so every header
 /// action looks the same everywhere it appears.
-struct HeaderIconButton: View {
+public struct HeaderIconButton: View {
     @EnvironmentObject var theme: ThemeManager
     let systemName: String
     let action: () -> Void
 
-    var body: some View {
+    public var body: some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(theme.font(15.0, weight: .semibold))
+                .font(theme.font(15.0, weight: Font.Weight.semibold))
                 .foregroundStyle(theme.textPrimary)
                 .frame(width: 38.0, height: 38.0)
                 .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
@@ -686,15 +686,15 @@ struct HeaderIconButton: View {
 // hand-copied at every call site. Sentence case reads faster and looks
 // intentional rather than stamped; kept small and secondary so it still
 // functions as a quiet section eyebrow, not a heading.
-struct SectionLabel: View {
+public struct SectionLabel: View {
     @EnvironmentObject var theme: ThemeManager
     let text: String
 
     init(_ text: String) { self.text = text }
 
-    var body: some View {
+    public var body: some View {
         Text(text)
-            .font(theme.font(12.0, weight: .semibold))
+            .font(theme.font(12.0, weight: Font.Weight.semibold))
             .foregroundStyle(theme.textSecondary)
     }
 }
@@ -705,24 +705,24 @@ struct SectionLabel: View {
 // category tags, "over budget", etc.) — sentence case, soft tinted
 // fill instead of an all-caps outline, so badges read as gentle status
 // chips instead of shouting for attention.
-struct Badge: View {
+public struct Badge: View {
     @EnvironmentObject var theme: ThemeManager
     let text: String
     var icon: String? = nil
     var tint: Color? = nil
     var prominent: Bool = false
 
-    var body: some View {
+    public var body: some View {
         let color = tint ?? theme.accent
         HStack(spacing: 4.0) {
             if let icon {
-                Image(systemName: icon).font(theme.font(11.0, weight: .semibold))
+                Image(systemName: icon).font(theme.font(11.0, weight: Font.Weight.semibold))
             }
-            Text(text).font(theme.font(12.0, weight: .semibold))
+            Text(text).font(theme.font(12.0, weight: Font.Weight.semibold))
         }
         .foregroundStyle(prominent ? theme.onAccent : color)
-        .padding(.horizontal, 10.0)
-        .padding(.vertical, 5.0)
+        .padding(Edge.Set.horizontal, 10.0)
+        .padding(Edge.Set.vertical, 5.0)
         .background(prominent ? color : color.opacity(0.14))
         // A large fixed radius reads as a capsule regardless of the
         // pill's actual height — SwiftUI/Compose both clamp the corner
@@ -733,18 +733,18 @@ struct Badge: View {
 
 // MARK: - Appearance Picker (embed in ProfileView, replaces ThemePickerSection)
 
-struct ThemePickerSection: View {
+public struct ThemePickerSection: View {
     @EnvironmentObject var theme: ThemeManager
 
     /// Cross-platform stand-in for `.ultraThinMaterial` — see
     /// SharedBudgetView.swift for why materials don't transpile.
     private var cardFill: Color { theme.cardStroke.opacity(0.35) }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16.0) {
+    public var body: some View {
+        VStack(alignment: HorizontalAlignment.leading, spacing: 16.0) {
             SectionLabel("Appearance")
 
-            VStack(alignment: .leading, spacing: 10.0) {
+            VStack(alignment: HorizontalAlignment.leading, spacing: 10.0) {
                 SectionLabel("Accent color")
 
                 HStack(spacing: 14.0) {
@@ -753,7 +753,7 @@ struct ThemePickerSection: View {
                             #if !SKIP
                             UIImpactFeedbackGenerator(style: .light).impactOccurred()
                             #endif
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            withAnimation(Animation.spring(response: 0.3, dampingFraction: 0.7)) {
                                 theme.colorTheme = option
                             }
                         }) {
@@ -767,7 +767,7 @@ struct ThemePickerSection: View {
                                     .stroke(theme.textPrimary.opacity(option == theme.colorTheme ? 0.9 : 0.0), lineWidth: 2.0)
                                     .frame(width: 46.0, height: 46.0)
                                 if option == theme.colorTheme {
-                                    Image(systemName: "checkmark").font(theme.font(12.0, weight: .black)).foregroundStyle(option.onSwatch)
+                                    Image(systemName: "checkmark").font(theme.font(12.0, weight: Font.Weight.black)).foregroundStyle(option.onSwatch)
                                 }
                             }
                         }
@@ -776,7 +776,7 @@ struct ThemePickerSection: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 10.0) {
+            VStack(alignment: HorizontalAlignment.leading, spacing: 10.0) {
                 SectionLabel("Appearance mode")
 
                 VStack(spacing: 8.0) {
@@ -792,7 +792,7 @@ struct ThemePickerSection: View {
                                 // No explicit foregroundStyle — falls back to
                                 // .primary automatically, which resolves to
                                 // theme.textPrimary via themedSurface(_:).
-                                Text(mode.displayName).font(theme.font(13.0, weight: .medium))
+                                Text(mode.displayName).font(theme.font(13.0, weight: Font.Weight.medium))
                                 Spacer()
                                 Image(systemName: mode == theme.appearanceMode ? "checkmark.circle.fill" : "circle")
                                     .foregroundStyle(mode == theme.appearanceMode ? theme.accent : theme.textTertiary)
@@ -810,7 +810,7 @@ struct ThemePickerSection: View {
         .background(cardFill)
         .cornerRadius(20.0)
         .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(theme.cardStroke, lineWidth: 1.0))
-        .padding(.horizontal, Layout.pageMargin)
+        .padding(Edge.Set.horizontal, Layout.pageMargin)
         // This section is embedded inside ProfileView, which already calls
         // .themedSurface() at its own root — so this nested call isn't
         // strictly required here. It's included so ThemePickerSection also
