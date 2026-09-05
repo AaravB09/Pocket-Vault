@@ -179,7 +179,7 @@ enum LegalDocument {
     """
 }
 
-struct LegalDocumentView: View {
+public struct LegalDocumentView: View {
     enum Kind {
         case privacy, terms
         var title: String { self == .privacy ? "Privacy Policy" : "Terms of Service" }
@@ -188,9 +188,9 @@ struct LegalDocumentView: View {
 
     let kind: Kind
     @EnvironmentObject var theme: ThemeManager
-    @Environment(\.dismiss) var dismiss
+    @Environment(\.dismiss) var dismiss: DismissAction
 
-    var body: some View {
+    public var body: some View {
         // `NavigationView` isn't implemented by Skip's SwiftUI shim (it's
         // also deprecated in real SwiftUI since iOS 16) — `NavigationStack`
         // is the direct replacement and needs no other changes here since
@@ -202,15 +202,15 @@ struct LegalDocumentView: View {
                 // (headers, lists) isn't guaranteed to render identically
                 // under Skip's SwiftUI shim — worth a quick visual check on
                 // Android specifically for this view once built.
-                Text(.init(kind.markdown))
-                    .font(theme.font(14, weight: .light))
+                Text(kind.markdown)
+                    .font(theme.font(14, weight: Font.Weight.light))
                     .foregroundStyle(theme.textPrimary)
                     .padding(20)
             }
             .navigationTitle(kind.title)
             .themedSurface(ignoresSafeArea: true)
             .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
+                ToolbarItem(placement: ToolbarItemPlacement.confirmationAction) {
                     Button("Done") { dismiss() }
                 }
             }
@@ -220,22 +220,22 @@ struct LegalDocumentView: View {
 
 /// Tappable "Terms of Service" / "Privacy Policy" fine print — drop this
 /// anywhere consent needs to be visible (LoginView, ProfileView).
-struct LegalFinePrint: View {
+public struct LegalFinePrint: View {
     @EnvironmentObject var theme: ThemeManager
     @State private var presented: LegalDocumentView.Kind?
 
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 4) {
             Text("By continuing, you agree to our")
             Button("Terms") { presented = .terms }
             Text("and")
             Button("Privacy Policy") { presented = .privacy }
         }
-        .font(theme.font(10, weight: .light))
+        .font(theme.font(10, weight: Font.Weight.light))
         .foregroundStyle(theme.textTertiary)
-        .buttonStyle(.plain)
+        .buttonStyle(ButtonStyle.plain)
         .tint(theme.accent)
-        .multilineTextAlignment(.center)
+        .multilineTextAlignment(TextAlignment.center)
         .sheet(item: Binding(
             get: { presented.map { IdentifiableKind(kind: $0) } },
             set: { presented = $0?.kind }

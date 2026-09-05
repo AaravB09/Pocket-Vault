@@ -49,11 +49,11 @@ struct Item : Identifiable, Hashable, Codable {
     }
 
     var dateString: String {
-        date.formatted(date: .complete, time: .omitted)
+        date.formatted(date: Date.FormatStyle.DateStyle.complete, time: Date.FormatStyle.TimeStyle.omitted)
     }
 
     var dateTimeString: String {
-        date.formatted(date: .abbreviated, time: .shortened)
+        date.formatted(date: Date.FormatStyle.DateStyle.abbreviated, time: Date.FormatStyle.TimeStyle.shortened)
     }
 }
 

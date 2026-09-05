@@ -35,7 +35,7 @@ public struct PocketVaultRootView : View {
     // Mirrors the same three call sites iOS already has: resolve once up
     // front, again whenever the system's own scheme changes, and again
     // whenever the user picks a different appearance mode.
-    @Environment(\.colorScheme) private var systemColorScheme
+    @Environment(\.colorScheme) private var systemColorScheme: ColorScheme
 
     public init() {
     }

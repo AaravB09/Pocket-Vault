@@ -160,7 +160,7 @@ final class LeaderboardManager: ObservableObject {
             errorMessage = "Sign in to add friends."
             return
         }
-        let trimmed = code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        let trimmed = code.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).uppercased()
         guard !trimmed.isEmpty else { return }
 
         isLoading = true

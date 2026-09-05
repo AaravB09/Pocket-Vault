@@ -44,7 +44,7 @@ final class StreakManager: ObservableObject {
     func evaluateStreakOnLaunch() {
         guard let last = lastDepositDate else { return }
         let daysSince = calendar.dateComponents(
-            [.day],
+            [Calendar.Component.day],
             from: calendar.startOfDay(for: last),
             to: calendar.startOfDay(for: Date())
         ).day ?? 0
@@ -65,7 +65,7 @@ final class StreakManager: ObservableObject {
 
         if let last = lastDepositDate {
             let lastDay = calendar.startOfDay(for: last)
-            let daysSince = calendar.dateComponents([.day], from: lastDay, to: today).day ?? 0
+            let daysSince = calendar.dateComponents([Calendar.Component.day], from: lastDay, to: today).day ?? 0
 
             switch daysSince {
             case 0:

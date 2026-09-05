@@ -50,13 +50,13 @@ struct OfflineBanner: View {
     var body: some View {
         HStack(spacing: 8) {
             Image.platformSymbol("wifi.slash", android: "exclamationmark.triangle.fill")
-                .font(theme.font(11, weight: .bold))
+                .font(theme.font(11, weight: Font.Weight.bold))
             Text("Offline — goals & budget still editable")
-                .font(theme.font(12, weight: .medium))
+                .font(theme.font(12, weight: Font.Weight.medium))
         }
-        .foregroundStyle(.secondary)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .foregroundStyle(HierarchicalShapeStyle.secondary)
+        .padding(Edge.Set.horizontal, 14)
+        .padding(Edge.Set.vertical, 8)
         // NOTE(skip): .ultraThinMaterial has no Android/Compose equivalent
         // and was unresolved — which was cascading into the .clipShape
         // right below it too. Only the material itself needs branching;
@@ -70,6 +70,6 @@ struct OfflineBanner: View {
         #endif
         .clipShape(Capsule())
         .overlay(Capsule().stroke(theme.cardStroke, lineWidth: 1))
-        .transition(.move(edge: .top).combined(with: .opacity))
+        .transition(AnyTransition.move(edge: Edge.Set.top).combined(with: AnyTransition.opacity))
     }
 }

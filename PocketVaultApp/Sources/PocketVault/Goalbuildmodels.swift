@@ -109,7 +109,7 @@ private enum HexColorParser {
     /// silently defaulting to black) so the caller can drop a part with
     /// a malformed color instead of rendering it wrong.
     static func parse(hex: String) -> UIColor? {
-        let cleaned = hex.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "#", with: "")
+        let cleaned = hex.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).replacingOccurrences(of: "#", with: "")
         
         guard cleaned.count == 6 else { return nil }
         
@@ -227,7 +227,7 @@ struct GoalBuildLibrary {
     /// showing a broken or absurdly oversized sculpture.
     static func customVoxels(fromBlueprintJSON json: String, trimColor: UIColor) -> [VoxelUnit] {
         guard
-            let data = json.data(using: .utf8),
+            let data = json.data(using: String.Encoding.utf8),
             let parts = try? JSONDecoder().decode([AIVoxelPart].self, from: data),
             parts.count >= 6, parts.count <= 30
         else {

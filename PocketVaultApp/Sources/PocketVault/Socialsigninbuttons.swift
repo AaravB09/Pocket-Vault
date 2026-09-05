@@ -14,7 +14,7 @@ import AuthenticationServices
 struct SocialSignInButtons: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var theme: ThemeManager
-    @Environment(\.openURL) var openURL
+    @Environment(\.openURL) var openURL: URL
 
     #if !SKIP
     @State private var webAuthSession: ASWebAuthenticationSession?
@@ -83,8 +83,8 @@ private final class WebAuthPresentationContextProvider: NSObject, ASWebAuthentic
 /// there isn't worth it for a decorative icon.
 private struct SocialOAuthButton: View {
     @EnvironmentObject var theme: ThemeManager
-    @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isEnabled) private var isEnabled: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion: Bool
     let title: String
     let action: () -> Void
 
@@ -120,9 +120,9 @@ private struct SocialOAuthButton: View {
             action()
         }) {
             Text(title)
-                .font(theme.font(15, weight: .semibold))
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
+                .font(theme.font(15, weight: Font.Weight.semibold))
+                .frame(maxWidth: CGFloat.infinity)
+                .padding(Edge.Set.vertical, 14)
                 .foregroundStyle(isEnabled ? theme.textPrimary : theme.textPrimary.opacity(0.4))
                 #if !SKIP
                 .background(.ultraThinMaterial)
@@ -146,7 +146,7 @@ private struct SocialOAuthButton: View {
                 )
                 .scaleEffect(isPressed ? 0.98 : 1.0)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ButtonStyle.plain)
         .focused($isFocused)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
@@ -156,9 +156,9 @@ private struct SocialOAuthButton: View {
                     isPressed = false
                     guard isEnabled, !reduceMotion else { return }
                     flash = true
-                    withAnimation(.easeOut(duration: 0.35)) { flash = false }
+                    withAnimation(Animation.easeOut(duration: 0.35)) { flash = false }
                 }
         )
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
+        .animation(Animation.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
     }
 }

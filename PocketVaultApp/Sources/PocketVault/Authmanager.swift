@@ -169,7 +169,7 @@ final class AuthManager: ObservableObject {
         do {
             let (data, response) = try await URLSession.shared.data(for: req)
             guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-                print("Stored session no longer valid, signing out:", String(data: data, encoding: .utf8) ?? "no body")
+                print("Stored session no longer valid, signing out:", String(data: data, encoding: String.Encoding.utf8) ?? "no body")
                 await signOut()
                 return
             }
@@ -222,7 +222,7 @@ final class AuthManager: ObservableObject {
         do {
             let (data, response) = try await URLSession.shared.data(for: req)
             guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-                print("Supabase \(provider) sign-in error:", String(data: data, encoding: .utf8) ?? "no body")
+                print("Supabase \(provider) sign-in error:", String(data: data, encoding: String.Encoding.utf8) ?? "no body")
                 errorMessage = "That sign-in didn't go through. Try again."
                 return
             }
@@ -310,7 +310,7 @@ final class AuthManager: ObservableObject {
                 return
             }
             guard (200...299).contains(http.statusCode) else {
-                print("Supabase auth error [\(http.statusCode)]:", String(data: data, encoding: .utf8) ?? "no body")
+                print("Supabase auth error [\(http.statusCode)]:", String(data: data, encoding: String.Encoding.utf8) ?? "no body")
                 let err = try? JSONDecoder().decode(SupabaseAuthError.self, from: data)
                 let rawMessage = err?.error_description ?? err?.msg ?? err?.error ?? ""
                 // NOTE(skip): localizedCaseInsensitiveContains isn't
@@ -419,7 +419,7 @@ final class AuthManager: ObservableObject {
 
         let (data, response) = try await URLSession.shared.data(for: req)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            let raw = String(data: data, encoding: .utf8) ?? "unknown error"
+            let raw = String(data: data, encoding: String.Encoding.utf8) ?? "unknown error"
             throw NSError(domain: "AuthManager", code: 4, userInfo: [NSLocalizedDescriptionKey: raw])
         }
     }
@@ -445,7 +445,7 @@ final class AuthManager: ObservableObject {
 
         let (data, response) = try await URLSession.shared.data(for: req)
         guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            let raw = String(data: data, encoding: .utf8) ?? "unknown error"
+            let raw = String(data: data, encoding: String.Encoding.utf8) ?? "unknown error"
             throw NSError(domain: "AuthManager", code: 7, userInfo: [NSLocalizedDescriptionKey: raw])
         }
 

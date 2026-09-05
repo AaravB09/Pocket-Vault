@@ -138,26 +138,26 @@ struct FeatureTourOverlay: View {
 
                     ZStack {
                         VStack(spacing: 10) {
-                            Image.platformSymbol(step.icon, android: step.androidIcon).font(theme.font(22, weight: .bold)).foregroundStyle(theme.accent)
+                            Image.platformSymbol(step.icon, android: step.androidIcon).font(theme.font(22, weight: Font.Weight.bold)).foregroundStyle(theme.accent)
                             Text(step.title)
-                                .font(theme.font(15, weight: .semibold))
-                                .foregroundStyle(.primary)
+                                .font(theme.font(15, weight: Font.Weight.semibold))
+                                .foregroundStyle(HierarchicalShapeStyle.primary)
                             Text(step.message)
-                                .font(theme.font(12, weight: .light))
+                                .font(theme.font(12, weight: Font.Weight.light))
                                 .foregroundStyle(theme.textPrimary.opacity(0.7))
-                                .multilineTextAlignment(.center)
+                                .multilineTextAlignment(TextAlignment.center)
 
                             HStack(spacing: 12) {
                                 Button("Skip") { finish() }
-                                    .font(theme.font(11)).foregroundStyle(.secondary) // was .tertiary
+                                    .font(theme.font(11)).foregroundStyle(HierarchicalShapeStyle.secondary) // was .tertiary
                                 Spacer()
                                 Text("\(stepIndex + 1)/\(visibleSteps.count)")
-                                    .font(theme.font(11)).foregroundStyle(.secondary) // was .tertiary
+                                    .font(theme.font(11)).foregroundStyle(HierarchicalShapeStyle.secondary) // was .tertiary
                                 Spacer()
                                 Button(stepIndex == visibleSteps.count - 1 ? "Done" : "Next") { advance() }
-                                    .font(theme.font(12, weight: .bold))
+                                    .font(theme.font(12, weight: Font.Weight.bold))
                                     .foregroundStyle(theme.onAccent)
-                                    .padding(.horizontal, 18).padding(.vertical, 10)
+                                    .padding(Edge.Set.horizontal, 18).padding(Edge.Set.vertical, 10)
                                     .background(theme.accent)
                                     .clipShape(Capsule())
                                     .shadow(color: theme.accent.opacity(0.4), radius: 8, y: 3)

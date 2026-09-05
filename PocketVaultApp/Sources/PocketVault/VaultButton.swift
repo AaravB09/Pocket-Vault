@@ -24,8 +24,8 @@ public struct VaultButton: View {
     // MARK: Injected dependencies
 
     @EnvironmentObject private var theme: ThemeManager
-    @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isEnabled) private var isEnabled: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion: Bool
 
     // MARK: Parameters
 
@@ -241,7 +241,7 @@ public struct VaultButton: View {
                         .font(theme.font(fontSize, weight: fontWeight))
                         .foregroundStyle(contentColor)
                         .opacity(isLoading ? 0.0 : 1.0)
-                        .animation(.easeOut(duration: 0.18), value: isLoading)
+                        .animation(Animation.easeOut(duration: 0.18), value: isLoading)
 
                     if isLoading {
                         ProgressView()
@@ -250,11 +250,11 @@ public struct VaultButton: View {
                 }
             }
             .frame(height: height)
-            .frame(maxWidth: fullWidth ? .infinity : nil)
-            .padding(.horizontal, horizontalPadding)
-            .overlay(focusRing, alignment: .center)
+            .frame(maxWidth: fullWidth ? CGFloat.infinity : nil)
+            .padding(Edge.Set.horizontal, horizontalPadding)
+            .overlay(focusRing, alignment: Alignment.center)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(ButtonStyle.plain)
         .disabled(!isInteractive)
         .focused($isFocused)
         .simultaneousGesture(pressGesture)
@@ -263,9 +263,9 @@ public struct VaultButton: View {
             isHovering = isInteractive && newValue
         }
         #endif
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
-        .animation(.easeOut(duration: 0.15), value: isEnabled)
-        .animation(.easeOut(duration: 0.2), value: isLoading)
+        .animation(Animation.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
+        .animation(Animation.easeOut(duration: 0.15), value: isEnabled)
+        .animation(Animation.easeOut(duration: 0.2), value: isLoading)
     }
 
     // MARK: - Sub-views
@@ -353,7 +353,7 @@ public struct VaultButton: View {
                 isPressed = false
                 guard isInteractive, !reduceMotion else { return }
                 isFlashing = true
-                withAnimation(.easeOut(duration: 0.35)) {
+                withAnimation(Animation.easeOut(duration: 0.35)) {
                     isFlashing = false
                 }
             }
