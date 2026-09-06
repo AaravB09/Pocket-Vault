@@ -7,7 +7,7 @@ struct GoalPickerBar: View {
     @ObservedObject var goalStore: GoalStore
     var onAddGoal: () -> Void
 
-    var body: some View {
+    public var body: some View {
         ScrollView(Axis.Set.horizontal, showsIndicators: false) {
             HStack(spacing: 10) {
                 ForEach(goalStore.goals) { goal in

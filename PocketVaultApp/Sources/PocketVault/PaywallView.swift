@@ -9,8 +9,8 @@ public struct FeatureRow: View {
     let title: String
     let description: String
 
-    var body: some View {
-        HStack(alignment: Alignment.top, spacing: 12) {
+    public var body: some View {
+        HStack(alignment: VerticalAlignment.top, spacing: 12) {
             Image.platformSymbol(icon, android: androidIcon ?? icon)
                 .font(theme.font(14, weight: Font.Weight.semibold))
                 .foregroundStyle(theme.accent)
@@ -19,7 +19,7 @@ public struct FeatureRow: View {
                 .background(theme.accent.opacity(0.12))
                 .clipShape(Circle())
 
-            VStack(alignment: Alignment.leading, spacing: 2) {
+            VStack(alignment: HorizontalAlignment.leading, spacing: 2) {
                 Text(title)
                     .font(theme.font(12, weight: Font.Weight.bold))
                     .foregroundStyle(Color.primary)
@@ -34,7 +34,7 @@ public struct FeatureRow: View {
 }
 
 private var pocketVaultFeatureList: some View {
-    VStack(alignment: Alignment.leading, spacing: 16) {
+    VStack(alignment: HorizontalAlignment.leading, spacing: 16) {
         FeatureRow(
             icon: "sparkles",
             androidIcon: "star.fill",
@@ -99,7 +99,7 @@ public struct CustomPaywallView: View {
     @State private var showCoach: Bool = false
     @State private var showAccountRequired: Bool = false
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             LinearGradient(
                 colors: [theme.background, theme.background.opacity(0.92)],
@@ -191,7 +191,7 @@ public struct CustomPaywallView: View {
             if authManager.isGuest {
                 Text("You'll create a free account on the next step")
                     .font(theme.font(10, weight: Font.Weight.light))
-                    .foregroundStyle(Color.tertiary)
+                    .foregroundStyle(.tertiary)
             }
 
             VaultButton(
@@ -238,10 +238,10 @@ public struct CustomPaywallView: View {
 
     private func periodLabel(for package: Package) -> String {
         switch package.packageType {
-        case RCFusePackageType.monthly: return "Per month"
-        case RCFusePackageType.annual: return "Per year"
-        case RCFusePackageType.weekly: return "Per week"
-        case RCFusePackageType.lifetime: return "One-time"
+        case PackageType.monthly: return "Per month"
+        case PackageType.annual: return "Per year"
+        case PackageType.weekly: return "Per week"
+        case PackageType.lifetime: return "One-time"
         default: return ""
         }
     }
@@ -356,7 +356,7 @@ public struct PlanCard: View {
             ?? formattedPrice(value, currencyCode: package.storeProduct.currencyCode)
     }
 
-    var body: some View {
+    public var body: some View {
         VaultButton(
             variant: VaultButtonVariant.ghost,
             height: 130.0,
@@ -387,7 +387,7 @@ public struct PlanCard: View {
                                 if let anchorPrice {
                                     Text(fmt(anchorPrice))
                                         .font(theme.font(12, weight: Font.Weight.light))
-                                        .foregroundStyle(Color.tertiary)
+                                        .foregroundStyle(.tertiary)
                                         .strikethrough(color: theme.textTertiary)
                                 }
                             }
@@ -398,7 +398,7 @@ public struct PlanCard: View {
                     .animation(Animation.spring(response: 0.55, dampingFraction: 0.7), value: revealReal)
                     Text(periodLabel)
                         .font(theme.font(11, weight: Font.Weight.medium))
-                        .foregroundStyle(Color.tertiary)
+                        .foregroundStyle(.tertiary)
                 }
                 .frame(maxWidth: CGFloat.infinity)
                 .padding(Edge.Set.vertical, 22)
@@ -447,7 +447,7 @@ public struct CustomPaywallView: View {
     @State private var showCoach: Bool = false
     @State private var showAccountRequired: Bool = false
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             LinearGradient(
                 colors: [theme.background, theme.background.opacity(0.92)],
@@ -715,7 +715,7 @@ public struct PlanCard: View {
         formattedPrice(value, currencyCode: pkg.storeProduct.currencyCode)
     }
 
-    var body: some View {
+    public var body: some View {
         VaultButton(
             variant: VaultButtonVariant.ghost,
             height: 130.0,

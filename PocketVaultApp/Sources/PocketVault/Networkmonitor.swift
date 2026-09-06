@@ -47,14 +47,18 @@ final class NetworkMonitor: ObservableObject {
 struct OfflineBanner: View {
     @EnvironmentObject var theme: ThemeManager
 
-    var body: some View {
+    public var body: some View {
         HStack(spacing: 8) {
             Image.platformSymbol("wifi.slash", android: "exclamationmark.triangle.fill")
                 .font(theme.font(11, weight: Font.Weight.bold))
             Text("Offline — goals & budget still editable")
                 .font(theme.font(12, weight: Font.Weight.medium))
         }
+        #if !SKIP
         .foregroundStyle(HierarchicalShapeStyle.secondary)
+        #else
+        .foregroundStyle(Color.secondary)
+        #endif
         .padding(Edge.Set.horizontal, 14)
         .padding(Edge.Set.vertical, 8)
         // NOTE(skip): .ultraThinMaterial has no Android/Compose equivalent
@@ -70,6 +74,6 @@ struct OfflineBanner: View {
         #endif
         .clipShape(Capsule())
         .overlay(Capsule().stroke(theme.cardStroke, lineWidth: 1))
-        .transition(AnyTransition.move(edge: Edge.Set.top).combined(with: AnyTransition.opacity))
+        .transition(AnyTransition.move(edge: Edge.top).combined(with: AnyTransition.opacity))
     }
 }

@@ -78,7 +78,7 @@ public struct ContentView: View {
         }
     }
 
-    var body: some View {
+    public var body: some View {
         GeometryReader { rootGeo in
             let topInset = rootGeo.safeAreaInsets.top
 
@@ -385,7 +385,7 @@ public struct AestheticDepositModalView: View {
 
     let quickAmounts: [Double] = [25.0, 50.0, 100.0, 250.0]
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             forgeBackground
                 .ignoresSafeArea()

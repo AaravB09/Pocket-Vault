@@ -14,14 +14,14 @@ import AuthenticationServices
 struct SocialSignInButtons: View {
     @EnvironmentObject var authManager: AuthManager
     @EnvironmentObject var theme: ThemeManager
-    @Environment(\.openURL) var openURL: URL
+    @Environment(\.openURL) var openURL: OpenURLAction
 
     #if !SKIP
     @State private var webAuthSession: ASWebAuthenticationSession?
     @State private var presentationProvider = WebAuthPresentationContextProvider()
     #endif
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 12) {
 SocialOAuthButton(title: "Continue with Google") { startOAuth(provider: "google") }
         }
@@ -109,7 +109,7 @@ private struct SocialOAuthButton: View {
         self.action = action
     }
 
-    var body: some View {
+    public var body: some View {
         Button(action: {
             guard isEnabled else {
                 print("[SocialOAuthButton] '\(title)' tapped but isEnabled=false — button is disabled")
@@ -146,7 +146,9 @@ private struct SocialOAuthButton: View {
                 )
                 .scaleEffect(isPressed ? 0.98 : 1.0)
         }
-        .buttonStyle(ButtonStyle.plain)
+        #if !SKIP
+        .buttonStyle(PlainButtonStyle())
+        #endif
         .focused($isFocused)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)

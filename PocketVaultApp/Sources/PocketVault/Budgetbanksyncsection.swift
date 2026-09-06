@@ -23,7 +23,7 @@ struct BudgetBankSyncSection: View {
     @State private var linkPresenter = PlaidLinkPresenter()
     #endif
 
-    var body: some View {
+    public var body: some View {
         Group {
             if entitlementManager.isPro {
                 connectedState

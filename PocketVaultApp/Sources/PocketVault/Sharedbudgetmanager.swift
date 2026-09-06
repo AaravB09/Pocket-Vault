@@ -141,7 +141,7 @@ final class SharedBudgetManager: ObservableObject {
             errorMessage = "Sign in to join a shared budget."
             return nil
         }
-        let trimmed = code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        let trimmed = code.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines).uppercased()
         guard !trimmed.isEmpty else { return nil }
 
         isLoading = true

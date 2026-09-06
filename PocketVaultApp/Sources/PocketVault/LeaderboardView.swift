@@ -17,7 +17,7 @@ public struct LeaderboardView: View {
     /// never reach this view's `.task` (see `body` below).
     private var identityID: String { authManager.userID ?? leaderboardManager.myUserID }
 
-    var body: some View {
+    public var body: some View {
         if authManager.isGuest {
             AccountRequiredGateView(featureName: "Friends & Leaderboard")
         } else {
@@ -98,7 +98,7 @@ public struct LeaderboardView: View {
                                     .font(theme.font(15))
                                     .foregroundStyle(theme.accent)
                             }
-                            VStack(alignment: Alignment.leading, spacing: 2) {
+                            VStack(alignment: HorizontalAlignment.leading, spacing: 2) {
                                 Text("Shared budget")
                                     .font(theme.font(13, weight: Font.Weight.semibold))
                                     .foregroundStyle(theme.textPrimary)

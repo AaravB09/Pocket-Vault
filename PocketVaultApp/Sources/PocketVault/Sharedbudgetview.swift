@@ -31,7 +31,7 @@ public struct SharedBudgetView: View {
     /// effect that only one side has.
     private var cardFill: Color { theme.cardStroke.opacity(0.35) }
 
-    var body: some View {
+    public var body: some View {
         if authManager.isGuest {
             AccountRequiredGateView(featureName: "Shared Budget")
         } else {
@@ -221,7 +221,7 @@ public struct SharedBudgetView: View {
 
             if !sharedBudgetManager.deposits.isEmpty {
                 Rectangle().fill(theme.hairline).frame(height: 1)
-                VStack(alignment: Alignment.leading, spacing: 14) {
+                VStack(alignment: HorizontalAlignment.leading, spacing: 14) {
                     SectionLabel("Recent deposits")
 
                     VStack(spacing: 10) {

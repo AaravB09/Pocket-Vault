@@ -11,7 +11,7 @@ public enum AppColorTheme: String, CaseIterable, Identifiable, Codable {
     case sapphireBlue
     case crimsonRed
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
     var displayName: String {
         switch self {
@@ -107,7 +107,7 @@ public enum AppAppearanceMode: String, CaseIterable, Identifiable, Codable {
     case light
     case dark
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
     var displayName: String {
         switch self {
@@ -421,7 +421,9 @@ public struct PrimaryCTAButton<Label: View>: View {
             .scaleEffect(isPressed ? 0.98 : 1.0)
             #endif
         }
-        .buttonStyle(PrimitiveButtonStyle.plain)
+        #if !SKIP
+        .buttonStyle(PlainButtonStyle())
+        #endif
         .disabled(!isInteractive)
         .focused($isFocused)
         .simultaneousGesture(
@@ -515,7 +517,9 @@ public struct SecondaryCTAButton<Label: View>: View {
             .scaleEffect(isPressed ? 0.98 : 1.0)
             #endif
         }
-        .buttonStyle(PrimitiveButtonStyle.plain)
+        #if !SKIP
+        .buttonStyle(PlainButtonStyle())
+        #endif
         .disabled(!isInteractive)
         .focused($isFocused)
         .simultaneousGesture(
@@ -590,7 +594,9 @@ public struct TertiaryCTAButton<Label: View>: View {
                     .padding(-4.0)
             )
         }
-        .buttonStyle(PrimitiveButtonStyle.plain)
+        #if !SKIP
+        .buttonStyle(PlainButtonStyle())
+        #endif
         .disabled(!isInteractive)
         .focused($isFocused)
         .simultaneousGesture(

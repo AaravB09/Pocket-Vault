@@ -111,7 +111,7 @@ struct FeatureTourOverlay: View {
         )
     ]
 
-    var body: some View {
+    public var body: some View {
         GeometryReader { geo in
             ZStack {
                 Color.black.opacity(0.55)
@@ -141,7 +141,11 @@ struct FeatureTourOverlay: View {
                             Image.platformSymbol(step.icon, android: step.androidIcon).font(theme.font(22, weight: Font.Weight.bold)).foregroundStyle(theme.accent)
                             Text(step.title)
                                 .font(theme.font(15, weight: Font.Weight.semibold))
+                                #if !SKIP
                                 .foregroundStyle(HierarchicalShapeStyle.primary)
+                                #else
+                                .foregroundStyle(Color.primary)
+                                #endif
                             Text(step.message)
                                 .font(theme.font(12, weight: Font.Weight.light))
                                 .foregroundStyle(theme.textPrimary.opacity(0.7))
@@ -149,10 +153,20 @@ struct FeatureTourOverlay: View {
 
                             HStack(spacing: 12) {
                                 Button("Skip") { finish() }
-                                    .font(theme.font(11)).foregroundStyle(HierarchicalShapeStyle.secondary) // was .tertiary
+                                    .font(theme.font(11))
+                                    #if !SKIP
+                                    .foregroundStyle(HierarchicalShapeStyle.secondary) // was .tertiary
+                                    #else
+                                    .foregroundStyle(Color.secondary) // was .tertiary
+                                    #endif
                                 Spacer()
                                 Text("\(stepIndex + 1)/\(visibleSteps.count)")
-                                    .font(theme.font(11)).foregroundStyle(HierarchicalShapeStyle.secondary) // was .tertiary
+                                    .font(theme.font(11))
+                                    #if !SKIP
+                                    .foregroundStyle(HierarchicalShapeStyle.secondary) // was .tertiary
+                                    #else
+                                    .foregroundStyle(Color.secondary) // was .tertiary
+                                    #endif
                                 Spacer()
                                 Button(stepIndex == visibleSteps.count - 1 ? "Done" : "Next") { advance() }
                                     .font(theme.font(12, weight: Font.Weight.bold))

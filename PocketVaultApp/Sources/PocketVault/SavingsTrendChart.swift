@@ -13,7 +13,7 @@ public enum TrendRange: String, CaseIterable, Identifiable {
     case sixMonth = "6M"
     case all = "ALL"
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
     var days: Int? {
         switch self {
@@ -87,8 +87,8 @@ public struct SavingsTrendChart: View {
         return (max(lo - pad, 0), hi + pad)
     }
 
-    var body: some View {
-        VStack(alignment: Alignment.leading, spacing: 16) {
+    public var body: some View {
+        VStack(alignment: HorizontalAlignment.leading, spacing: 16) {
             header
 
             if visiblePoints.count >= 2 {
@@ -143,8 +143,8 @@ public struct SavingsTrendChart: View {
     // MARK: - Header
 
     private var header: some View {
-        HStack(alignment: Alignment.top) {
-            VStack(alignment: Alignment.leading, spacing: 4) {
+        HStack(alignment: VerticalAlignment.top) {
+            VStack(alignment: HorizontalAlignment.leading, spacing: 4) {
                 Text("Savings trend")
                     .font(theme.font(12, weight: Font.Weight.semibold))
                     .foregroundStyle(theme.textTertiary)

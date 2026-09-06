@@ -30,7 +30,7 @@ struct AndroidGoalShowcaseView: View {
     let progressRatio: Double
     @State private var isReady = false
     
-    var body: some View {
+    public var body: some View {
         #if SKIP
         if let assetPath = Self.assetPath(for: goalKind) {
             ZStack {

@@ -17,8 +17,8 @@ let package = Package(
         // were floating ranges that could resolve to a newer skip
         // release and pull in a different transitive set on next
         // resolve; pinning makes the resolution deterministic.
-        .package(url: "https://source.skip.tools/skip.git", exact: "1.9.7"),
-        .package(url: "https://source.skip.tools/skip-ui.git", exact: "1.59.2"),
+        .package(url: "https://source.skip.tools/skip.git", from: "1.9.8"),
+        .package(url: "https://source.skip.tools/skip-ui.git", from: "1.59.2"),
         .package(url: "https://github.com/RevenueCat/purchases-ios.git", exact: "5.87.1"),
         .package(url: "https://github.com/plaid/plaid-link-ios-spm.git", exact: "7.1.0"),
         // Android side of Pro/Ask AI: the native `RevenueCat` package right

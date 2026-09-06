@@ -54,7 +54,7 @@ struct PrivacyRevealOverlay: View {
     @EnvironmentObject var theme: ThemeManager
     @EnvironmentObject var privacy: PrivacyManager
 
-    var body: some View {
+    public var body: some View {
         Button(action: { privacy.reveal() }) {
             VStack(spacing: 6) {
                 Image.platformSymbol("eye.slash.fill", android: "lock.fill")
@@ -62,7 +62,11 @@ struct PrivacyRevealOverlay: View {
                 Text("Tap to reveal")
                     .font(theme.font(11, weight: Font.Weight.semibold))
             }
+            #if !SKIP
             .foregroundStyle(HierarchicalShapeStyle.secondary)
+            #else
+            .foregroundStyle(Color.secondary)
+            #endif
             .padding(14)
             // NOTE(skip): `.ultraThinMaterial` and `.clipShape` aren't
             // resolved by Skip's SwiftUI shim — iOS keeps the real
@@ -88,7 +92,7 @@ struct PrivacyQuickToggleButton: View {
     @EnvironmentObject var theme: ThemeManager
     @EnvironmentObject var privacy: PrivacyManager
 
-    var body: some View {
+    public var body: some View {
         if privacy.isPrivacyModeOn {
             Button(action: {
                 #if !SKIP
@@ -102,7 +106,11 @@ struct PrivacyQuickToggleButton: View {
             }) {
                 Image.platformSymbol(privacy.shouldMask ? "eye.slash.fill" : "eye.fill", android: privacy.shouldMask ? "lock.fill" : "checkmark.circle")
                     .font(theme.font(14, weight: Font.Weight.medium))
+                    #if !SKIP
                     .foregroundStyle(HierarchicalShapeStyle.secondary)
+                    #else
+                    .foregroundStyle(Color.secondary)
+                    #endif
                     .frame(width: 36, height: 36)
                     // NOTE(skip): same `.ultraThinMaterial`/`.clipShape`
                     // gap as PrivacyRevealOverlay above. `.clipShape(Circle())`

@@ -158,7 +158,7 @@ public struct CalendarView: View {
                         // crashes the moment this screen renders. Keying by
                         // the array's own index instead guarantees every
                         // cell has a unique id on both platforms.
-                        LazyVGrid(columns: Array(repeating: GridItem(GridItem.Flexibility.flexible), count: 7), spacing: 10) {
+                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 10) {
                             ForEach(Array(daysInCurrentMonth().enumerated()), id: \.offset) { _, date in
                                 if let date = date {
                                     DayCell(date: date, isDepositDay: isDepositMadeOn(date: date))

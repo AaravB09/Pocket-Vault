@@ -86,7 +86,7 @@ struct AmountScrubPicker: View {
     private var neighborUp: Double { clamped(amount + step) }
     private var neighborDown: Double { clamped(amount - step) }
 
-    var body: some View {
+    public var body: some View {
         VStack(spacing: 6.0) {
             ZStack {
                 VStack(spacing: 2.0) {

@@ -1,7 +1,7 @@
 import SwiftUI
 
 public struct GoalPreset: Identifiable {
-    let id = UUID()
+    public let id = UUID()
     let name: String
     let icon: String
     // Skip/Android has no equivalent for "cpu", "car.side", or "shield" —
@@ -303,69 +303,87 @@ public struct SetupGoalView: View {
             }
             .padding(Edge.Set.horizontal, Layout.pageMargin)
 
+            // NOTE: the row content used to be inlined directly in this
+            // ForEach's closure. With everything (Button, action closure,
+            // HStack, background/overlay chain) inline, the type-checker
+            // couldn't solve the whole expression in one pass and fell back
+            // to matching the wrong ForEach initializer overload (the
+            // Binding<Data>-based "editable list" one), which surfaced as
+            // "Cannot convert value of type '[GoalPreset]' to expected
+            // argument type 'Binding<C>'" even though `presets` is a plain
+            // array. Extracting the row into `presetRow(for:)` below keeps
+            // this closure trivial so the real (plain-array) ForEach
+            // overload resolves correctly.
             VStack(spacing: 12) {
                 ForEach(presets) { preset in
-                    let isSelected = selectedPresetName == preset.name
-
-                    Button(action: {
-                        selectedPresetName = preset.name
-                        amountText = "\(Int(preset.defaultAmount))"
-                        aiSuggestion = nil
-                        resolvedGoalKind = GoalKind.from(presetName: preset.name)
-                        resolvedVoxelBlueprintJSON = nil
-                        // Smart default: seed a realistic target date for this
-                        // kind of goal instead of leaving "today" selected.
-                        targetDate = Calendar.current.date(byAdding: Calendar.Component.month, value: preset.defaultMonths, to: Date()) ?? targetDate
-                        #if !SKIP
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                        #endif
-                    }) {
-                        HStack(spacing: 14) {
-                            Image.platformSymbol(preset.icon, android: preset.androidIcon)
-                                .font(theme.font(16, weight: Font.Weight.light))
-                                .foregroundStyle(isSelected ? theme.onAccent : theme.textTertiary)
-
-                            Text(preset.name)
-                                .font(theme.font(15, weight: Font.Weight.semibold))
-                                .foregroundStyle(isSelected ? theme.onAccent : .primary)
-
-                            Spacer()
-
-                            if isSelected {
-                                Image(systemName: "checkmark")
-                                    .font(theme.font(12, weight: Font.Weight.bold))
-                                    .foregroundStyle(theme.onAccent)
-                            }
-                        }
-                        .padding(Edge.Set.horizontal, 20)
-                        .padding(Edge.Set.vertical, 16)
-                        .background(
-                            Capsule()
-                                .fill(isSelected ? theme.accent : (theme.isLight ? Color.black.opacity(0.03) : Color.white.opacity(0.03)))
-                        )
-                        .overlay(
-                            Capsule()
-                                .stroke(isSelected ? Color.clear : theme.hairline, lineWidth: 1)
-                        )
-                    }
-                    // NOTE(skip): same root cause as PrimaryCTAButton /
-                    // SecondaryCTAButton / TertiaryCTAButton in
-                    // Thememanager.swift — a bare `Button` with no
-                    // `.buttonStyle` picks up Skip/Compose's default
-                    // Material button styling on Android, which paints its
-                    // own (dark/black) container OVER this Button's actual
-                    // content instead of just wrapping it. Every other
-                    // custom button in the app already carries
-                    // `.buttonStyle(PrimitiveButtonStyle.plain)` for exactly this reason; this
-                    // preset row was the one Button left without it, which
-                    // is why tapping any goal option here turned solid
-                    // black on Android instead of showing the theme's
-                    // accent color.
-                    .buttonStyle(PrimitiveButtonStyle.plain)
+                    presetRow(for: preset)
                 }
             }
             .padding(Edge.Set.horizontal, Layout.pageMargin)
         }
+    }
+
+    @ViewBuilder
+    private func presetRow(for preset: GoalPreset) -> some View {
+        let isSelected = selectedPresetName == preset.name
+
+        Button(action: {
+            selectedPresetName = preset.name
+            amountText = "\(Int(preset.defaultAmount))"
+            aiSuggestion = nil
+            resolvedGoalKind = GoalKind.from(presetName: preset.name)
+            resolvedVoxelBlueprintJSON = nil
+            // Smart default: seed a realistic target date for this
+            // kind of goal instead of leaving "today" selected.
+            targetDate = Calendar.current.date(byAdding: Calendar.Component.month, value: preset.defaultMonths, to: Date()) ?? targetDate
+            #if !SKIP
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            #endif
+        }) {
+            HStack(spacing: 14) {
+                Image.platformSymbol(preset.icon, android: preset.androidIcon)
+                    .font(theme.font(16, weight: Font.Weight.light))
+                    .foregroundStyle(isSelected ? theme.onAccent : theme.textTertiary)
+
+                Text(preset.name)
+                    .font(theme.font(15, weight: Font.Weight.semibold))
+                    .foregroundStyle(isSelected ? theme.onAccent : .primary)
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(theme.font(12, weight: Font.Weight.bold))
+                        .foregroundStyle(theme.onAccent)
+                }
+            }
+            .padding(Edge.Set.horizontal, 20)
+            .padding(Edge.Set.vertical, 16)
+            .background(
+                Capsule()
+                    .fill(isSelected ? theme.accent : (theme.isLight ? Color.black.opacity(0.03) : Color.white.opacity(0.03)))
+            )
+            .overlay(
+                Capsule()
+                    .stroke(isSelected ? Color.clear : theme.hairline, lineWidth: 1)
+            )
+        }
+        // NOTE(skip): same root cause as PrimaryCTAButton /
+        // SecondaryCTAButton / TertiaryCTAButton in
+        // Thememanager.swift — a bare `Button` with no
+        // `.buttonStyle` picks up Skip/Compose's default
+        // Material button styling on Android, which paints its
+        // own (dark/black) container OVER this Button's actual
+        // content instead of just wrapping it. Every other
+        // custom button in the app already carries
+        // `.buttonStyle(PlainButtonStyle())` for exactly this reason; this
+        // preset row was the one Button left without it, which
+        // is why tapping any goal option here turned solid
+        // black on Android instead of showing the theme's
+        // accent color.
+        #if !SKIP
+        .buttonStyle(PlainButtonStyle())
+        #endif
     }
 
     // MARK: - Step 2: Amount

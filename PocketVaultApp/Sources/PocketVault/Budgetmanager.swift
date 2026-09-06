@@ -3,12 +3,12 @@ import Combine
 
 // MARK: - Model
 
-enum SpendCategory: String, Codable, CaseIterable, Identifiable {
+public enum SpendCategory: String, Codable, CaseIterable, Identifiable {
     case food, transport, shopping, bills, subscriptions, entertainment, other
 
-    var id: String { rawValue }
+    public var id: String { rawValue }
 
-    var displayName: String {
+    public var displayName: String {
         switch self {
         case .food: return "Food"
         case .transport: return "Transport"
@@ -20,7 +20,7 @@ enum SpendCategory: String, Codable, CaseIterable, Identifiable {
         }
     }
 
-    var icon: String {
+    public var icon: String {
         switch self {
         case .food: return "fork.knife"
         case .transport: return "car.fill"
@@ -35,7 +35,7 @@ enum SpendCategory: String, Codable, CaseIterable, Identifiable {
     /// Maps Plaid's personal_finance_category.primary values onto our
     /// simpler set. Anything unrecognized falls back to .other rather
     /// than crashing the decode.
-    static func fromPlaid(_ raw: String?) -> SpendCategory {
+    public static func fromPlaid(_ raw: String?) -> SpendCategory {
         switch raw?.uppercased() {
         case "FOOD_AND_DRINK": return .food
         case "TRANSPORTATION": return .transport
@@ -48,16 +48,16 @@ enum SpendCategory: String, Codable, CaseIterable, Identifiable {
     }
 }
 
-struct SpendTransaction: Identifiable, Codable, Equatable {
-    var id: UUID = UUID()
-    var amount: Double
-    var category: SpendCategory
-    var note: String
-    var date: Date
+public struct SpendTransaction: Identifiable, Codable, Equatable {
+    public var id: UUID = UUID()
+    public var amount: Double
+    public var category: SpendCategory
+    public var note: String
+    public var date: Date
     /// nil for manually-logged entries. Set for anything pulled in via
     /// Plaid — this is the dedup key so a repeat sync doesn't double-count.
-    var plaidTransactionID: String? = nil
-    var isAutoImported: Bool { plaidTransactionID != nil }
+    public var plaidTransactionID: String? = nil
+    public var isAutoImported: Bool { plaidTransactionID != nil }
 }
 
 enum BudgetStatus { case onTrack, approaching, over }

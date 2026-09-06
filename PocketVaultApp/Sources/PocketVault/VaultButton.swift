@@ -254,7 +254,9 @@ public struct VaultButton: View {
             .padding(Edge.Set.horizontal, horizontalPadding)
             .overlay(focusRing, alignment: Alignment.center)
         }
-        .buttonStyle(ButtonStyle.plain)
+        #if !SKIP
+        .buttonStyle(PlainButtonStyle())
+        #endif
         .disabled(!isInteractive)
         .focused($isFocused)
         .simultaneousGesture(pressGesture)

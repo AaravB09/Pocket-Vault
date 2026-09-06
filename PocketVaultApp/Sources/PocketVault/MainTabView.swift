@@ -5,8 +5,8 @@ import SwiftUI
 /// `FeatureTourOverlay` can point its arrow at the actual element instead
 /// of guessing its position from hardcoded screen-height math.
 public struct TourAnchorPreferenceKey: PreferenceKey {
-    static let defaultValue: [Int: CGRect] = [:]
-    static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
+    public static let defaultValue: [Int: CGRect] = [:]
+    public static func reduce(value: inout [Int: CGRect], nextValue: () -> [Int: CGRect]) {
         for (key, rect) in nextValue() {
             value[key] = rect
         }
@@ -139,7 +139,13 @@ public struct MainTabView: View {
                 #if !SKIP
                 .preference(key: TourAnchorPreferenceKey.self, value: [key: g.frame(in: .named("tourOverlay"))])
                 #else
-                .preference(key: TourAnchorPreferenceKey.self, value: [key: g.frame(in: CoordinateSpace.global)])
+                .preference(key: TourAnchorPreferenceKey.self, value: [key: g.frame(in: {
+                                    #if !SKIP
+                                    return .named("global")
+                                    #else
+                                    return NamedCoordinateSpace.named("global")
+                                    #endif
+                                }())])
                 #endif
         }
     }
@@ -468,7 +474,7 @@ public struct MainTabView: View {
                     }
                 )
                 .padding(Edge.Set.bottom, fixedBottomSafeInset + 2.0)
-                .ignoresSafeArea(SwiftUI.Scene.container, edges: Edge.Set.bottom)
+                .ignoresSafeArea(SafeAreaRegions.container, edges: Edge.Set.bottom)
 
             if selectedTab != 0 {
                 AskAIBubble(selectedTab: $selectedTab, isPro: entitlementManager.isPro, extraBottomInset: fixedBottomSafeInset)
@@ -627,14 +633,20 @@ public struct AskAIBubble: View {
                     .background(
                         GeometryReader { g in
                             Color.clear
-                                .preference(key: TourAnchorPreferenceKey.self, value: [4: g.frame(in: CoordinateSpace.global)])
+                                .preference(key: TourAnchorPreferenceKey.self, value: [4: g.frame(in: {
+                                    #if !SKIP
+                                    return .named("global")
+                                    #else
+                                    return NamedCoordinateSpace.named("global")
+                                    #endif
+                                }())])
                         }
                     )
                     .padding(Edge.Set.trailing, Layout.pageMargin)
                     .padding(Edge.Set.bottom, 142.0 + extraBottomInset)
             }
         }
-        .ignoresSafeArea(SwiftUI.Scene.container, edges: Edge.Set.bottom)
+        .ignoresSafeArea(SafeAreaRegions.container, edges: Edge.Set.bottom)
         .allowsHitTesting(true)
         #endif
     }
@@ -770,7 +782,7 @@ public struct LiquidTabButton: View {
 public struct BlurView: UIViewRepresentable {
     var style: UIBlurEffect.Style
 
-    func makeUIView(context: Context) -> UIVisualEffectView {
+    public func makeUIView(context: Context) -> UIVisualEffectView {
         // TEMP DEBUG — if this prints more than once per app launch, the
         // blur view is being torn down and rebuilt (e.g. on tab switch),
         // which can itself read as a one-frame position/size jump
@@ -779,6 +791,6 @@ public struct BlurView: UIViewRepresentable {
         return UIVisualEffectView(effect: UIBlurEffect(style: style))
     }
 
-    func updateUIView(_ uiView: UIVisualEffectView, context: Context) {}
+    public func updateUIView(_ uiView: UIVisualEffectView, context: Context) {}
 }
 #endif

@@ -9,7 +9,7 @@ public struct BrushStrokeShape: Shape {
         set { progress = newValue }
     }
 
-    func path(in rect: CGRect) -> Path {
+    public func path(in rect: CGRect) -> Path {
         var path = Path()
         let width = rect.width * max(progress, 0.001)
         

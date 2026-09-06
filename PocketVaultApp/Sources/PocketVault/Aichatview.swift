@@ -1,7 +1,7 @@
 import SwiftUI
 
-public struct ChatMessage: Identifiable, Equatable {
-    let id = UUID()
+public struct ChatMessage: Identifiable, Equatable, Sendable {
+    public let id = UUID()
     let role: Role
     let text: String
 
@@ -327,6 +327,7 @@ public struct AIChatView: View {
         .padding(Edge.Set.horizontal, 16)
     }
 
+    @MainActor
     private func send() async {
         let text = draft.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
         guard !text.isEmpty else { return }
@@ -338,9 +339,10 @@ public struct AIChatView: View {
         errorMessage = nil
         messages.append(ChatMessage(role: .user, text: text))
         isSending = true
+        let historySnapshot = messages
         do {
             let reply = try await AIChatService.send(
-                history: messages,
+                history: historySnapshot,
                 goalTitle: goalTitle,
                 targetGoal: targetGoal,
                 currentSavings: currentSavings,

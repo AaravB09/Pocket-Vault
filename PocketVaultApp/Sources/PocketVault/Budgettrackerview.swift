@@ -127,7 +127,7 @@ public struct BudgetTrackerView: View {
         .background(color.opacity(0.14))
         .clipShape(RoundedRectangle(cornerRadius: 16))
         // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(color.opacity(0.5), lineWidth: 1.2))
+        .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 16).stroke(color.opacity(0.5), lineWidth: 1.2) }
         .padding(Edge.Set.horizontal, Layout.pageMargin)
         .transition(AnyTransition.move(edge: Edge.top).combined(with: AnyTransition.opacity))
     }
@@ -145,7 +145,7 @@ public struct BudgetTrackerView: View {
     private var progressCard: some View {
         VStack(spacing: 18) {
             HStack {
-                VStack(alignment: Alignment.leading, spacing: 4) {
+                VStack(alignment: HorizontalAlignment.leading, spacing: 4) {
                     SectionLabel("Spent this month")
                     Text("$\(Int(budgetManager.totalSpentThisMonth))")
                         .font(theme.font(34, weight: Font.Weight.light))
@@ -219,7 +219,9 @@ public struct BudgetTrackerView: View {
             }
             // FIX: Replaced custom style with a standard style to resolve "Cannot find in scope".
             // Replace `.borderedProminent` with your specific button style struct once you locate it.
-            .buttonStyle(ButtonStyle.borderedProminent)
+            #if !SKIP
+            .buttonStyle(BorderedProminentButtonStyle())
+            #endif
         }
         .padding(20)
         // NOTE(skip): .ultraThinMaterial has no Android/Compose equivalent
@@ -228,7 +230,7 @@ public struct BudgetTrackerView: View {
         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
         .clipShape(RoundedRectangle(cornerRadius: 20))
         // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
+        .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1) }
         .padding(Edge.Set.horizontal, Layout.pageMargin)
     }
 
@@ -242,7 +244,7 @@ public struct BudgetTrackerView: View {
 
         return Group {
             if !nonZero.isEmpty {
-                VStack(alignment: Alignment.leading, spacing: 12) {
+                VStack(alignment: HorizontalAlignment.leading, spacing: 12) {
                     SectionLabel("By category")
                         .padding(Edge.Set.horizontal, Layout.pageMargin)
 
@@ -285,9 +287,9 @@ public struct BudgetTrackerView: View {
                     .padding(Edge.Set.horizontal, 40)
                     .padding(Edge.Set.top, 20)
             } else {
-                VStack(alignment: Alignment.leading, spacing: 18) {
+                VStack(alignment: HorizontalAlignment.leading, spacing: 18) {
                     ForEach(budgetManager.transactionsByDay, id: \.date) { day in
-                        VStack(alignment: Alignment.leading, spacing: 8) {
+                        VStack(alignment: HorizontalAlignment.leading, spacing: 8) {
                             Text(dayLabel(day.date))
                                 .font(theme.font(12, weight: Font.Weight.semibold))
                                 .foregroundStyle(Color.secondary) // was .tertiary
@@ -399,7 +401,7 @@ public struct TransactionRow: View {
                     .font(theme.font(13))
                     .foregroundStyle(theme.accent)
             }
-            VStack(alignment: Alignment.leading, spacing: 2) {
+            VStack(alignment: HorizontalAlignment.leading, spacing: 2) {
                 HStack(spacing: 6) {
                     Text(item.note.isEmpty ? item.category.displayName : item.note)
                         .font(theme.font(13, weight: Font.Weight.medium))
@@ -426,7 +428,7 @@ public struct TransactionRow: View {
         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
         .clipShape(RoundedRectangle(cornerRadius: 14))
         // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
+        .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1) }
     }
 
     private func timeLabel(_ date: Date) -> String {
@@ -483,11 +485,11 @@ public struct AddPaymentSheet: View {
                             .foregroundStyle(Color.primary)
                     }
 
-                    VStack(alignment: Alignment.leading, spacing: 10) {
+                    VStack(alignment: HorizontalAlignment.leading, spacing: 10) {
                         SectionLabel("Category")
                             .padding(Edge.Set.horizontal, Layout.pageMargin)
 
-                        LazyVGrid(columns: [GridItem(GridItem.Adaptive(minimum: 96))], spacing: 10) {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 96))], spacing: 10) {
                             ForEach(SpendCategory.allCases) { category in
                                 Button(action: { selectedCategory = category }) {
                                     VStack(spacing: 6) {
@@ -502,14 +504,14 @@ public struct AddPaymentSheet: View {
                                     .background(selectedCategory == category ? theme.accent : (theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06)))
                                     .clipShape(RoundedRectangle(cornerRadius: 14))
                                     // FIX: Pass Double(0) explicitly so Skip's Kotlin codegen doesn't mix up Int and Double
-                                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.accent.opacity(selectedCategory == category ? Double(0) : 0.25), lineWidth: 1))
+                                    .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 14).stroke(theme.accent.opacity(selectedCategory == category ? Double(0) : 0.25), lineWidth: 1) }
                                 }
                             }
                         }
                         .padding(Edge.Set.horizontal, Layout.pageMargin)
                     }
 
-                    VStack(alignment: Alignment.leading, spacing: 8) {
+                    VStack(alignment: HorizontalAlignment.leading, spacing: 8) {
                         SectionLabel("Note (optional)")
 
                         TextField("e.g. Grocery run", text: $note)
@@ -519,7 +521,7 @@ public struct AddPaymentSheet: View {
                             .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                             .clipShape(RoundedRectangle(cornerRadius: 14))
                             // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
-                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
+                            .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1) }
                     }
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
@@ -535,7 +537,9 @@ public struct AddPaymentSheet: View {
                     }
                     // FIX: Replaced custom style with a standard style to resolve "Cannot find in scope".
                     // Replace `.borderedProminent` with your specific button style struct once you locate it.
-                    .buttonStyle(ButtonStyle.borderedProminent)
+                    #if !SKIP
+                    .buttonStyle(BorderedProminentButtonStyle())
+                    #endif
                     .disabled(!isValid)
                     .opacity(isValid ? 1.0 : 0.4)
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
@@ -606,7 +610,9 @@ public struct LimitEditorSheet: View {
                 }
                 // FIX: Replaced custom style with a standard style to resolve "Cannot find in scope".
                 // Replace `.borderedProminent` with your specific button style struct once you locate it.
-                .buttonStyle(ButtonStyle.borderedProminent)
+                #if !SKIP
+                .buttonStyle(BorderedProminentButtonStyle())
+                #endif
                 .disabled(!isValid)
                 .opacity(isValid ? 1.0 : 0.4)
                 .padding(Edge.Set.horizontal, Layout.pageMargin)

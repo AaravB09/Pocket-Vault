@@ -92,7 +92,7 @@ public struct SavingsCoachView: View {
         _selectedTab = selectedTab
     }
 
-    var body: some View {
+    public var body: some View {
         ZStack {
             ScrollView {
                 VStack(spacing: 26) {
@@ -127,7 +127,9 @@ public struct SavingsCoachView: View {
 
                             // Fix: Explicitly typing `DatePickerComponents.date`
                             DatePicker("Target date", selection: $targetDate, in: Date()...Date.distantFuture, displayedComponents: DatePickerComponents.date)
-                                .datePickerStyle(DatePickerStyle.compact)
+                                #if !SKIP
+                                .datePickerStyle(CompactDatePickerStyle())
+                                #endif
                                 .tint(theme.accent)
                                 .colorScheme(theme.isLight ? ColorScheme.light : ColorScheme.dark)
                                 .padding(16)
@@ -189,7 +191,7 @@ public struct SavingsCoachView: View {
     }
 
     private var planCard: some View {
-        VStack(alignment: Alignment.leading, spacing: 16) {
+        VStack(alignment: HorizontalAlignment.leading, spacing: 16) {
             HStack(spacing: 8) {
                 Image.platformSymbol("sparkles", android: "star.fill")
                     .foregroundStyle(theme.accent)

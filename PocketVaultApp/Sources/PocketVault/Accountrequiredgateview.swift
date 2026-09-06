@@ -1,3 +1,4 @@
+#if !SKIP_BRIDGE
 import SwiftUI
 
 /// Shown in place of a feature's content when a guest hits something that
@@ -65,3 +66,4 @@ public struct AccountRequiredGateView: View {
         }
     }
 }
+#endif

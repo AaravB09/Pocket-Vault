@@ -7,26 +7,26 @@ import Combine
 /// history — the same idea as an investment app logging a snapshot on
 /// every price/holding change to plot a performance chart. See
 /// SavingsTrendChart.swift for where this gets rendered.
-struct SavingsSnapshot: Identifiable, Codable, Equatable {
-    var id: UUID = UUID()
-    var date: Date
-    var amount: Double
+public struct SavingsSnapshot: Identifiable, Codable, Equatable {
+    public var id: UUID = UUID()
+    public var date: Date
+    public var amount: Double
 }
 
-struct Goal: Identifiable, Codable, Equatable {
-    var id: UUID = UUID()
-    var title: String
-    var kindRaw: String
-    var targetAmount: Double
-    var currentSavings: Double
-    var targetDate: Date
+public struct Goal: Identifiable, Codable, Equatable {
+    public var id: UUID = UUID()
+    public var title: String
+    public var kindRaw: String
+    public var targetAmount: Double
+    public var currentSavings: Double
+    public var targetDate: Date
     // nil = not shared. When set, this is the id of a row in Supabase's
     // shared_goals table — see SharedBudgetManager. Older saved goals
     // decode this as nil automatically since it's Optional.
-    var sharedGoalID: String? = nil
+    public var sharedGoalID: String? = nil
     // Balance-over-time log for the trend chart. Optional/defaulted so
     // goals saved before this field existed decode cleanly as [].
-    var history: [SavingsSnapshot] = []
+    public var history: [SavingsSnapshot] = []
     // Raw JSON for an AI-generated voxel sculpture unique to this goal's
     // own description (a bag of cat food, a guitar, a bike) — set only
     // when AIGoalBuilderService classifies the goal as .custom and
@@ -44,9 +44,9 @@ struct Goal: Identifiable, Codable, Equatable {
 /// those bindings now route through here and point at whichever goal is
 /// currently active, via `mutateActive`.
 @MainActor
-final class GoalStore: ObservableObject {
-    @Published var goals: [Goal] = []
-    @Published var activeGoalID: UUID?
+public final class GoalStore: ObservableObject {
+    @Published public var goals: [Goal] = []
+    @Published public var activeGoalID: UUID?
 
     private let defaults = UserDefaults.standard
     private let goalsKey: String
@@ -56,7 +56,7 @@ final class GoalStore: ObservableObject {
     /// from every other — see AuthManager.storageNamespace. Without this,
     /// signing out and continuing as a guest would load whatever goals
     /// the previous signed-in account had saved.
-    init(namespace: String) {
+    public init(namespace: String) {
         goalsKey = "\(namespace)_pv_goals_v1"
         activeGoalKey = "\(namespace)_pv_activeGoalID_v1"
         load()
@@ -65,7 +65,7 @@ final class GoalStore: ObservableObject {
         }
     }
 
-    var activeGoal: Goal? {
+    public var activeGoal: Goal? {
         if let id = activeGoalID, let match = goals.first(where: { $0.id == id }) {
             return match
         }
@@ -77,7 +77,7 @@ final class GoalStore: ObservableObject {
         return goals.firstIndex(where: { $0.id == goal.id })
     }
 
-    func addGoal(title: String, kindRaw: String, targetAmount: Double, targetDate: Date, customVoxelBlueprintJSON: String? = nil) {
+    public func addGoal(title: String, kindRaw: String, targetAmount: Double, targetDate: Date, customVoxelBlueprintJSON: String? = nil) {
         var goal = Goal(title: title, kindRaw: kindRaw, targetAmount: targetAmount, currentSavings: 0, targetDate: targetDate, customVoxelBlueprintJSON: customVoxelBlueprintJSON)
         goal.history = [SavingsSnapshot(date: Date(), amount: 0)]
         goals.append(goal)
@@ -85,7 +85,7 @@ final class GoalStore: ObservableObject {
         persist()
     }
 
-    func setActive(_ id: UUID) {
+    public func setActive(_ id: UUID) {
         guard goals.contains(where: { $0.id == id }) else { return }
         activeGoalID = id
         persist()

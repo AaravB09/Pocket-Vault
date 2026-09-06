@@ -41,7 +41,7 @@ public struct ProfileView: View {
     private enum ExportFormat: String, CaseIterable, Identifiable {
         case csv = "CSV"
         case json = "JSON"
-        var id: String { rawValue }
+        public var id: String { rawValue }
     }
 
     @State private var profileImageData: Data?
@@ -143,7 +143,7 @@ public struct ProfileView: View {
                     }
 
                     // Display name
-                    VStack(alignment: Alignment.leading, spacing: 8) {
+                    VStack(alignment: HorizontalAlignment.leading, spacing: 8) {
                         SectionLabel("Display name")
 
                         HStack {
@@ -351,11 +351,11 @@ public struct ProfileView: View {
     // The `devSection` is left outside any `#if DEBUG` so Skip's transpile
     // doesn't strip it (Skip only respects `#if SKIP`, not `#if DEBUG`).
     private var devSection: some View {
-        VStack(alignment: Alignment.leading, spacing: 12) {
+        VStack(alignment: HorizontalAlignment.leading, spacing: 12) {
             SectionLabel("Dev tools")
 
             HStack {
-                VStack(alignment: Alignment.leading, spacing: 4) {
+                VStack(alignment: HorizontalAlignment.leading, spacing: 4) {
                     Text("Force Pro unlocked")
                         .font(theme.font(13, weight: Font.Weight.medium))
                         .foregroundStyle(theme.textPrimary)
@@ -399,37 +399,52 @@ public struct ProfileView: View {
     }
 
     // MARK: - Privacy & Data
+
+    // Extracted from the HStack below — pulling this label stack into its own
+    // computed property (rather than inlining it) is what lets the Swift
+    // type-checker resolve the surrounding HStack/.padding/.background/.cornerRadius
+    // chain without timing out.
+    private var privacyModeLabel: some View {
+        VStack(alignment: HorizontalAlignment.leading, spacing: 4) {
+            Text("Privacy Mode")
+                .font(theme.font(13, weight: Font.Weight.medium))
+                .foregroundStyle(theme.textPrimary)
+            Text("Blurs balances until you tap to reveal — handy with people around.")
+                .font(theme.font(10, weight: Font.Weight.light))
+                .foregroundStyle(theme.textTertiary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     private var privacyAndDataSection: some View {
-        VStack(alignment: Alignment.leading, spacing: 16) {
+        // Pulled out of the modifier chain below — an inline ternary here was
+        // part of what made the type-checker choke on the whole HStack chain.
+        let privacyRowBackground = theme.isLight ? Color.black.opacity(0.03) : Color.white.opacity(0.05)
+
+        return VStack(alignment: HorizontalAlignment.leading, spacing: 16) {
             SectionLabel("Privacy & data")
 
             HStack {
-                VStack(alignment: Alignment.leading, spacing: 4) {
-                    Text("Privacy Mode")
-                        .font(theme.font(13, weight: Font.Weight.medium))
-                        .foregroundStyle(theme.textPrimary)
-                    Text("Blurs balances until you tap to reveal — handy with people around.")
-                        .font(theme.font(10, weight: Font.Weight.light))
-                        .foregroundStyle(theme.textTertiary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
+                privacyModeLabel
                 Spacer()
                 Toggle("", isOn: $privacyManager.isPrivacyModeOn)
                     .labelsHidden()
                     .tint(theme.accent)
             }
             .padding(14)
-            .background(theme.isLight ? Color.black.opacity(0.03) : Color.white.opacity(0.05))
+            .background(privacyRowBackground)
             .cornerRadius(14)
             .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
 
-            VStack(alignment: Alignment.leading, spacing: 10) {
+            VStack(alignment: HorizontalAlignment.leading, spacing: 10) {
                 Picker("Format", selection: $exportFormat) {
                     ForEach(ExportFormat.allCases) { format in
                         Text(format.rawValue).tag(format)
                     }
                 }
-                .pickerStyle(PickerStyle.segmented)
+                #if !SKIP
+                .pickerStyle(SegmentedPickerStyle())
+                #endif
                 .onChange(of: exportFormat) { _ in exportURLs = nil }
 
                 if let exportURLs, !exportURLs.isEmpty {
@@ -506,7 +521,7 @@ public struct ProfileView: View {
 public struct SecondaryCTAStyleModifier: ViewModifier {
     var accent: Color
     
-    func body(content: Content) -> some View {
+    public func body(content: Content) -> some View {
         content
             .font(Font.system(size: 15, weight: Font.Weight.semibold))
             .padding(Edge.Set.vertical, 14)

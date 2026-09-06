@@ -233,7 +233,9 @@ public struct LegalFinePrint: View {
         }
         .font(theme.font(10, weight: Font.Weight.light))
         .foregroundStyle(theme.textTertiary)
-        .buttonStyle(ButtonStyle.plain)
+        #if !SKIP
+        .buttonStyle(PlainButtonStyle())
+        #endif
         .tint(theme.accent)
         .multilineTextAlignment(TextAlignment.center)
         .sheet(item: Binding(
