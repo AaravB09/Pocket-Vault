@@ -146,20 +146,14 @@ public struct NewPasswordView: View {
                             .padding(Edge.Set.horizontal, Layout.pageMargin)
                     }
 
-                    Button(action: save) {
-                        HStack {
-                            if isSaving { ProgressView().tint(theme.background) }
-                            Text(isSaving ? "Saving…" : "Save new password")
-                        }
-                        .font(theme.font(16, weight: Font.Weight.semibold))
-                        .frame(maxWidth: CGFloat.infinity)
-                        .padding(Edge.Set.vertical, 17)
-                        .background(isValid ? theme.textPrimary : theme.textPrimary.opacity(0.25))
-                        .foregroundColor(theme.background)
-                        .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius))
-                    }
-                    .disabled(!isValid || isSaving)
-                    .padding(Edge.Set.horizontal, Layout.pageMargin)
+                    VaultButton(
+                        "Save new password",
+                        variant: VaultButtonVariant.primary,
+                        isLoading: isSaving,
+                        fontSize: 16.0,
+                        action: save
+                    )
+                    .disabled(!isValid)
 
                     Spacer(minLength: 40)
                 }

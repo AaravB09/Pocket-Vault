@@ -269,6 +269,8 @@ public enum Layout {
     static let controlRadius: CGFloat = 16.0
     static let sectionSpacing: CGFloat = 24.0
     static let cardPadding: CGFloat = 18.0
+    static let height: CGFloat = 50.0
+    static let horizontalPadding: CGFloat = 20.0
 }
 
 // MARK: - Shared CTA styles
