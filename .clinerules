@@ -1,0 +1,18 @@
+# Pocket Vault - Cross-Platform (iOS & Android) Engineering Rules
+
+## 1. Defensive Security Audit & Vulnerability Assessment
+- Perform static security analysis on all modified Swift (iOS) and Kotlin (Android) code.
+- Audit for OWASP Mobile Security risks: local data exposure, insecure SharedPreferences/UserDefaults, improper logging, or un-sanitized user input.
+- Ensure NO API keys, secrets, or tokens are hardcoded in `.swift`, `.kt`, `.xml`, or `.gradle` files. Force the use of Android EncryptedSharedPreferences/KeyStore or iOS Keychain.
+- Automatically refactor and patch security vulnerabilities or memory leaks before finishing tasks.
+
+## 2. Product & Psychological UX (SwiftUI & Jetpack Compose)
+- Evaluate UI against top-performing apps across both iOS (HIG) and Android (Material Design 3).
+- Implement psychological UX polish: micro-interactions, haptic feedback, clear visual hierarchy, dynamic light/dark mode support, and smooth state transitions.
+- Ensure minimum tap targets (48dp on Android, 44pt on iOS) and full accessibility support.
+
+## 3. Autonomous Build & Testing Protocol
+- Write unit and UI test cases covering core flows for both target platforms.
+- For Android: verify build and tests via `./gradlew testDebugUnitTest` or `./gradlew assembleDebug`.
+- For iOS: verify build and tests via `xcodebuild build` or `xcodebuild test`.
+- Read compiler output or test failure logs automatically, resolve any defects, and retry until all builds and tests pass cleanly.

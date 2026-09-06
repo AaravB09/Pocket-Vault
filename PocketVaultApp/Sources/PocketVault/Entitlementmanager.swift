@@ -140,7 +140,7 @@ final class EntitlementManager: NSObject, ObservableObject {
     /// Set to `false` before any Play Store release.
     /// Skip does NOT strip code inside `#if SKIP` - only the `#if SKIP`
     /// guard itself - so this constant ships in the APK unless flipped.
-    private let androidDevBuildsOnly: Bool = true
+    private let androidDevBuildsOnly: Bool = false
 
     /// Static read-only accessor for the dev-builds flag. Used by
     /// `ProfileView.shouldShowDevSection` to hide the dev toggle in the UI
