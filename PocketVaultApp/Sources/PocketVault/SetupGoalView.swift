@@ -122,17 +122,17 @@ public struct SetupGoalView: View {
 
     public var body: some View {
         ZStack {
-            VStack(spacing: 0) {
+            VStack(spacing: 0.0) {
                 header
 
                 ScrollView {
-                    VStack(spacing: 28) {
+                    VStack(spacing: 28.0) {
                         switch step {
                         case .goal: goalStepContent
                         case .amount: amountStepContent
                         }
                     }
-                    .padding(Edge.Set.top, 20)
+                    .padding(Edge.Set.top, 20.0)
                     .padding(Edge.Set.bottom, isOnboarding ? 140.0 : 220.0) // FIXED TYPE INFERENCE HERE
                 }
             }
@@ -163,12 +163,12 @@ public struct SetupGoalView: View {
     // MARK: - Header (back / progress / skip)
 
     private var header: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 14.0) {
             Button(action: goBack) {
                 Image(systemName: "chevron.left")
                     .font(theme.font(14, weight: Font.Weight.semibold))
                     .foregroundStyle(Color.primary)
-                    .frame(width: 34, height: 34)
+                    .frame(width: 34.0, height: 34.0)
                     .background(theme.isLight ? Color.black.opacity(0.05) : Color.white.opacity(0.08))
                     // NOTE(skip): `.clipShape` isn't resolved by Skip's
                     // SwiftUI shim — `.cornerRadius` at half the frame's
@@ -180,11 +180,11 @@ public struct SetupGoalView: View {
                     #endif
             }
 
-            HStack(spacing: 5) {
+            HStack(spacing: 5.0) {
                 ForEach(0..<totalSteps, id: \.self) { i in
                     Capsule()
                         .fill(i <= currentStepIndex ? theme.accent : theme.hairline)
-                        .frame(height: 3)
+                        .frame(height: 3.0)
                 }
             }
 
@@ -194,8 +194,8 @@ public struct SetupGoalView: View {
                     .foregroundStyle(theme.textSecondary)
             }
         }
-        .padding(Edge.Set.horizontal, 20)
-        .padding(Edge.Set.top, 16)
+        .padding(Edge.Set.horizontal, 20.0)
+        .padding(Edge.Set.top, 16.0)
     }
 
     // MARK: - Pinned CTA
@@ -212,9 +212,9 @@ public struct SetupGoalView: View {
     private var ctaBottomPadding: CGFloat { isOnboarding ? 20.0 : 100.0 }
 
     private var pinnedCTA: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 0.0) {
             LinearGradient(colors: [theme.background.opacity(0), theme.background], startPoint: UnitPoint.top, endPoint: UnitPoint.bottom)
-                .frame(height: 36)
+                .frame(height: 36.0)
                 .allowsHitTesting(false)
 
             // FIX: `.buttonStyle(PrimaryCTAButtonStyle(...))` referenced a
@@ -230,7 +230,7 @@ public struct SetupGoalView: View {
                 onAccent: theme.onAccent,
                 action: goNext
             ) {
-                HStack(spacing: 8) {
+                HStack(spacing: 8.0) {
                     Text(ctaTitle)
                     if step != .amount {
                         Image(systemName: "arrow.forward")
@@ -281,8 +281,8 @@ public struct SetupGoalView: View {
     // MARK: - Step 1: Goal
 
     private var goalStepContent: some View {
-        VStack(spacing: 28) {
-            VStack(spacing: 6) {
+        VStack(spacing: 28.0) {
+            VStack(spacing: 6.0) {
                 SectionLabel(isOnboarding ? "Choose your destination" : "Update journey")
 
                 Text("What are you building toward?")
@@ -294,12 +294,12 @@ public struct SetupGoalView: View {
                 .padding(Edge.Set.horizontal, Layout.pageMargin)
 
             HStack {
-                Rectangle().fill(theme.hairline).frame(height: 1)
+                Rectangle().fill(theme.hairline).frame(height: 1.0)
                 Text("or pick a quick preset")
                     .font(theme.font(12, weight: Font.Weight.medium))
                     .foregroundStyle(theme.textTertiary)
                     .fixedSize()
-                Rectangle().fill(theme.hairline).frame(height: 1)
+                Rectangle().fill(theme.hairline).frame(height: 1.0)
             }
             .padding(Edge.Set.horizontal, Layout.pageMargin)
 
@@ -314,7 +314,7 @@ public struct SetupGoalView: View {
             // array. Extracting the row into `presetRow(for:)` below keeps
             // this closure trivial so the real (plain-array) ForEach
             // overload resolves correctly.
-            VStack(spacing: 12) {
+            VStack(spacing: 12.0) {
                 ForEach(presets) { preset in
                     presetRow(for: preset)
                 }
@@ -340,7 +340,7 @@ public struct SetupGoalView: View {
             UIImpactFeedbackGenerator(style: .light).impactOccurred()
             #endif
         }) {
-            HStack(spacing: 14) {
+            HStack(spacing: 14.0) {
                 Image.platformSymbol(preset.icon, android: preset.androidIcon)
                     .font(theme.font(16, weight: Font.Weight.light))
                     .foregroundStyle(isSelected ? theme.onAccent : theme.textTertiary)
@@ -357,15 +357,15 @@ public struct SetupGoalView: View {
                         .foregroundStyle(theme.onAccent)
                 }
             }
-            .padding(Edge.Set.horizontal, 20)
-            .padding(Edge.Set.vertical, 16)
+            .padding(Edge.Set.horizontal, 20.0)
+            .padding(Edge.Set.vertical, 16.0)
             .background(
                 Capsule()
                     .fill(isSelected ? theme.accent : (theme.isLight ? Color.black.opacity(0.03) : Color.white.opacity(0.03)))
             )
             .overlay(
                 Capsule()
-                    .stroke(isSelected ? Color.clear : theme.hairline, lineWidth: 1)
+                    .stroke(isSelected ? Color.clear : theme.hairline, lineWidth: 1.0)
             )
         }
         // NOTE(skip): same root cause as PrimaryCTAButton /
@@ -389,13 +389,13 @@ public struct SetupGoalView: View {
     // MARK: - Step 2: Amount
 
     private var amountStepContent: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 6.0) {
             SectionLabel("Target value")
 
             Text("How much are you aiming for?")
                 .font(theme.font(22, weight: Font.Weight.semibold))
                 .foregroundStyle(Color.primary)
-                .padding(Edge.Set.bottom, 24)
+                .padding(Edge.Set.bottom, 24.0)
 
             AmountScrubPicker(amount: amountBinding)
         }
@@ -404,8 +404,8 @@ public struct SetupGoalView: View {
 
     // MARK: - AI Goal Card
     private var aiGoalCard: some View {
-        VStack(spacing: 14) {
-            HStack(spacing: 8) {
+        VStack(spacing: 14.0) {
+            HStack(spacing: 8.0) {
                 Image.platformSymbol("sparkles", android: "star.fill")
                     .foregroundStyle(theme.accent)
                 Text("Describe your own goal")
@@ -421,7 +421,7 @@ public struct SetupGoalView: View {
             TextField("", text: $customGoalDescription, prompt: Text("e.g. \"a weekend trip to Tahoe\"").foregroundColor(theme.textTertiary), axis: Axis.vertical)
                 .foregroundStyle(Color.primary)
                 .font(theme.font(14, weight: Font.Weight.light))
-                .padding(14)
+                .padding(14.0)
                 // NOTE(skip): `.ultraThinMaterial` and `.clipShape` aren't
                 // resolved by Skip's SwiftUI shim — iOS keeps the real
                 // material + shape clip, Android gets a plain tinted
@@ -429,12 +429,12 @@ public struct SetupGoalView: View {
                 // everywhere else in the app.
                 #if !SKIP
                 .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 14))
+                .clipShape(RoundedRectangle(cornerRadius: 14.0))
                 #else
                 .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                 .cornerRadius(14)
                 #endif
-                .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
 
             // FIX: `.buttonStyle(.secondaryCTA(theme))` is the same leftover
             // pattern as PrimaryCTAButtonStyle above — that ButtonStyle no
@@ -461,21 +461,21 @@ public struct SetupGoalView: View {
                 suggestionResultCard(aiSuggestion)
             }
         }
-        .padding(20)
+        .padding(20.0)
         #if !SKIP
         .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: 20.0))
         #else
         .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
         .cornerRadius(20)
         #endif
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.accent.opacity(0.3), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(theme.accent.opacity(0.3), lineWidth: 1.0))
     }
 
     private func suggestionResultCard(_ suggestion: AIGoalBuilderService.Suggestion) -> some View {
         let isApplied = selectedPresetName == suggestion.title
 
-        return VStack(spacing: 10) {
+        return VStack(spacing: 10.0) {
             HStack {
                 Text(suggestion.title)
                     .font(theme.font(15, weight: Font.Weight.semibold))
@@ -493,13 +493,13 @@ public struct SetupGoalView: View {
                 .frame(maxWidth: CGFloat.infinity, alignment: Alignment.leading)
 
             Button(action: applySuggestion) {
-                HStack(spacing: 6) {
+                HStack(spacing: 6.0) {
                     Image(systemName: isApplied ? "checkmark.circle.fill" : "arrow.turn.right.down")
                     Text(isApplied ? "Applied" : "Use this goal")
                 }
                 .font(theme.font(14, weight: Font.Weight.semibold))
                 .frame(maxWidth: CGFloat.infinity)
-                .padding(Edge.Set.vertical, 12)
+                .padding(Edge.Set.vertical, 12.0)
                 .background(isApplied ? theme.hairline : theme.accent.opacity(0.15))
                 .foregroundColor(isApplied ? theme.accent : theme.textPrimary)
                 // NOTE(skip): background here is already theme-agnostic,
@@ -509,14 +509,14 @@ public struct SetupGoalView: View {
                 #else
                 .cornerRadius(Layout.controlRadius)
                 #endif
-                .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius).stroke(theme.accent.opacity(isApplied ? 0.5 : 0.2), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius).stroke(theme.accent.opacity(isApplied ? 0.5 : 0.2), lineWidth: 1.0))
             }
         }
-        .padding(14)
+        .padding(14.0)
         .background(theme.isLight ? Color.black.opacity(0.05) : Color.black.opacity(0.2))
         // NOTE(skip): same clipShape-only fix as the button above.
         #if !SKIP
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .clipShape(RoundedRectangle(cornerRadius: 14.0))
         #else
         .cornerRadius(14)
         #endif

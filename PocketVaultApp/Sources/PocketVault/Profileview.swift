@@ -66,18 +66,18 @@ public struct ProfileView: View {
     public var body: some View {
         ZStack {
             ScrollView {
-                VStack(spacing: 26) {
+                VStack(spacing: 26.0) {
                     HStack {
                         ShareLink(item: "Join me on Pocket Vault and let's save together! Add me with friend code \(leaderboardManager.myFriendCode).") {
-                            HStack(spacing: 6) {
+                            HStack(spacing: 6.0) {
                                 Image.platformSymbol("person.badge.plus", android: "plus.circle.fill")
                                     .font(theme.font(12, weight: Font.Weight.semibold))
                                 Text("Invite friends")
                                     .font(theme.font(13, weight: Font.Weight.semibold))
                             }
                             .foregroundStyle(theme.textPrimary)
-                            .padding(Edge.Set.horizontal, 14)
-                            .padding(Edge.Set.vertical, 10)
+                            .padding(Edge.Set.horizontal, 14.0)
+                            .padding(Edge.Set.vertical, 10.0)
                             // Unified cross-platform styling
                             .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                             .cornerRadius(100)
@@ -98,10 +98,10 @@ public struct ProfileView: View {
                             Image.platformSymbol("trophy.fill", android: "star.fill")
                                 .font(theme.font(13, weight: Font.Weight.semibold))
                                 .foregroundStyle(theme.accent)
-                                .frame(width: 38, height: 38)
+                                .frame(width: 38.0, height: 38.0)
                                 .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                                 .cornerRadius(19)
-                                .overlay(Circle().stroke(theme.cardStroke, lineWidth: 1))
+                                .overlay(Circle().stroke(theme.cardStroke, lineWidth: 1.0))
                         }
 
                         Spacer()
@@ -112,11 +112,11 @@ public struct ProfileView: View {
                                 .foregroundStyle(theme.textTertiary)
                         }
                     }
-                    .padding(Edge.Set.horizontal, 20)
-                    .padding(Edge.Set.top, 20)
+                    .padding(Edge.Set.horizontal, 20.0)
+                    .padding(Edge.Set.top, 20.0)
 
                     // Profile Header & Avatar Picker
-                    VStack(spacing: 12) {
+                    VStack(spacing: 12.0) {
                         #if !SKIP
                         PhotosPicker(selection: $selectedItem, matching: PHPickerFilter.images) {
                             avatarContent
@@ -143,7 +143,7 @@ public struct ProfileView: View {
                     }
 
                     // Display name
-                    VStack(alignment: HorizontalAlignment.leading, spacing: 8) {
+                    VStack(alignment: HorizontalAlignment.leading, spacing: 8.0) {
                         SectionLabel("Display name")
 
                         HStack {
@@ -151,16 +151,16 @@ public struct ProfileView: View {
                                 .textInputAutocapitalization(TextInputAutocapitalization.words)
                                 .autocorrectionDisabled()
                                 .foregroundStyle(theme.textPrimary)
-                                .padding(14)
+                                .padding(14.0)
                                 .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                                 .cornerRadius(Layout.controlRadius)
-                                .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius).stroke(theme.cardStroke, lineWidth: 1))
+                                .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius).stroke(theme.cardStroke, lineWidth: 1.0))
 
                             Button(action: saveDisplayName) {
                                 Text("Save")
                                     .font(theme.font(14, weight: Font.Weight.semibold))
-                                    .padding(Edge.Set.horizontal, 18)
-                                    .padding(Edge.Set.vertical, 14)
+                                    .padding(Edge.Set.horizontal, 18.0)
+                                    .padding(Edge.Set.vertical, 14.0)
                                     .background(theme.accent)
                                     .foregroundColor(theme.onAccent)
                                     .cornerRadius(Layout.controlRadius)
@@ -171,7 +171,7 @@ public struct ProfileView: View {
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     // Friend code
-                    VStack(spacing: 8) {
+                    VStack(spacing: 8.0) {
                         SectionLabel("Friend code")
                         Text(leaderboardManager.myFriendCode)
                             .font(theme.font(20, weight: Font.Weight.semibold))
@@ -179,10 +179,10 @@ public struct ProfileView: View {
                             .foregroundStyle(theme.textPrimary)
                     }
                     .frame(maxWidth: CGFloat.infinity)
-                    .padding(18)
+                    .padding(18.0)
                     .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                     .cornerRadius(16)
-                    .overlay(RoundedRectangle(cornerRadius: 16).stroke(theme.cardStroke, lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(theme.cardStroke, lineWidth: 1.0))
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     privacyAndDataSection
@@ -193,10 +193,10 @@ public struct ProfileView: View {
                     }
 
                     LegalFinePrint()
-                        .padding(Edge.Set.top, 4)
+                        .padding(Edge.Set.top, 4.0)
 
                     Button(action: { showFeedback = true }) {
-                        HStack(spacing: 10) {
+                        HStack(spacing: 10.0) {
                             Image(systemName: "envelope.fill")
                             Text("Send feedback")
                         }
@@ -209,14 +209,14 @@ public struct ProfileView: View {
                     }
                     .secondaryCTA(accent: theme.danger)
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
-                    .padding(Edge.Set.top, 8)
+                    .padding(Edge.Set.top, 8.0)
 
                     Button(action: { showDeleteAccountConfirm = true }) {
                         Text("Delete account")
                     }
                     .secondaryCTA(accent: Color.red.opacity(0.85))
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
-                    .padding(Edge.Set.top, 6)
+                    .padding(Edge.Set.top, 6.0)
 
                     Spacer(minLength: 40)
                 }
@@ -289,12 +289,12 @@ public struct ProfileView: View {
                 Image(uiImage: uiImage)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 80, height: 80)
+                    .frame(width: 80.0, height: 80.0)
                     .cornerRadius(40)
             } else {
                 Circle()
                     .fill(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
-                    .frame(width: 80, height: 80)
+                    .frame(width: 80.0, height: 80.0)
                 Image(systemName: "person.fill")
                     .font(theme.font(30, weight: Font.Weight.light))
                     .foregroundStyle(theme.accent)
@@ -302,13 +302,13 @@ public struct ProfileView: View {
 
             Circle()
                 .stroke(theme.accent.opacity(0.6), lineWidth: 1.5)
-                .frame(width: 80, height: 80)
+                .frame(width: 80.0, height: 80.0)
 
             #if !SKIP
             Image.platformSymbol("camera.fill", android: "pencil")
                 .font(theme.font(10, weight: Font.Weight.bold))
                 .foregroundStyle(theme.onAccent)
-                .padding(6)
+                .padding(6.0)
                 .background(theme.accent)
                 .clipShape(Circle())
                 .offset(x: 28, y: 28)
@@ -351,11 +351,11 @@ public struct ProfileView: View {
     // The `devSection` is left outside any `#if DEBUG` so Skip's transpile
     // doesn't strip it (Skip only respects `#if SKIP`, not `#if DEBUG`).
     private var devSection: some View {
-        VStack(alignment: HorizontalAlignment.leading, spacing: 12) {
+        VStack(alignment: HorizontalAlignment.leading, spacing: 12.0) {
             SectionLabel("Dev tools")
 
             HStack {
-                VStack(alignment: HorizontalAlignment.leading, spacing: 4) {
+                VStack(alignment: HorizontalAlignment.leading, spacing: 4.0) {
                     Text("Force Pro unlocked")
                         .font(theme.font(13, weight: Font.Weight.medium))
                         .foregroundStyle(theme.textPrimary)
@@ -379,7 +379,7 @@ public struct ProfileView: View {
             Button(action: {
                 Task { await EntitlementManager.resetTestAccountStatic() }
             }) {
-                HStack(spacing: 8) {
+                HStack(spacing: 8.0) {
                     Image(systemName: "arrow.counterclockwise")
                     Text("Reset test account")
                 }
@@ -387,10 +387,10 @@ public struct ProfileView: View {
                 .foregroundStyle(theme.danger)
             }
         }
-        .padding(20)
+        .padding(20.0)
         .background(theme.danger.opacity(0.08))
         .cornerRadius(20)
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.danger.opacity(0.3), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(theme.danger.opacity(0.3), lineWidth: 1.0))
         .padding(Edge.Set.horizontal, Layout.pageMargin)
         // Sync local @State from static EntitlementManager.forceProOverride on appear.
         .task { isForceProOverride = EntitlementManager.forceProOverride }
@@ -405,7 +405,7 @@ public struct ProfileView: View {
     // type-checker resolve the surrounding HStack/.padding/.background/.cornerRadius
     // chain without timing out.
     private var privacyModeLabel: some View {
-        VStack(alignment: HorizontalAlignment.leading, spacing: 4) {
+        VStack(alignment: HorizontalAlignment.leading, spacing: 4.0) {
             Text("Privacy Mode")
                 .font(theme.font(13, weight: Font.Weight.medium))
                 .foregroundStyle(theme.textPrimary)
@@ -421,7 +421,7 @@ public struct ProfileView: View {
         // part of what made the type-checker choke on the whole HStack chain.
         let privacyRowBackground = theme.isLight ? Color.black.opacity(0.03) : Color.white.opacity(0.05)
 
-        return VStack(alignment: HorizontalAlignment.leading, spacing: 16) {
+        return VStack(alignment: HorizontalAlignment.leading, spacing: 16.0) {
             SectionLabel("Privacy & data")
 
             HStack {
@@ -431,12 +431,12 @@ public struct ProfileView: View {
                     .labelsHidden()
                     .tint(theme.accent)
             }
-            .padding(14)
+            .padding(14.0)
             .background(privacyRowBackground)
             .cornerRadius(14)
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
 
-            VStack(alignment: HorizontalAlignment.leading, spacing: 10) {
+            VStack(alignment: HorizontalAlignment.leading, spacing: 10.0) {
                 Picker("Format", selection: $exportFormat) {
                     ForEach(ExportFormat.allCases) { format in
                         Text(format.rawValue).tag(format)
@@ -450,7 +450,7 @@ public struct ProfileView: View {
                 if let exportURLs, !exportURLs.isEmpty {
                     #if !SKIP
                     ShareLink(items: exportURLs) {
-                        HStack(spacing: 10) {
+                        HStack(spacing: 10.0) {
                             Image(systemName: "square.and.arrow.up")
                             Text("EXPORT MY DATA")
                         }
@@ -459,7 +459,7 @@ public struct ProfileView: View {
                     #else
                     if let firstURL = exportURLs.first {
                         ShareLink(item: firstURL) {
-                            HStack(spacing: 10) {
+                            HStack(spacing: 10.0) {
                                 Image(systemName: "square.and.arrow.up")
                                 Text("EXPORT MY DATA")
                             }
@@ -469,7 +469,7 @@ public struct ProfileView: View {
                     #endif
                 } else {
                     Button(action: prepareExport) {
-                        HStack(spacing: 10) {
+                        HStack(spacing: 10.0) {
                             Image(systemName: "square.and.arrow.up")
                             Text("EXPORT MY DATA")
                         }
@@ -482,10 +482,10 @@ public struct ProfileView: View {
                     .foregroundStyle(theme.textTertiary)
             }
         }
-        .padding(20)
+        .padding(20.0)
         .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
         .cornerRadius(20)
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(theme.cardStroke, lineWidth: 1.0))
         .padding(Edge.Set.horizontal, Layout.pageMargin)
     }
 
@@ -524,8 +524,8 @@ public struct SecondaryCTAStyleModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content
             .font(Font.system(size: 15, weight: Font.Weight.semibold))
-            .padding(Edge.Set.vertical, 14)
-            .padding(Edge.Set.horizontal, 16)
+            .padding(Edge.Set.vertical, 14.0)
+            .padding(Edge.Set.horizontal, 16.0)
             .frame(maxWidth: CGFloat.infinity)
             .background(accent.opacity(0.12))
             .foregroundColor(accent)

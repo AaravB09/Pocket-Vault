@@ -17,13 +17,13 @@ public struct GuestSavePromptView: View {
 
     public var body: some View {
         ZStack {
-            VStack(spacing: 22) {
+            VStack(spacing: 22.0) {
                 Image.platformSymbol("exclamationmark.icloud.fill", android: "exclamationmark.triangle.fill")
                     .font(theme.font(34, weight: Font.Weight.light))
                     .foregroundStyle(theme.accent)
-                    .padding(Edge.Set.top, 50)
+                    .padding(Edge.Set.top, 50.0)
 
-                VStack(spacing: 8) {
+                VStack(spacing: 8.0) {
                     SectionLabel("Don't lose your progress")
 
                     Text("\(goalName) only lives on this device")

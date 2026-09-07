@@ -251,7 +251,7 @@ public final class ThemeManager: ObservableObject {
 // radius, and CTA width line up with each other and with the floating
 // dock — instead of screens picking their own one-off numbers (e.g. a
 // full-width CTA at `.padding(.horizontal, Layout.pageMargin)` sitting above a dock at
-// `.padding(.horizontal, 14)`, which is what made the two look like they
+// `.padding(.horizontal, 14.0)`, which is what made the two look like they
 // belonged to different apps).
 //
 // NOTE: literals below are written as `20.0` rather than `20` — Swift

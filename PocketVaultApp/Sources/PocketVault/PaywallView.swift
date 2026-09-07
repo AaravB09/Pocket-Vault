@@ -10,16 +10,16 @@ public struct FeatureRow: View {
     let description: String
 
     public var body: some View {
-        HStack(alignment: VerticalAlignment.top, spacing: 12) {
+        HStack(alignment: VerticalAlignment.top, spacing: 12.0) {
             Image.platformSymbol(icon, android: androidIcon ?? icon)
                 .font(theme.font(14, weight: Font.Weight.semibold))
                 .foregroundStyle(theme.accent)
-                .frame(width: 20, height: 20)
-                .padding(4)
+                .frame(width: 20.0, height: 20.0)
+                .padding(4.0)
                 .background(theme.accent.opacity(0.12))
                 .clipShape(Circle())
 
-            VStack(alignment: HorizontalAlignment.leading, spacing: 2) {
+            VStack(alignment: HorizontalAlignment.leading, spacing: 2.0) {
                 Text(title)
                     .font(theme.font(12, weight: Font.Weight.bold))
                     .foregroundStyle(Color.primary)
@@ -34,7 +34,7 @@ public struct FeatureRow: View {
 }
 
 private var pocketVaultFeatureList: some View {
-    VStack(alignment: HorizontalAlignment.leading, spacing: 16) {
+    VStack(alignment: HorizontalAlignment.leading, spacing: 16.0) {
         FeatureRow(
             icon: "sparkles",
             androidIcon: "star.fill",
@@ -136,8 +136,8 @@ public struct CustomPaywallView: View {
     // MARK: - Loaded state
 
     private var paywallContent: some View {
-        VStack(spacing: 22) {
-            VStack(spacing: 6) {
+        VStack(spacing: 22.0) {
+            VStack(spacing: 6.0) {
                 Text("POCKET VAULT")
                     .font(theme.font(10, weight: Font.Weight.bold))
                     .tracking(3)
@@ -146,10 +146,10 @@ public struct CustomPaywallView: View {
                     .font(theme.font(26, weight: Font.Weight.light))
                     .foregroundStyle(Color.primary)
             }
-            .padding(Edge.Set.top, 28)
+            .padding(Edge.Set.top, 28.0)
 
             if packages.count >= 2 {
-                HStack(spacing: 12) {
+                HStack(spacing: 12.0) {
                     ForEach(Array(packages.enumerated()), id: \.offset) { index, package in
                         PlanCard(
                             package: package,
@@ -172,19 +172,19 @@ public struct CustomPaywallView: View {
                     periodLabel: periodLabel(for: only),
                     onSelect: {}
                 )
-                .padding(Edge.Set.horizontal, 40)
+                .padding(Edge.Set.horizontal, 40.0)
             }
 
             pocketVaultFeatureList
-                .padding(20)
+                .padding(20.0)
                 .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .clipShape(RoundedRectangle(cornerRadius: 18.0))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(theme.cardStroke, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 18.0)
+                        .stroke(theme.cardStroke, lineWidth: 1.0)
                 )
-                .padding(Edge.Set.horizontal, 28)
-                .padding(Edge.Set.vertical, 8)
+                .padding(Edge.Set.horizontal, 28.0)
+                .padding(Edge.Set.vertical, 8.0)
 
             purchaseButton
 
@@ -260,7 +260,7 @@ public struct CustomPaywallView: View {
     // MARK: - Fallback (offerings not configured)
 
     private var notConfiguredState: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 16.0) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(theme.font(34, weight: Font.Weight.bold))
                 .foregroundStyle(theme.accent)
@@ -273,7 +273,7 @@ public struct CustomPaywallView: View {
                 .multilineTextAlignment(TextAlignment.center)
                 .padding(Edge.Set.horizontal, Layout.pageMargin)
             VaultButton("Close", variant: VaultButtonVariant.secondary, height: 36.0, fontSize: 12.0, fontWeight: Font.Weight.bold, action: { dismiss() })
-                .padding(Edge.Set.top, 8)
+                .padding(Edge.Set.top, 8.0)
         }
         .padding()
     }
@@ -366,7 +366,7 @@ public struct PlanCard: View {
             fullWidth: false,
             action: onSelect,
             label: AnyView(
-                VStack(spacing: 8) {
+                VStack(spacing: 8.0) {
                     Text(package.storeProduct.localizedTitle)
                         .font(theme.font(13, weight: Font.Weight.semibold))
                         .foregroundStyle(isSelected ? theme.accent : theme.textSecondary)
@@ -380,7 +380,7 @@ public struct PlanCard: View {
                                 .transition(AnyTransition.scale.combined(with: AnyTransition.opacity))
                         }
                         if revealReal {
-                            VStack(spacing: 2) {
+                            VStack(spacing: 2.0) {
                                 Text(fmt(realPrice))
                                     .font(theme.font(30, weight: Font.Weight.light))
                                     .foregroundStyle(theme.accent)
@@ -394,19 +394,19 @@ public struct PlanCard: View {
                             .transition(AnyTransition.scale.combined(with: AnyTransition.opacity))
                         }
                     }
-                    .frame(height: 56)
+                    .frame(height: 56.0)
                     .animation(Animation.spring(response: 0.55, dampingFraction: 0.7), value: revealReal)
                     Text(periodLabel)
                         .font(theme.font(11, weight: Font.Weight.medium))
                         .foregroundStyle(.tertiary)
                 }
                 .frame(maxWidth: CGFloat.infinity)
-                .padding(Edge.Set.vertical, 22)
-                .padding(Edge.Set.horizontal, 14)
+                .padding(Edge.Set.vertical, 22.0)
+                .padding(Edge.Set.horizontal, 14.0)
                 .background(.ultraThinMaterial)
-                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .clipShape(RoundedRectangle(cornerRadius: 18.0))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18)
+                    RoundedRectangle(cornerRadius: 18.0)
                         .stroke(isSelected ? theme.accent : theme.cardStroke, lineWidth: isSelected ? 2.5 : 1)
                 )
                 .shadow(color: Color.black.opacity(isSelected ? 0.14 : 0), radius: 12, y: 5)
@@ -484,8 +484,8 @@ public struct CustomPaywallView: View {
     // MARK: - Loaded state
 
     private var paywallContent: some View {
-        VStack(spacing: 22) {
-            VStack(spacing: 6) {
+        VStack(spacing: 22.0) {
+            VStack(spacing: 6.0) {
                 Text("POCKET VAULT")
                     .font(theme.font(10, weight: Font.Weight.bold))
                     .tracking(3)
@@ -494,10 +494,10 @@ public struct CustomPaywallView: View {
                     .font(theme.font(26, weight: Font.Weight.light))
                     .foregroundStyle(theme.textPrimary)
             }
-            .padding(Edge.Set.top, 28)
+            .padding(Edge.Set.top, 28.0)
 
             if packages.count >= 2 {
-                HStack(spacing: 12) {
+                HStack(spacing: 12.0) {
                     ForEach(Array(packages.enumerated()), id: \.offset) { index, pkg in
                         PlanCard(
                             pkg: pkg,
@@ -519,19 +519,19 @@ public struct CustomPaywallView: View {
                     periodLabel: periodLabel(for: only),
                     onSelect: {}
                 )
-                .padding(Edge.Set.horizontal, 40)
+                .padding(Edge.Set.horizontal, 40.0)
             }
 
             pocketVaultFeatureList
-                .padding(20)
+                .padding(20.0)
                 .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .clipShape(RoundedRectangle(cornerRadius: 18.0))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18)
-                        .stroke(theme.cardStroke, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 18.0)
+                        .stroke(theme.cardStroke, lineWidth: 1.0)
                 )
-                .padding(Edge.Set.horizontal, 28)
-                .padding(Edge.Set.vertical, 8)
+                .padding(Edge.Set.horizontal, 28.0)
+                .padding(Edge.Set.vertical, 8.0)
 
             purchaseButton
 
@@ -611,7 +611,7 @@ public struct CustomPaywallView: View {
     // MARK: - Fallback (offerings not configured)
 
     private var notConfiguredState: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 16.0) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(theme.font(34, weight: Font.Weight.bold))
                 .foregroundStyle(theme.accent)
@@ -624,7 +624,7 @@ public struct CustomPaywallView: View {
                 .multilineTextAlignment(TextAlignment.center)
                 .padding(Edge.Set.horizontal, Layout.pageMargin)
             VaultButton("Close", variant: VaultButtonVariant.secondary, height: 36.0, fontSize: 12.0, fontWeight: Font.Weight.bold, action: { dismiss() })
-                .padding(Edge.Set.top, 8)
+                .padding(Edge.Set.top, 8.0)
         }
         .padding()
     }
@@ -725,7 +725,7 @@ public struct PlanCard: View {
             fullWidth: false,
             action: onSelect,
             label: AnyView(
-                VStack(spacing: 8) {
+                VStack(spacing: 8.0) {
                     Text(pkg.storeProduct.localizedTitle)
                         .font(theme.font(13, weight: Font.Weight.semibold))
                         .foregroundStyle(isSelected ? theme.accent : theme.textSecondary)
@@ -739,7 +739,7 @@ public struct PlanCard: View {
                                 .transition(AnyTransition.scale.combined(with: AnyTransition.opacity))
                         }
                         if revealReal {
-                            VStack(spacing: 2) {
+                            VStack(spacing: 2.0) {
                                 Text(fmt(realPrice))
                                     .font(theme.font(30, weight: Font.Weight.light))
                                     .foregroundStyle(theme.accent)
@@ -753,19 +753,19 @@ public struct PlanCard: View {
                             .transition(AnyTransition.scale.combined(with: AnyTransition.opacity))
                         }
                     }
-                    .frame(height: 56)
+                    .frame(height: 56.0)
                     .animation(Animation.spring(response: 0.55, dampingFraction: 0.7), value: revealReal)
                     Text(periodLabel)
                         .font(theme.font(11, weight: Font.Weight.medium))
                         .foregroundStyle(Color.secondary)
                 }
                 .frame(maxWidth: CGFloat.infinity)
-                .padding(Edge.Set.vertical, 22)
-                .padding(Edge.Set.horizontal, 14)
+                .padding(Edge.Set.vertical, 22.0)
+                .padding(Edge.Set.horizontal, 14.0)
                 .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
-                .clipShape(RoundedRectangle(cornerRadius: 18))
+                .clipShape(RoundedRectangle(cornerRadius: 18.0))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 18)
+                    RoundedRectangle(cornerRadius: 18.0)
                         .stroke(isSelected ? theme.accent : theme.cardStroke, lineWidth: isSelected ? 2.5 : 1.0)
                 )
                 .shadow(color: Color.black.opacity(isSelected ? 0.14 : 0.0), radius: 12, y: 5)

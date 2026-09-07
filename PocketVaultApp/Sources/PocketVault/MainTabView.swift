@@ -333,7 +333,7 @@ public struct MainTabView: View {
     // `fixedBottomSafeInset` above for why. Android keeps its original,
     // never-buggy placement.
     private var tabBarView: some View {
-            HStack(spacing: 4) {
+            HStack(spacing: 4.0) {
                 LiquidTabButton(icon: "cube.fill", androidIcon: "house.fill", label: "Vault", isSelected: selectedTab == 0) {
                     selectedTab = 0
                 }
@@ -362,13 +362,13 @@ public struct MainTabView: View {
                     .transition(AnyTransition.scale.combined(with: AnyTransition.opacity))
                 }
             }
-            .padding(Edge.Set.horizontal, 12)
-            .padding(Edge.Set.vertical, 10)
+            .padding(Edge.Set.horizontal, 12.0)
+            .padding(Edge.Set.vertical, 10.0)
             .animation(Animation.spring(response: 0.4, dampingFraction: 0.75), value: hasActiveSharedBudget)
             .background(tabBarBlurBackground)
             .clipShape(Capsule())
             .overlay(
-                Capsule().stroke(themeManager.cardStroke, lineWidth: 1)
+                Capsule().stroke(themeManager.cardStroke, lineWidth: 1.0)
             )
             // PERF (Android): this dock is mounted on every tab and never
             // unmounts, so its `.shadow` gets re-evaluated on every
@@ -517,7 +517,7 @@ public struct MainTabView: View {
         .overlay(alignment: Alignment.top) {
             if !networkMonitor.isOnline {
                 OfflineBanner()
-                    .padding(Edge.Set.top, 54)
+                    .padding(Edge.Set.top, 54.0)
                     // Added explicit Edge type for Skip compiler
                     .transition(AnyTransition.move(edge: Edge.top).combined(with: AnyTransition.opacity))
             }
@@ -619,7 +619,7 @@ public struct AskAIBubble: View {
                 }
             )
             .padding(Edge.Set.trailing, Layout.pageMargin)
-            .padding(Edge.Set.bottom, 12)
+            .padding(Edge.Set.bottom, 12.0)
             .allowsHitTesting(true)
         #else
         // RealityView (and therefore this whole class of bug) is
@@ -674,7 +674,7 @@ public struct AskAIButton: View {
             tapCount += 1
             selectedTab = 4
         }) {
-            HStack(spacing: 8) {
+            HStack(spacing: 8.0) {
                 Image.platformSymbol("sparkles", android: "star.fill")
                     .font(themeManager.font(16, weight: Font.Weight.semibold))
                 if showsLabel {
@@ -683,19 +683,19 @@ public struct AskAIButton: View {
                 }
             }
             .foregroundStyle(themeManager.onAccent)
-            .padding(Edge.Set.vertical, 13)
+            .padding(Edge.Set.vertical, 13.0)
             .padding(Edge.Set.horizontal, showsLabel ? 16.0 : 13.0)
             .background(themeManager.accent)
             .clipShape(Capsule())
             .overlay(
-                Capsule().stroke(themeManager.onAccent.opacity(0.14), lineWidth: 1)
+                Capsule().stroke(themeManager.onAccent.opacity(0.14), lineWidth: 1.0)
             )
             .overlay(alignment: Alignment.topTrailing) {
                 if !isPro {
                     Image(systemName: "lock.fill")
                         .font(themeManager.font(8, weight: Font.Weight.bold))
                         .foregroundStyle(themeManager.accent)
-                        .padding(4)
+                        .padding(4.0)
                         .background(themeManager.onAccent)
                         .clipShape(Circle())
                         .offset(x: 4, y: -4)
@@ -743,7 +743,7 @@ public struct LiquidTabButton: View {
             #endif
             action()
         }) {
-            HStack(spacing: 6) {
+            HStack(spacing: 6.0) {
                 Image.platformSymbol(icon, android: androidIcon)
                     .font(themeManager.font(17, weight: isSelected ? Font.Weight.semibold : Font.Weight.regular))
                     .foregroundStyle(isSelected ? themeManager.onAccent : themeManager.textSecondary)
@@ -761,7 +761,7 @@ public struct LiquidTabButton: View {
                         #endif
                 }
             }
-            .padding(Edge.Set.vertical, 10)
+            .padding(Edge.Set.vertical, 10.0)
             .padding(Edge.Set.horizontal, isSelected ? 14.0 : 12.0)
             .frame(minWidth: 44)
             .background(isSelected ? themeManager.accent : Color.clear)

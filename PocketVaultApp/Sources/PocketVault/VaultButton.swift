@@ -274,10 +274,10 @@ public struct VaultButton: View {
 
     @ViewBuilder
     private var backgroundLayer: some View {
-        RoundedRectangle(cornerRadius: Layout.controlRadius, style: .continuous)
+        RoundedRectangle(cornerRadius: Layout.controlRadius, style: RoundedCornerStyle.continuous)
             .fill(backgroundFillColor)
             .overlay(
-                RoundedRectangle(cornerRadius: Layout.controlRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: Layout.controlRadius, style: RoundedCornerStyle.continuous)
                     .stroke(strokeColor, lineWidth: 1.0)
             )
             .shadow(
@@ -289,7 +289,7 @@ public struct VaultButton: View {
 
     @ViewBuilder
     private var flashOverlay: some View {
-        RoundedRectangle(cornerRadius: Layout.controlRadius, style: .continuous)
+        RoundedRectangle(cornerRadius: Layout.controlRadius, style: RoundedCornerStyle.continuous)
             .fill(flashFillColor)
             .opacity(isFlashing ? 0.18 : 0.0)
             .allowsHitTesting(false)
@@ -297,7 +297,7 @@ public struct VaultButton: View {
 
     @ViewBuilder
     private var focusRing: some View {
-        RoundedRectangle(cornerRadius: Layout.controlRadius + 3.0, style: .continuous)
+        RoundedRectangle(cornerRadius: Layout.controlRadius + 3.0, style: RoundedCornerStyle.continuous)
             .stroke(focusRingColor, lineWidth: isFocused ? 3.0 : 0.0)
             .padding(-3.0)
     }

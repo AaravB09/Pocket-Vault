@@ -56,7 +56,7 @@ struct PrivacyRevealOverlay: View {
 
     public var body: some View {
         Button(action: { privacy.reveal() }) {
-            VStack(spacing: 6) {
+            VStack(spacing: 6.0) {
                 Image.platformSymbol("eye.slash.fill", android: "lock.fill")
                     .font(theme.font(16, weight: Font.Weight.semibold))
                 Text("Tap to reveal")
@@ -67,7 +67,7 @@ struct PrivacyRevealOverlay: View {
             #else
             .foregroundStyle(Color.secondary)
             #endif
-            .padding(14)
+            .padding(14.0)
             // NOTE(skip): `.ultraThinMaterial` and `.clipShape` aren't
             // resolved by Skip's SwiftUI shim — iOS keeps the real
             // material + shape clip, Android gets a plain tinted
@@ -75,12 +75,12 @@ struct PrivacyRevealOverlay: View {
             // else in the app (LoginView, MainTabView, etc.).
             #if !SKIP
             .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .clipShape(RoundedRectangle(cornerRadius: 14.0))
             #else
             .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
             .cornerRadius(14)
             #endif
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
         }
     }
 }
@@ -111,7 +111,7 @@ struct PrivacyQuickToggleButton: View {
                     #else
                     .foregroundStyle(Color.secondary)
                     #endif
-                    .frame(width: 36, height: 36)
+                    .frame(width: 36.0, height: 36.0)
                     // NOTE(skip): same `.ultraThinMaterial`/`.clipShape`
                     // gap as PrivacyRevealOverlay above. `.clipShape(Circle())`
                     // isn't resolved under Skip either, so Android gets
@@ -125,7 +125,7 @@ struct PrivacyQuickToggleButton: View {
                     .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                     .cornerRadius(18)
                     #endif
-                    .overlay(Circle().stroke(theme.cardStroke, lineWidth: 1))
+                    .overlay(Circle().stroke(theme.cardStroke, lineWidth: 1.0))
             }
         }
     }

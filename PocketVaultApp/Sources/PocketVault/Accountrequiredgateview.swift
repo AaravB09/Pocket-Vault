@@ -21,6 +21,7 @@ public struct AccountRequiredGateView: View {
     init(featureName: String, message: String? = nil) {
         self.featureName = featureName
         self.message = message ?? "Sign in with a free account to use \(featureName) — it needs a verified identity so the data stays private between you and the people you choose."
+        self.showSignUp = false
     }
 
     public var body: some View {

@@ -16,7 +16,7 @@ public struct BudgetTrackerView: View {
     public var body: some View {
         ZStack {
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 22) {
+                VStack(spacing: 22.0) {
                     header
 
                     if let alertStatus = budgetManager.justCrossedThreshold {
@@ -35,7 +35,7 @@ public struct BudgetTrackerView: View {
 
                     transactionHistory
                 }
-                .padding(Edge.Set.bottom, 130)
+                .padding(Edge.Set.bottom, 130.0)
             }
         }
         // FIX: themedSurface() no longer takes `theme` as a parameter —
@@ -72,9 +72,9 @@ public struct BudgetTrackerView: View {
         // safe-area inset, and read as too much empty space specifically on
         // Android. iOS keeps the original 40.
         #if !SKIP
-        .padding(Edge.Set.top, 40)
+        .padding(Edge.Set.top, 40.0)
         #else
-        .padding(Edge.Set.top, 12)
+        .padding(Edge.Set.top, 12.0)
         #endif
     }
 
@@ -108,7 +108,7 @@ public struct BudgetTrackerView: View {
         let color = alertContent.1
         let message = alertContent.2
 
-        return HStack(spacing: 12) {
+        return HStack(spacing: 12.0) {
             Image(systemName: icon)
                 .font(theme.font(16, weight: Font.Weight.bold))
                 .foregroundStyle(color)
@@ -123,11 +123,11 @@ public struct BudgetTrackerView: View {
                     .foregroundStyle(Color.gray.opacity(0.5))
             }
         }
-        .padding(16)
+        .padding(16.0)
         .background(color.opacity(0.14))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 16.0))
         // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
-        .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 16).stroke(color.opacity(0.5), lineWidth: 1.2) }
+        .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 16.0).stroke(color.opacity(0.5), lineWidth: 1.2) }
         .padding(Edge.Set.horizontal, Layout.pageMargin)
         .transition(AnyTransition.move(edge: Edge.top).combined(with: AnyTransition.opacity))
     }
@@ -143,9 +143,9 @@ public struct BudgetTrackerView: View {
     }
 
     private var progressCard: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 18.0) {
             HStack {
-                VStack(alignment: HorizontalAlignment.leading, spacing: 4) {
+                VStack(alignment: HorizontalAlignment.leading, spacing: 4.0) {
                     SectionLabel("Spent this month")
                     Text("$\(Int(budgetManager.totalSpentThisMonth))")
                         .font(theme.font(34, weight: Font.Weight.light))
@@ -153,9 +153,9 @@ public struct BudgetTrackerView: View {
                 }
                 Spacer()
                 Button(action: { showLimitEditor = true }) {
-                    VStack(alignment: HorizontalAlignment.trailing, spacing: 4) {
+                    VStack(alignment: HorizontalAlignment.trailing, spacing: 4.0) {
                         SectionLabel("Limit")
-                        HStack(spacing: 4) {
+                        HStack(spacing: 4.0) {
                             Text("$\(Int(budgetManager.monthlyLimit))")
                                 .font(theme.font(16, weight: Font.Weight.semibold))
                                 .foregroundStyle(theme.accent)
@@ -197,7 +197,7 @@ public struct BudgetTrackerView: View {
                         .frame(width: geo.size.width * CGFloat(budgetManager.percentUsed > 1.0 ? 1.0 : budgetManager.percentUsed))
                 }
             }
-            .frame(height: 10)
+            .frame(height: 10.0)
 
             HStack {
                 // FIX: same generic-min issue as above.
@@ -212,7 +212,7 @@ public struct BudgetTrackerView: View {
             .blur(radius: privacy.shouldMask ? 6.0 : 0.0)
 
             Button(action: { showAddSheet = true }) {
-                HStack(spacing: 8) {
+                HStack(spacing: 8.0) {
                     Image(systemName: "plus.circle.fill")
                     Text("Log a payment")
                 }
@@ -223,14 +223,14 @@ public struct BudgetTrackerView: View {
             .buttonStyle(BorderedProminentButtonStyle())
             #endif
         }
-        .padding(20)
+        .padding(20.0)
         // NOTE(skip): .ultraThinMaterial has no Android/Compose equivalent
         // and was unresolved, which cascaded into the .clipShape error
         // right below it. Swapped for a themed translucent fill instead.
         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: 20.0))
         // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
-        .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1) }
+        .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 20.0).stroke(theme.cardStroke, lineWidth: 1.0) }
         .padding(Edge.Set.horizontal, Layout.pageMargin)
     }
 
@@ -244,17 +244,17 @@ public struct BudgetTrackerView: View {
 
         return Group {
             if !nonZero.isEmpty {
-                VStack(alignment: HorizontalAlignment.leading, spacing: 12) {
+                VStack(alignment: HorizontalAlignment.leading, spacing: 12.0) {
                     SectionLabel("By category")
                         .padding(Edge.Set.horizontal, Layout.pageMargin)
 
-                    VStack(spacing: 10) {
+                    VStack(spacing: 10.0) {
                         ForEach(nonZero, id: \.0) { category, amount in
-                            HStack(spacing: 12) {
+                            HStack(spacing: 12.0) {
                                 Image(systemName: category.icon)
                                     .font(theme.font(13))
                                     .foregroundStyle(theme.accent)
-                                    .frame(width: 26)
+                                    .frame(width: 26.0)
                                 Text(category.displayName)
                                     .font(theme.font(12, weight: Font.Weight.medium))
                                     .foregroundStyle(Color.primary)
@@ -263,10 +263,10 @@ public struct BudgetTrackerView: View {
                                     .font(theme.font(13, weight: Font.Weight.semibold))
                                     .foregroundStyle(Color.primary)
                             }
-                            .padding(Edge.Set.horizontal, 16)
-                            .padding(Edge.Set.vertical, 12)
+                            .padding(Edge.Set.horizontal, 16.0)
+                            .padding(Edge.Set.vertical, 12.0)
                             .background(theme.isLight ? Color.black.opacity(0.03) : Color.white.opacity(0.05))
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .clipShape(RoundedRectangle(cornerRadius: 14.0))
                         }
                     }
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
@@ -284,18 +284,18 @@ public struct BudgetTrackerView: View {
                     .font(theme.font(13, weight: Font.Weight.light))
                     .foregroundStyle(Color.secondary) // was .tertiary
                     .multilineTextAlignment(TextAlignment.center)
-                    .padding(Edge.Set.horizontal, 40)
-                    .padding(Edge.Set.top, 20)
+                    .padding(Edge.Set.horizontal, 40.0)
+                    .padding(Edge.Set.top, 20.0)
             } else {
-                VStack(alignment: HorizontalAlignment.leading, spacing: 18) {
+                VStack(alignment: HorizontalAlignment.leading, spacing: 18.0) {
                     ForEach(budgetManager.transactionsByDay, id: \.date) { day in
-                        VStack(alignment: HorizontalAlignment.leading, spacing: 8) {
+                        VStack(alignment: HorizontalAlignment.leading, spacing: 8.0) {
                             Text(dayLabel(day.date))
                                 .font(theme.font(12, weight: Font.Weight.semibold))
                                 .foregroundStyle(Color.secondary) // was .tertiary
                                 .padding(Edge.Set.horizontal, Layout.pageMargin)
 
-                            VStack(spacing: 8) {
+                            VStack(spacing: 8.0) {
                                 ForEach(day.items) { item in
                                     TransactionRow(item: item, onDelete: {
                                         budgetManager.deleteTransaction(item.id)
@@ -354,9 +354,9 @@ public struct TransactionRow: View {
                     Image(systemName: "trash.fill")
                         .font(theme.font(15, weight: Font.Weight.semibold))
                         .foregroundStyle(Color.white)
-                        .frame(width: revealWidth, height: 44)
+                        .frame(width: revealWidth, height: 44.0)
                         .background(theme.danger)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .clipShape(RoundedRectangle(cornerRadius: 14.0))
                 }
             }
 
@@ -394,15 +394,15 @@ public struct TransactionRow: View {
     }
 
     private var rowContent: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 12.0) {
             ZStack {
-                Circle().fill(theme.accent.opacity(0.15)).frame(width: 34, height: 34)
+                Circle().fill(theme.accent.opacity(0.15)).frame(width: 34.0, height: 34.0)
                 Image(systemName: item.category.icon)
                     .font(theme.font(13))
                     .foregroundStyle(theme.accent)
             }
-            VStack(alignment: HorizontalAlignment.leading, spacing: 2) {
-                HStack(spacing: 6) {
+            VStack(alignment: HorizontalAlignment.leading, spacing: 2.0) {
+                HStack(spacing: 6.0) {
                     Text(item.note.isEmpty ? item.category.displayName : item.note)
                         .font(theme.font(13, weight: Font.Weight.medium))
                         .foregroundStyle(Color.primary)
@@ -422,13 +422,13 @@ public struct TransactionRow: View {
                 .font(theme.font(13, weight: Font.Weight.semibold))
                 .foregroundStyle(Color.primary)
         }
-        .padding(Edge.Set.vertical, 10)
-        .padding(Edge.Set.horizontal, 14)
+        .padding(Edge.Set.vertical, 10.0)
+        .padding(Edge.Set.horizontal, 14.0)
         // NOTE(skip): same Material swap as progressCard above.
         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
-        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .clipShape(RoundedRectangle(cornerRadius: 14.0))
         // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
-        .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1) }
+        .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0) }
     }
 
     private func timeLabel(_ date: Date) -> String {
@@ -457,7 +457,7 @@ public struct AddPaymentSheet: View {
     public var body: some View {
         ZStack {
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: 24.0) {
                     HStack {
                         Spacer()
                         Button(action: { dismiss() }) {
@@ -466,17 +466,17 @@ public struct AddPaymentSheet: View {
                                 .foregroundStyle(Color.secondary) // was .tertiary
                         }
                     }
-                    .padding(Edge.Set.horizontal, 20)
-                    .padding(Edge.Set.top, 20)
+                    .padding(Edge.Set.horizontal, 20.0)
+                    .padding(Edge.Set.top, 20.0)
 
-                    VStack(spacing: 4) {
+                    VStack(spacing: 4.0) {
                         SectionLabel("Log payment")
                         Text("What did you spend?")
                             .font(theme.font(22, weight: Font.Weight.semibold))
                             .foregroundStyle(Color.primary)
                     }
 
-                    VStack(spacing: 6) {
+                    VStack(spacing: 6.0) {
                         SectionLabel("Amount ($)")
                         TextField("0", text: $amountText)
                             .keyboardType(UIKeyboardType.decimalPad)
@@ -485,14 +485,14 @@ public struct AddPaymentSheet: View {
                             .foregroundStyle(Color.primary)
                     }
 
-                    VStack(alignment: HorizontalAlignment.leading, spacing: 10) {
+                    VStack(alignment: HorizontalAlignment.leading, spacing: 10.0) {
                         SectionLabel("Category")
                             .padding(Edge.Set.horizontal, Layout.pageMargin)
 
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 96))], spacing: 10) {
+                        LazyVGrid(columns: [GridItem(GridItem.Size.adaptive(minimum: 96))], spacing: 10.0) {
                             ForEach(SpendCategory.allCases) { category in
                                 Button(action: { selectedCategory = category }) {
-                                    VStack(spacing: 6) {
+                                    VStack(spacing: 6.0) {
                                         Image(systemName: category.icon)
                                             .font(theme.font(16))
                                         Text(category.displayName)
@@ -500,28 +500,28 @@ public struct AddPaymentSheet: View {
                                     }
                                     .foregroundStyle(selectedCategory == category ? theme.onAccent : theme.textPrimary)
                                     .frame(maxWidth: CGFloat.infinity)
-                                    .padding(Edge.Set.vertical, 14)
+                                    .padding(Edge.Set.vertical, 14.0)
                                     .background(selectedCategory == category ? theme.accent : (theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06)))
-                                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                                    .clipShape(RoundedRectangle(cornerRadius: 14.0))
                                     // FIX: Pass Double(0) explicitly so Skip's Kotlin codegen doesn't mix up Int and Double
-                                    .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 14).stroke(theme.accent.opacity(selectedCategory == category ? Double(0) : 0.25), lineWidth: 1) }
+                                    .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 14.0).stroke(theme.accent.opacity(selectedCategory == category ? Double(0) : 0.25), lineWidth: 1.0) }
                                 }
                             }
                         }
                         .padding(Edge.Set.horizontal, Layout.pageMargin)
                     }
 
-                    VStack(alignment: HorizontalAlignment.leading, spacing: 8) {
+                    VStack(alignment: HorizontalAlignment.leading, spacing: 8.0) {
                         SectionLabel("Note (optional)")
 
                         TextField("e.g. Grocery run", text: $note)
                             .foregroundStyle(Color.primary)
-                            .padding(14)
+                            .padding(14.0)
                             // NOTE(skip): same Material swap.
                             .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .clipShape(RoundedRectangle(cornerRadius: 14.0))
                             // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
-                            .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1) }
+                            .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0) }
                     }
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
@@ -543,7 +543,7 @@ public struct AddPaymentSheet: View {
                     .disabled(!isValid)
                     .opacity(isValid ? 1.0 : 0.4)
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
-                    .padding(Edge.Set.bottom, 50)
+                    .padding(Edge.Set.bottom, 50.0)
                 }
             }
         }
@@ -568,7 +568,7 @@ public struct LimitEditorSheet: View {
 
     public var body: some View {
         ZStack {
-            VStack(spacing: 24) {
+            VStack(spacing: 24.0) {
                 HStack {
                     Spacer()
                     Button(action: { dismiss() }) {
@@ -578,9 +578,9 @@ public struct LimitEditorSheet: View {
                     }
                 }
                 .padding(Edge.Set.horizontal, Layout.pageMargin)
-                .padding(Edge.Set.top, 20)
+                .padding(Edge.Set.top, 20.0)
 
-                VStack(spacing: 4) {
+                VStack(spacing: 4.0) {
                     SectionLabel("Monthly limit")
                     Text("Set your spending cap")
                         .font(theme.font(22, weight: Font.Weight.semibold))
@@ -597,7 +597,7 @@ public struct LimitEditorSheet: View {
                     .font(theme.font(12, weight: Font.Weight.light))
                     .foregroundStyle(Color.secondary) // was .tertiary
                     .multilineTextAlignment(TextAlignment.center)
-                    .padding(Edge.Set.horizontal, 40)
+                    .padding(Edge.Set.horizontal, 40.0)
 
                 Spacer()
 
@@ -616,7 +616,7 @@ public struct LimitEditorSheet: View {
                 .disabled(!isValid)
                 .opacity(isValid ? 1.0 : 0.4)
                 .padding(Edge.Set.horizontal, Layout.pageMargin)
-                .padding(Edge.Set.bottom, 50)
+                .padding(Edge.Set.bottom, 50.0)
             }
         }
         // FIX: see the note in BudgetTrackerView.body above — themedSurface()

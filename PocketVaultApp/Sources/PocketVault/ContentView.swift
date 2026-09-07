@@ -91,9 +91,9 @@ public struct ContentView: View {
                 .allowsHitTesting(false)
 
                 ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
+                    VStack(spacing: 0.0) {
                         // MARK: - Top Header Block
-                        VStack(spacing: 16) {
+                        VStack(spacing: 16.0) {
                             // 1. Row 1: Profile & Greeting / Pro Status Only
                             HStack {
                                 Button(action: { showProfile = true }) {
@@ -102,19 +102,19 @@ public struct ContentView: View {
                                             Image(uiImage: uiImage)
                                                 .resizable()
                                                 .scaledToFill()
-                                                .frame(width: 40, height: 40)
+                                                .frame(width: 40.0, height: 40.0)
                                                 .clipShape(Circle())
                                         } else {
                                             Circle()
                                                 .fill(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
-                                                .frame(width: 40, height: 40)
+                                                .frame(width: 40.0, height: 40.0)
                                             Image(systemName: "person.fill")
                                                 .font(theme.font(15, weight: Font.Weight.light))
                                                 .foregroundStyle(theme.accent)
                                         }
                                         Circle()
-                                            .stroke(theme.cardStroke, lineWidth: 1)
-                                            .frame(width: 40, height: 40)
+                                            .stroke(theme.cardStroke, lineWidth: 1.0)
+                                            .frame(width: 40.0, height: 40.0)
                                     }
                                 }
 
@@ -137,7 +137,7 @@ public struct ContentView: View {
 
                                 Spacer()
 
-                                HStack(spacing: 10) {
+                                HStack(spacing: 10.0) {
                                     HeaderIconButton(systemName: "calendar") { selectedTab = 2 }
                                     PrivacyQuickToggleButton()
                                 }
@@ -155,7 +155,7 @@ public struct ContentView: View {
                                         showSetupGoalSheet = true
                                     },
                                     label: AnyView(
-                                        HStack(spacing: 8) {
+                                        HStack(spacing: 8.0) {
                                             Image.platformSymbol(goalKind.displayIcon, android: goalKind.androidDisplayIcon)
                                                 .font(theme.font(13, weight: Font.Weight.medium))
                                                 .foregroundStyle(theme.accent)
@@ -168,8 +168,8 @@ public struct ContentView: View {
                                                 .font(theme.font(10, weight: Font.Weight.semibold))
                                                 .foregroundStyle(theme.textTertiary)
                                         }
-                                        .padding(Edge.Set.horizontal, 16)
-                                        .padding(Edge.Set.vertical, 8)
+                                        .padding(Edge.Set.horizontal, 16.0)
+                                        .padding(Edge.Set.vertical, 8.0)
                                     )
                                 )
 
@@ -180,7 +180,7 @@ public struct ContentView: View {
                         #if !SKIP
                         .padding(Edge.Set.top, topInset + 25)
                         #else
-                        .padding(Edge.Set.top, 12)
+                        .padding(Edge.Set.top, 12.0)
                         #endif
 
                         // Goal Picker
@@ -193,11 +193,11 @@ public struct ContentView: View {
                             newGoalVoxelBlueprintJSON = nil
                             showAddGoalSheet = true
                         }
-                        .padding(Edge.Set.top, 16)
+                        .padding(Edge.Set.top, 16.0)
 
                         // Editorial Hero Progress Text
                         ZStack {
-                            VStack(spacing: 4) {
+                            VStack(spacing: 4.0) {
                                 Text("\(Int(displayProgress * 100))%")
                                     #if !SKIP
                                     .font(theme.font(92, weight: Font.Weight.ultraLight))
@@ -212,7 +212,7 @@ public struct ContentView: View {
                                         )
                                     )
 
-                                HStack(spacing: 8) {
+                                HStack(spacing: 8.0) {
                                     Text("$\(Int(currentSavings))")
                                         .font(theme.font(16, weight: Font.Weight.medium))
                                         .foregroundStyle(theme.accent)
@@ -226,7 +226,7 @@ public struct ContentView: View {
                                     Text("Head start for creating your goal — deposit to keep it moving")
                                         .font(theme.font(9, weight: Font.Weight.light))
                                         .foregroundStyle(Color.secondary)
-                                        .padding(Edge.Set.top, 2)
+                                        .padding(Edge.Set.top, 2.0)
                                 }
 
                                 // Minimalist Hairline Progress Line
@@ -240,9 +240,9 @@ public struct ContentView: View {
                                             .frame(width: geo.size.width * CGFloat(displayProgress))
                                     }
                                 }
-                                .frame(height: 2)
-                                .padding(Edge.Set.horizontal, 80)
-                                .padding(Edge.Set.top, 12)
+                                .frame(height: 2.0)
+                                .padding(Edge.Set.horizontal, 80.0)
+                                .padding(Edge.Set.top, 12.0)
                             }
                             #if !SKIP
                             .blur(radius: privacy.shouldMask ? 14.0 : 0.0)
@@ -257,9 +257,9 @@ public struct ContentView: View {
                                 .offset(y: -20)
                         }
                         #if !SKIP
-                        .padding(Edge.Set.top, 20)
+                        .padding(Edge.Set.top, 20.0)
                         #else
-                        .padding(Edge.Set.top, 12)
+                        .padding(Edge.Set.top, 12.0)
                         #endif
 
                         SavingsTrendChart(
@@ -267,9 +267,9 @@ public struct ContentView: View {
                             targetAmount: targetGoal
                         )
                         #if !SKIP
-                        .padding(Edge.Set.top, 24)
+                        .padding(Edge.Set.top, 24.0)
                         #else
-                        .padding(Edge.Set.top, 14)
+                        .padding(Edge.Set.top, 14.0)
                         #endif
 
                         HStack {
@@ -278,9 +278,9 @@ public struct ContentView: View {
                         }
                         .padding(Edge.Set.horizontal, Layout.pageMargin)
                         #if !SKIP
-                        .padding(Edge.Set.top, 16)
+                        .padding(Edge.Set.top, 16.0)
                         #else
-                        .padding(Edge.Set.top, 10)
+                        .padding(Edge.Set.top, 10.0)
                         #endif
 
                         Spacer()
@@ -289,7 +289,7 @@ public struct ContentView: View {
                             Text("Deposit funds")
                         }
                         .padding(Edge.Set.horizontal, Layout.pageMargin)
-                        .padding(Edge.Set.bottom, 24)
+                        .padding(Edge.Set.bottom, 24.0)
                     }
                     .frame(minHeight: rootGeo.size.height)
                 }
@@ -396,14 +396,14 @@ public struct AestheticDepositModalView: View {
                     }
                 }
 
-            VStack(spacing: 28) {
+            VStack(spacing: 28.0) {
                 Text("Add a deposit")
                     .font(theme.font(22, weight: Font.Weight.bold))
                     .foregroundStyle(theme.textPrimary)
-                    .padding(Edge.Set.top, 40)
+                    .padding(Edge.Set.top, 40.0)
 
                 // Quick Amount Chips
-                HStack(spacing: 12) {
+                HStack(spacing: 12.0) {
                     ForEach(quickAmounts, id: \.self) { amt in
                         VaultButton(
                             "+$\(Int(amt))",
@@ -422,7 +422,7 @@ public struct AestheticDepositModalView: View {
                 }
 
                 // Amount Input
-                VStack(spacing: 6) {
+                VStack(spacing: 6.0) {
                     SectionLabel("Amount ($)")
 
                     TextField("Amount", text: $customAmount)
@@ -443,7 +443,7 @@ public struct AestheticDepositModalView: View {
                     Text("Confirm deposit")
                 }
                 .padding(Edge.Set.horizontal, Layout.pageMargin)
-                .padding(Edge.Set.bottom, 44)
+                .padding(Edge.Set.bottom, 44.0)
             }
         }
         .themedSurface(ignoresSafeArea: true)
@@ -480,14 +480,14 @@ public struct AestheticDepositModalView: View {
         }
         #else
         GeometryReader { geo in
-            RoundedRectangle(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: 24.0)
                 .fill(
                     LinearGradient(
                         colors: [theme.accent.opacity(0.35), theme.accent.opacity(0.05)],
                         startPoint: UnitPoint.topLeading, endPoint: UnitPoint.bottomTrailing
                     )
                 )
-                .frame(width: 140, height: 140)
+                .frame(width: 140.0, height: 140.0)
                 .rotation3DEffect(Angle.radians(Double(artifactRotation)), axis: (x: 0, y: 1, z: 0))
                 .position(x: geo.size.width / 2, y: geo.size.height * 0.32)
                 .blur(radius: 2)

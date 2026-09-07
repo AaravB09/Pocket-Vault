@@ -88,7 +88,7 @@ public struct SavingsTrendChart: View {
     }
 
     public var body: some View {
-        VStack(alignment: HorizontalAlignment.leading, spacing: 16) {
+        VStack(alignment: HorizontalAlignment.leading, spacing: 16.0) {
             header
 
             if visiblePoints.count >= 2 {
@@ -101,9 +101,9 @@ public struct SavingsTrendChart: View {
                     // (before this, the inset bug alone was already
                     // eating the height difference several times over).
                     #if !SKIP
-                    .frame(height: 150)
+                    .frame(height: 150.0)
                     #else
-                    .frame(height: 110)
+                    .frame(height: 110.0)
                     #endif
 
                 rangePicker
@@ -123,7 +123,7 @@ public struct SavingsTrendChart: View {
         .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
         .cornerRadius(Layout.cardRadius)
         #endif
-        .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1.0))
         .padding(Edge.Set.horizontal, Layout.pageMargin)
         // NOTE(skip): `.blur` isn't implemented under Skip at all. The
         // PrivacyRevealOverlay below already covers the content when
@@ -144,7 +144,7 @@ public struct SavingsTrendChart: View {
 
     private var header: some View {
         HStack(alignment: VerticalAlignment.top) {
-            VStack(alignment: HorizontalAlignment.leading, spacing: 4) {
+            VStack(alignment: HorizontalAlignment.leading, spacing: 4.0) {
                 Text("Savings trend")
                     .font(theme.font(12, weight: Font.Weight.semibold))
                     .foregroundStyle(theme.textTertiary)
@@ -167,15 +167,15 @@ public struct SavingsTrendChart: View {
             Spacer()
 
             if visiblePoints.count >= 2 {
-                HStack(spacing: 4) {
+                HStack(spacing: 4.0) {
                     Image(systemName: isPositive ? "arrow.up.right" : "arrow.down.right")
                         .font(theme.font(10, weight: Font.Weight.bold))
                     Text("\(isPositive ? "+" : "-")$\(Int(abs(windowDelta)))")
                         .font(theme.font(12, weight: Font.Weight.semibold))
                 }
                 .foregroundStyle(isPositive ? theme.success : theme.danger)
-                .padding(Edge.Set.horizontal, 10)
-                .padding(Edge.Set.vertical, 6)
+                .padding(Edge.Set.horizontal, 10.0)
+                .padding(Edge.Set.vertical, 6.0)
                 .background((isPositive ? theme.success : theme.danger).opacity(0.14))
                 // NOTE(skip): same clipShape-only fix as the main card —
                 // background here is already theme-agnostic.
@@ -229,7 +229,7 @@ public struct SavingsTrendChart: View {
             }
 
             RuleMark(y: .value("Target", targetAmount))
-                .lineStyle(StrokeStyle(lineWidth: 1, dash: [4.0, 4.0]))
+                .lineStyle(StrokeStyle(lineWidth: 1.0, dash: [4.0, 4.0]))
                 .foregroundStyle(theme.textTertiary.opacity(0.6))
                 .annotation(position: .top, alignment: Alignment.trailing) {
                     Text("Goal")
@@ -260,7 +260,7 @@ public struct SavingsTrendChart: View {
 
             if let scrubbed = scrubbedPoint {
                 RuleMark(x: .value("Date", scrubbed.date))
-                    .lineStyle(StrokeStyle(lineWidth: 1))
+                    .lineStyle(StrokeStyle(lineWidth: 1.0))
                     .foregroundStyle(theme.textTertiary.opacity(0.5))
 
                 PointMark(
@@ -385,7 +385,7 @@ public struct SavingsTrendChart: View {
                         path.move(to: CGPoint(x: 0, y: y))
                         path.addLine(to: CGPoint(x: size.width, y: y))
                     }
-                    .stroke(theme.textTertiary.opacity(0.6), style: StrokeStyle(lineWidth: 1, dash: [4.0, 4.0]))
+                    .stroke(theme.textTertiary.opacity(0.6), style: StrokeStyle(lineWidth: 1.0, dash: [4.0, 4.0]))
 
                     Text("Goal")
                         .font(theme.font(10, weight: Font.Weight.semibold))
@@ -395,8 +395,8 @@ public struct SavingsTrendChart: View {
                     // Today marker, unless actively scrubbing
                     if scrubbedPoint == nil, let latest = points.last {
                         let p = CGPoint(x: xPos(latest), y: yPos(latest.amount))
-                        Circle().fill(theme.accent).frame(width: 12, height: 12).position(p)
-                        Circle().fill(theme.onAccent).frame(width: 5, height: 5).position(p)
+                        Circle().fill(theme.accent).frame(width: 12.0, height: 12.0).position(p)
+                        Circle().fill(theme.onAccent).frame(width: 5.0, height: 5.0).position(p)
                     }
 
                     // Scrub marker
@@ -406,11 +406,11 @@ public struct SavingsTrendChart: View {
                             path.move(to: CGPoint(x: x, y: 0))
                             path.addLine(to: CGPoint(x: x, y: size.height))
                         }
-                        .stroke(theme.textTertiary.opacity(0.5), lineWidth: 1)
+                        .stroke(theme.textTertiary.opacity(0.5), lineWidth: 1.0)
 
                         Circle()
                             .fill(theme.accent)
-                            .frame(width: 14, height: 14)
+                            .frame(width: 14.0, height: 14.0)
                             .position(x: x, y: yPos(scrubbed.amount))
                     }
                 }
@@ -446,7 +446,7 @@ public struct SavingsTrendChart: View {
     // MARK: - Range picker
 
     private var rangePicker: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 6.0) {
             ForEach(TrendRange.allCases) { range in
                 Button(action: {
                     #if !SKIP
@@ -461,7 +461,7 @@ public struct SavingsTrendChart: View {
                         .tracking(0.5)
                         .foregroundStyle(selectedRange == range ? theme.onAccent : theme.textSecondary)
                         .frame(maxWidth: CGFloat.infinity)
-                        .padding(Edge.Set.vertical, 8)
+                        .padding(Edge.Set.vertical, 8.0)
                         .background(selectedRange == range ? theme.accent : Color.clear)
                         // NOTE(skip): same clipShape-only fix as elsewhere
                         // in this file — background is already
@@ -479,7 +479,7 @@ public struct SavingsTrendChart: View {
     // MARK: - Empty state
 
     private var emptyState: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 6.0) {
             Image.platformSymbol("chart.line.uptrend.xyaxis", android: "arrow.forward")
                 .font(theme.font(20))
                 .foregroundStyle(theme.textTertiary)
@@ -489,7 +489,7 @@ public struct SavingsTrendChart: View {
                 .multilineTextAlignment(TextAlignment.center)
         }
         .frame(maxWidth: CGFloat.infinity)
-        .padding(Edge.Set.vertical, 24)
+        .padding(Edge.Set.vertical, 24.0)
     }
 
     private func formatted(_ date: Date) -> String {

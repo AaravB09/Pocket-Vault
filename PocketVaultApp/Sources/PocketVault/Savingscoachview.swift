@@ -95,7 +95,7 @@ public struct SavingsCoachView: View {
     public var body: some View {
         ZStack {
             ScrollView {
-                VStack(spacing: 26) {
+                VStack(spacing: 26.0) {
                     HStack {
                         Spacer()
                         Button(action: { dismiss() }) {
@@ -104,10 +104,10 @@ public struct SavingsCoachView: View {
                                 .foregroundStyle(theme.textTertiary)
                         }
                     }
-                    .padding(Edge.Set.horizontal, 20)
-                    .padding(Edge.Set.top, 20)
+                    .padding(Edge.Set.horizontal, 20.0)
+                    .padding(Edge.Set.top, 20.0)
 
-                    VStack(spacing: 4) {
+                    VStack(spacing: 4.0) {
                         Text("SAVINGS COACH")
                             .font(theme.font(10, weight: Font.Weight.bold))
                             .tracking(3)
@@ -118,12 +118,12 @@ public struct SavingsCoachView: View {
                     }
 
                     if plan == nil {
-                        VStack(spacing: 18) {
+                        VStack(spacing: 18.0) {
                             Text("Tell me when you want to hit your goal and I'll build a tailored plan to get you there.")
                                 .font(theme.font(13, weight: Font.Weight.light))
                                 .foregroundStyle(theme.textSecondary)
                                 .multilineTextAlignment(TextAlignment.center)
-                                .padding(Edge.Set.horizontal, 30)
+                                .padding(Edge.Set.horizontal, 30.0)
 
                             // Fix: Explicitly typing `DatePickerComponents.date`
                             DatePicker("Target date", selection: $targetDate, in: Date()...Date.distantFuture, displayedComponents: DatePickerComponents.date)
@@ -132,7 +132,7 @@ public struct SavingsCoachView: View {
                                 #endif
                                 .tint(theme.accent)
                                 .colorScheme(theme.isLight ? ColorScheme.light : ColorScheme.dark)
-                                .padding(16)
+                                .padding(16.0)
                                 // NOTE(skip): `.ultraThinMaterial` and `.clipShape`
                                 // aren't resolved by Skip's SwiftUI shim — iOS keeps
                                 // the real material + shape clip, Android gets a
@@ -140,12 +140,12 @@ public struct SavingsCoachView: View {
                                 // pattern used everywhere else in the app.
                                 #if !SKIP
                                 .background(.ultraThinMaterial)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
+                                .clipShape(RoundedRectangle(cornerRadius: 16.0))
                                 #else
                                 .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                                 .cornerRadius(16)
                                 #endif
-                                .padding(Edge.Set.horizontal, 24)
+                                .padding(Edge.Set.horizontal, 24.0)
 
                             Button(action: { Task { await requestPlan() } }) {
                                 HStack {
@@ -155,7 +155,7 @@ public struct SavingsCoachView: View {
                                         .tracking(2.8)
                                 }
                                 .frame(maxWidth: CGFloat.infinity)
-                                .padding(Edge.Set.vertical, 19)
+                                .padding(Edge.Set.vertical, 19.0)
                                 .background(theme.accent)
                                 .foregroundColor(theme.onAccent)
                                 // NOTE(skip): background here is already
@@ -169,14 +169,14 @@ public struct SavingsCoachView: View {
                                 .shadow(color: theme.accent.opacity(0.5), radius: 18, y: 8)
                             }
                             .disabled(isLoading)
-                            .padding(Edge.Set.horizontal, 30)
+                            .padding(Edge.Set.horizontal, 30.0)
 
                             if let errorMessage {
                                 Text(errorMessage)
                                     .font(theme.font(11))
                                     .foregroundStyle(theme.danger.opacity(0.9))
                                     .multilineTextAlignment(TextAlignment.center)
-                                    .padding(Edge.Set.horizontal, 30)
+                                    .padding(Edge.Set.horizontal, 30.0)
                             }
                         }
                     } else {
@@ -191,8 +191,8 @@ public struct SavingsCoachView: View {
     }
 
     private var planCard: some View {
-        VStack(alignment: HorizontalAlignment.leading, spacing: 16) {
-            HStack(spacing: 8) {
+        VStack(alignment: HorizontalAlignment.leading, spacing: 16.0) {
+            HStack(spacing: 8.0) {
                 Image.platformSymbol("sparkles", android: "star.fill")
                     .foregroundStyle(theme.accent)
                 Text("YOUR TAILORED PLAN")
@@ -214,7 +214,7 @@ public struct SavingsCoachView: View {
                     .font(theme.font(11, weight: Font.Weight.bold))
                     .tracking(2)
                     .frame(maxWidth: CGFloat.infinity)
-                    .padding(Edge.Set.vertical, 16)
+                    .padding(Edge.Set.vertical, 16.0)
                     .background(theme.textPrimary)
                     .foregroundColor(theme.background)
                     // NOTE(skip): same clipShape-only fix as the
@@ -226,18 +226,18 @@ public struct SavingsCoachView: View {
                     .cornerRadius(100)
                     #endif
             }
-            .padding(Edge.Set.top, 8)
+            .padding(Edge.Set.top, 8.0)
         }
-        .padding(20)
+        .padding(20.0)
         #if !SKIP
         .background(.ultraThinMaterial)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
+        .clipShape(RoundedRectangle(cornerRadius: 20.0))
         #else
         .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
         .cornerRadius(20)
         #endif
-        .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
-        .padding(Edge.Set.horizontal, 24)
+        .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(theme.cardStroke, lineWidth: 1.0))
+        .padding(Edge.Set.horizontal, 24.0)
     }
 
     private func requestPlan() async {

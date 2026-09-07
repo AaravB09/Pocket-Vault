@@ -129,7 +129,7 @@ public struct AIChatView: View {
 
     private var lockedState: some View {
         ZStack(alignment: Alignment.topTrailing) {
-            VStack(spacing: 18) {
+            VStack(spacing: 18.0) {
                 // FIX (Android "weird, landscape-looking" locked screen):
                 // this was a raw `Image(systemName: "lock.fill")`, not routed
                 // through `platformSymbol` like every other icon on this
@@ -163,22 +163,22 @@ public struct AIChatView: View {
                     .font(theme.font(13, weight: Font.Weight.regular))
                     .foregroundStyle(theme.textSecondary)
                     .multilineTextAlignment(TextAlignment.center)
-                    .padding(Edge.Set.horizontal, 30)
+                    .padding(Edge.Set.horizontal, 30.0)
 
                 Button(action: { showPaywall = true }) {
                     Text("VIEW PRO PLANS")
                         .font(theme.font(12, weight: Font.Weight.bold))
                         .tracking(2.4)
-                        .padding(Edge.Set.horizontal, 26)
-                        .padding(Edge.Set.vertical, 15)
+                        .padding(Edge.Set.horizontal, 26.0)
+                        .padding(Edge.Set.vertical, 15.0)
                         .background(theme.accent)
                         .foregroundColor(theme.onAccent)
                         .clipShape(Capsule())
                         .shadow(color: theme.accent.opacity(0.4), radius: 14, y: 6)
                 }
-                .padding(Edge.Set.top, 8)
+                .padding(Edge.Set.top, 8.0)
             }
-            .padding(20)
+            .padding(20.0)
             // FIX (matches the video of the real iOS build): this whole
             // VStack had no card treatment at all — just plain content
             // sitting on the screen's flat background — which is what was
@@ -195,13 +195,13 @@ public struct AIChatView: View {
             // app on both platforms, not just visually similar.
             #if !SKIP
             .background(.ultraThinMaterial)
-            .clipShape(RoundedRectangle(cornerRadius: 20))
+            .clipShape(RoundedRectangle(cornerRadius: 20.0))
             #else
             .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
             .cornerRadius(20)
             #endif
-            .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
-            .padding(Edge.Set.horizontal, 24)
+            .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(theme.cardStroke, lineWidth: 1.0))
+            .padding(Edge.Set.horizontal, 24.0)
 
             // FIX: this locked state is shown directly as tab content (case 4
             // in MainTabView's switch), not presented as a sheet, so there
@@ -223,29 +223,29 @@ public struct AIChatView: View {
                     .font(theme.font(22, weight: Font.Weight.semibold))
                     .foregroundStyle(theme.textTertiary)
             }
-            .padding(Edge.Set.top, 16)
-            .padding(Edge.Set.trailing, 40)
+            .padding(Edge.Set.top, 16.0)
+            .padding(Edge.Set.trailing, 40.0)
         }
     }
 
     private var chatContent: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 6) {
+        VStack(spacing: 0.0) {
+            HStack(spacing: 6.0) {
                 Image.platformSymbol("sparkles", android: "star.fill").foregroundStyle(theme.accent)
                 Text("ASK AI").font(theme.font(10, weight: Font.Weight.bold)).tracking(3).foregroundStyle(theme.accent)
             }
-            .padding(Edge.Set.top, 90) // Increased top padding to push content lower
-            .padding(Edge.Set.bottom, 12)
+            .padding(Edge.Set.top, 90.0) // Increased top padding to push content lower
+            .padding(Edge.Set.bottom, 12.0)
 
             ScrollViewReader { proxy in
                 ScrollView {
-                    LazyVStack(alignment: HorizontalAlignment.leading, spacing: 14) {
+                    LazyVStack(alignment: HorizontalAlignment.leading, spacing: 14.0) {
                         if messages.isEmpty {
                             Text("Ask me anything about your savings — \u{201C}Am I on pace?\u{201D}, \u{201C}How do I save faster?\u{201D}, \u{201C}What if I skip a week?\u{201D}")
                                 .font(theme.font(13, weight: Font.Weight.light))
                                 .foregroundStyle(Color.gray.opacity(0.5))
-                                .padding(Edge.Set.horizontal, 24)
-                                .padding(Edge.Set.top, 24) // Added extra top padding to push initial prompt bubble lower
+                                .padding(Edge.Set.horizontal, 24.0)
+                                .padding(Edge.Set.top, 24.0) // Added extra top padding to push initial prompt bubble lower
                         }
                         ForEach(messages) { message in
                             bubble(for: message).id(message.id)
@@ -255,10 +255,10 @@ public struct AIChatView: View {
                                 ProgressView().tint(theme.accent)
                                 Text("Thinking…").font(theme.font(12)).foregroundStyle(Color.gray.opacity(0.5))
                             }
-                            .padding(Edge.Set.horizontal, 24)
+                            .padding(Edge.Set.horizontal, 24.0)
                         }
                     }
-                    .padding(Edge.Set.vertical, 12)
+                    .padding(Edge.Set.vertical, 12.0)
                 }
                 .onChange(of: messages) { _ in
                     if let last = messages.last {
@@ -271,7 +271,7 @@ public struct AIChatView: View {
                 Text(errorMessage)
                     .font(theme.font(11))
                     .foregroundStyle(theme.danger.opacity(0.9))
-                    .padding(Edge.Set.horizontal, 24)
+                    .padding(Edge.Set.horizontal, 24.0)
             }
 
             if !networkMonitor.isOnline {
@@ -279,18 +279,18 @@ public struct AIChatView: View {
                     .font(theme.font(11))
                     .foregroundStyle(Color.gray.opacity(0.5))
                     .multilineTextAlignment(TextAlignment.center)
-                    .padding(Edge.Set.horizontal, 24)
+                    .padding(Edge.Set.horizontal, 24.0)
             }
 
-            HStack(spacing: 10) {
+            HStack(spacing: 10.0) {
                 TextField("Ask a question…", text: $draft, axis: Axis.vertical)
-                    .padding(12)
+                    .padding(12.0)
                     #if !SKIP
                     .background(.ultraThinMaterial)
                     #else
                     .background(theme.background.opacity(0.8))
                     #endif
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .clipShape(RoundedRectangle(cornerRadius: 14.0))
                     // No explicit color — defaults to .primary, resolved to
                     // theme.textPrimary by themedSurface(_:) on the screen root.
                     .disabled(!networkMonitor.isOnline)
@@ -307,9 +307,9 @@ public struct AIChatView: View {
                 }
                 .disabled(draft.trimmingCharacters(in: CharacterSet.whitespaces).isEmpty || isSending || !networkMonitor.isOnline)
             }
-            .padding(Edge.Set.horizontal, 16)
-            .padding(Edge.Set.top, 8)
-            .padding(Edge.Set.bottom, 100)
+            .padding(Edge.Set.horizontal, 16.0)
+            .padding(Edge.Set.top, 8.0)
+            .padding(Edge.Set.bottom, 100.0)
         }
     }
 
@@ -319,12 +319,12 @@ public struct AIChatView: View {
             Text(message.text)
                 .font(theme.font(14, weight: Font.Weight.light))
                 .foregroundStyle(message.role == .user ? theme.onAccent : theme.textPrimary.opacity(0.9))
-                .padding(12)
+                .padding(12.0)
                 .background(message.role == .user ? theme.accent : (theme.isLight ? Color.black.opacity(0.05) : Color.white.opacity(0.08)))
-                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .clipShape(RoundedRectangle(cornerRadius: 16.0))
             if message.role == .model { Spacer(minLength: 40) }
         }
-        .padding(Edge.Set.horizontal, 16)
+        .padding(Edge.Set.horizontal, 16.0)
     }
 
     @MainActor

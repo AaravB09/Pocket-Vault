@@ -42,7 +42,7 @@ public struct SharedBudgetView: View {
     private var content: some View {
         ZStack {
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 24) {
+                VStack(spacing: 24.0) {
                     if selectedTab == nil {
                         HStack {
                             Spacer()
@@ -53,12 +53,12 @@ public struct SharedBudgetView: View {
                             }
                         }
                         .padding(Edge.Set.horizontal, Layout.pageMargin)
-                        .padding(Edge.Set.top, 20)
+                        .padding(Edge.Set.top, 20.0)
                     } else {
-                        Color.clear.frame(height: 8)
+                        Color.clear.frame(height: 8.0)
                     }
 
-                    VStack(spacing: 6) {
+                    VStack(spacing: 6.0) {
                         SectionLabel("Shared budget")
                         Text("Save Together")
                             .font(theme.font(22, weight: Font.Weight.light))
@@ -107,7 +107,7 @@ public struct SharedBudgetView: View {
 
     // MARK: - Active goal isn't shared yet
     private func shareThisGoalCard(goal: Goal) -> some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 14.0) {
             Image.platformSymbol("person.2.fill", android: "person.fill")
                 .font(theme.font(26, weight: Font.Weight.light))
                 .foregroundStyle(theme.accent)
@@ -146,7 +146,7 @@ public struct SharedBudgetView: View {
         .padding(Layout.cardPadding)
         .background(cardFill)
         .cornerRadius(Layout.cardRadius)
-        .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1.0))
         .padding(Edge.Set.horizontal, Layout.pageMargin)
     }
 
@@ -160,13 +160,13 @@ public struct SharedBudgetView: View {
         let combined = mine + partnerAmount
         let progress = min(max(combined / max(goal.targetAmount, 1.0), 0.0), 1.0)
 
-        return VStack(spacing: 26) {
-            HStack(spacing: 0) {
+        return VStack(spacing: 26.0) {
+            HStack(spacing: 0.0) {
                 contributorAvatar(initial: "Y", label: "You", amount: mine)
                 Image.platformSymbol("arrow.left.arrow.right", android: "arrow.clockwise.circle")
                     .font(theme.font(12))
                     .foregroundStyle(theme.accent.opacity(0.6))
-                    .padding(Edge.Set.horizontal, 6)
+                    .padding(Edge.Set.horizontal, 6.0)
                 contributorAvatar(
                     initial: String(partnerName.prefix(1)).uppercased(),
                     label: partnerName,
@@ -175,14 +175,14 @@ public struct SharedBudgetView: View {
                 )
             }
 
-            VStack(spacing: 10) {
+            VStack(spacing: 10.0) {
                 GeometryReader { geo in
                     ZStack(alignment: Alignment.leading) {
                         Rectangle().fill(theme.cardStroke)
                         Rectangle().fill(theme.accent).frame(width: geo.size.width * CGFloat(progress))
                     }
                 }
-                .frame(height: 4)
+                .frame(height: 4.0)
                 .cornerRadius(2)
 
                 HStack {
@@ -197,10 +197,10 @@ public struct SharedBudgetView: View {
             }
 
             if let code = sharedBudgetManager.share?.share_code, partnerID == nil {
-                Rectangle().fill(theme.hairline).frame(height: 1)
-                VStack(spacing: 8) {
+                Rectangle().fill(theme.hairline).frame(height: 1.0)
+                VStack(spacing: 8.0) {
                     SectionLabel("Share code")
-                    HStack(spacing: 8) {
+                    HStack(spacing: 8.0) {
                         Text(code)
                             .font(theme.font(20, weight: Font.Weight.semibold))
                             .tracking(3)
@@ -220,11 +220,11 @@ public struct SharedBudgetView: View {
             }
 
             if !sharedBudgetManager.deposits.isEmpty {
-                Rectangle().fill(theme.hairline).frame(height: 1)
-                VStack(alignment: HorizontalAlignment.leading, spacing: 14) {
+                Rectangle().fill(theme.hairline).frame(height: 1.0)
+                VStack(alignment: HorizontalAlignment.leading, spacing: 14.0) {
                     SectionLabel("Recent deposits")
 
-                    VStack(spacing: 10) {
+                    VStack(spacing: 10.0) {
                         ForEach(sharedBudgetManager.deposits.prefix(6)) { deposit in
                             HStack {
                                 Text(deposit.contributor_id == myID ? "You" : deposit.contributor_name)
@@ -240,7 +240,7 @@ public struct SharedBudgetView: View {
                 }
             }
 
-            Rectangle().fill(theme.hairline).frame(height: 1)
+            Rectangle().fill(theme.hairline).frame(height: 1.0)
 
             Button(role: ButtonRole.destructive, action: { showLeaveConfirm = true }) {
                 Text("Leave this shared budget")
@@ -252,7 +252,7 @@ public struct SharedBudgetView: View {
         .padding(Layout.cardPadding)
         .background(cardFill)
         .cornerRadius(Layout.cardRadius)
-        .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1.0))
         .padding(Edge.Set.horizontal, Layout.pageMargin)
         .confirmationDialog(
             isOwnerOfActiveShare ? "Leave and end this shared budget?" : "Leave this shared budget?",
@@ -287,14 +287,14 @@ public struct SharedBudgetView: View {
     }
 
     private func contributorAvatar(initial: String, label: String, amount: Double, isPending: Bool = false) -> some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 8.0) {
             ZStack {
                 Circle()
                     .fill(cardFill)
-                    .frame(width: 64, height: 64)
+                    .frame(width: 64.0, height: 64.0)
                 Circle()
                     .stroke(theme.accent.opacity(isPending ? 0.2 : 0.6), lineWidth: 1.5)
-                    .frame(width: 64, height: 64)
+                    .frame(width: 64.0, height: 64.0)
                 Text(initial)
                     .font(theme.font(22, weight: Font.Weight.light))
                     .foregroundStyle(isPending ? theme.textTertiary : theme.textPrimary)
@@ -312,14 +312,14 @@ public struct SharedBudgetView: View {
 
     // MARK: - Join someone else's shared budget
     private var joinCard: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 12.0) {
             SectionLabel("Join a shared budget")
 
-            HStack(spacing: 10) {
+            HStack(spacing: 10.0) {
                 TextField("Enter their code", text: $joinCodeInput)
                     .textInputAutocapitalization(TextInputAutocapitalization.characters)
                     .autocorrectionDisabled()
-                    .padding(14)
+                    .padding(14.0)
                     .background(cardFill)
                     .cornerRadius(14)
                     .foregroundStyle(theme.textPrimary)
@@ -341,8 +341,8 @@ public struct SharedBudgetView: View {
                 }) {
                     Text("Join")
                         .font(theme.font(14, weight: Font.Weight.semibold))
-                        .padding(Edge.Set.horizontal, 20)
-                        .padding(Edge.Set.vertical, 16)
+                        .padding(Edge.Set.horizontal, 20.0)
+                        .padding(Edge.Set.vertical, 16.0)
                         .background(theme.accent)
                         .foregroundColor(theme.onAccent)
                         .cornerRadius(Layout.controlRadius)

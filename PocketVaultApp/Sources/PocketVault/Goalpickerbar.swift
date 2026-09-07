@@ -9,7 +9,7 @@ struct GoalPickerBar: View {
 
     public var body: some View {
         ScrollView(Axis.Set.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
+            HStack(spacing: 10.0) {
                 ForEach(goalStore.goals) { goal in
                     let isActive = goal.id == goalStore.activeGoal?.id
 
@@ -19,7 +19,7 @@ struct GoalPickerBar: View {
                         #endif
                         goalStore.setActive(goal.id)
                     }) {
-                        HStack(spacing: 6) {
+                        HStack(spacing: 6.0) {
                             // FIX: was `Image(systemName: ....displayIcon)`
                             // directly — see the note on
                             // GoalKind.androidDisplayIcon in
@@ -46,7 +46,7 @@ struct GoalPickerBar: View {
                             Capsule().fill(isActive ? theme.accent : (theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06)))
                         )
                         .overlay(
-                            Capsule().stroke(isActive ? Color.clear : theme.cardStroke, lineWidth: 1)
+                            Capsule().stroke(isActive ? Color.clear : theme.cardStroke, lineWidth: 1.0)
                         )
                     }
                 }
@@ -55,9 +55,9 @@ struct GoalPickerBar: View {
                     Image(systemName: "plus")
                         .font(theme.font(12, weight: Font.Weight.semibold))
                         .foregroundStyle(theme.accent)
-                        .frame(width: 34, height: 34)
+                        .frame(width: 34.0, height: 34.0)
                         .background(Circle().fill(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06)))
-                        .overlay(Circle().stroke(theme.accent.opacity(0.4), lineWidth: 1))
+                        .overlay(Circle().stroke(theme.accent.opacity(0.4), lineWidth: 1.0))
                 }
             }
             .padding(Edge.Set.horizontal, Layout.pageMargin)

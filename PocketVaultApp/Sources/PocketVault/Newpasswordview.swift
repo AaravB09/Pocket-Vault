@@ -43,8 +43,8 @@ public struct NewPasswordView: View {
     public var body: some View {
         ZStack {
             ScrollView {
-                VStack(spacing: 24) {
-                    VStack(spacing: 6) {
+                VStack(spacing: 24.0) {
+                    VStack(spacing: 6.0) {
                         Text("POCKET VAULT")
                             .font(theme.font(11, weight: Font.Weight.bold))
                             .tracking(4)
@@ -53,7 +53,7 @@ public struct NewPasswordView: View {
                             .font(theme.font(22, weight: Font.Weight.light))
                             .foregroundStyle(theme.textPrimary)
                     }
-                    .padding(Edge.Set.top, 90)
+                    .padding(Edge.Set.top, 90.0)
 
                     if let email = authManager.userEmail {
                         Text("Resetting the password for \(email)")
@@ -63,7 +63,7 @@ public struct NewPasswordView: View {
                             .padding(Edge.Set.horizontal, Layout.pageMargin)
                     }
 
-                    VStack(spacing: 14) {
+                    VStack(spacing: 14.0) {
                         ZStack(alignment: Alignment.trailing) {
                             Group {
                                 if isPasswordVisible {
@@ -76,8 +76,8 @@ public struct NewPasswordView: View {
                             .autocorrectionDisabled()
                             .foregroundStyle(theme.textPrimary)
                             .tint(theme.accent)
-                            .padding(16)
-                            .padding(Edge.Set.trailing, 40)
+                            .padding(16.0)
+                            .padding(Edge.Set.trailing, 40.0)
                             // NOTE(skip): .ultraThinMaterial has no Android
                             // equivalent and was unresolved, cascading into
                             // the .clipShape right below it too.
@@ -86,15 +86,15 @@ public struct NewPasswordView: View {
                             #else
                             .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                             #endif
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
+                            .clipShape(RoundedRectangle(cornerRadius: 14.0))
+                            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
 
                             Button(action: { isPasswordVisible.toggle() }) {
                                 Image.platformSymbol(isPasswordVisible ? "eye.slash.fill" : "eye.fill", android: isPasswordVisible ? "lock.fill" : "checkmark.circle")
                                     .font(theme.font(14))
                                     .foregroundStyle(theme.textTertiary)
                             }
-                            .padding(Edge.Set.trailing, 16)
+                            .padding(Edge.Set.trailing, 16.0)
                         }
 
                         SecureField("", text: $confirmPassword, prompt: Text("Confirm new password").foregroundColor(theme.textTertiary))
@@ -102,19 +102,19 @@ public struct NewPasswordView: View {
                             .autocorrectionDisabled()
                             .foregroundStyle(theme.textPrimary)
                             .tint(theme.accent)
-                            .padding(16)
+                            .padding(16.0)
                             #if !SKIP
                             .background(.ultraThinMaterial)
                             #else
                             .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                             #endif
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
-                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
+                            .clipShape(RoundedRectangle(cornerRadius: 14.0))
+                            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
 
-                        VStack(alignment: HorizontalAlignment.leading, spacing: 8) {
+                        VStack(alignment: HorizontalAlignment.leading, spacing: 8.0) {
                             ForEach(requirements) { requirement in
                                 let met = requirement.isMet(newPassword)
-                                HStack(spacing: 8) {
+                                HStack(spacing: 8.0) {
                                     Image(systemName: met ? "checkmark.circle.fill" : "circle")
                                         .font(theme.font(13))
                                         .foregroundStyle(met ? theme.accent : theme.textTertiary)
@@ -124,7 +124,7 @@ public struct NewPasswordView: View {
                                 }
                             }
                             if !confirmPassword.isEmpty {
-                                HStack(spacing: 8) {
+                                HStack(spacing: 8.0) {
                                     Image(systemName: newPassword == confirmPassword ? "checkmark.circle.fill" : "circle")
                                         .font(theme.font(13))
                                         .foregroundStyle(newPassword == confirmPassword ? theme.accent : theme.textTertiary)
@@ -134,7 +134,7 @@ public struct NewPasswordView: View {
                                 }
                             }
                         }
-                        .padding(Edge.Set.horizontal, 4)
+                        .padding(Edge.Set.horizontal, 4.0)
                     }
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 

@@ -22,7 +22,7 @@ struct SocialSignInButtons: View {
     #endif
 
     public var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 12.0) {
 SocialOAuthButton(title: "Continue with Google") { startOAuth(provider: "google") }
         }
     }
@@ -122,7 +122,7 @@ private struct SocialOAuthButton: View {
             Text(title)
                 .font(theme.font(15, weight: Font.Weight.semibold))
                 .frame(maxWidth: CGFloat.infinity)
-                .padding(Edge.Set.vertical, 14)
+                .padding(Edge.Set.vertical, 14.0)
                 .foregroundStyle(isEnabled ? theme.textPrimary : theme.textPrimary.opacity(0.4))
                 #if !SKIP
                 .background(.ultraThinMaterial)
@@ -138,7 +138,7 @@ private struct SocialOAuthButton: View {
                         .opacity(flash ? 0.1 : 0.0)
                         .allowsHitTesting(false)
                 )
-                .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius).stroke(theme.cardStroke, lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius).stroke(theme.cardStroke, lineWidth: 1.0))
                 .overlay( // keyboard / Full Keyboard Access / Switch Control focus ring
                     RoundedRectangle(cornerRadius: Layout.controlRadius + 3.0)
                         .stroke(theme.accent, lineWidth: isFocused ? 3.0 : 0.0)

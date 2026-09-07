@@ -137,7 +137,7 @@ struct FeatureTourOverlay: View {
                     let cardWidth: CGFloat = 260
 
                     ZStack {
-                        VStack(spacing: 10) {
+                        VStack(spacing: 10.0) {
                             Image.platformSymbol(step.icon, android: step.androidIcon).font(theme.font(22, weight: Font.Weight.bold)).foregroundStyle(theme.accent)
                             Text(step.title)
                                 .font(theme.font(15, weight: Font.Weight.semibold))
@@ -151,7 +151,7 @@ struct FeatureTourOverlay: View {
                                 .foregroundStyle(theme.textPrimary.opacity(0.7))
                                 .multilineTextAlignment(TextAlignment.center)
 
-                            HStack(spacing: 12) {
+                            HStack(spacing: 12.0) {
                                 Button("Skip") { finish() }
                                     .font(theme.font(11))
                                     #if !SKIP
@@ -171,20 +171,20 @@ struct FeatureTourOverlay: View {
                                 Button(stepIndex == visibleSteps.count - 1 ? "Done" : "Next") { advance() }
                                     .font(theme.font(12, weight: Font.Weight.bold))
                                     .foregroundStyle(theme.onAccent)
-                                    .padding(Edge.Set.horizontal, 18).padding(Edge.Set.vertical, 10)
+                                    .padding(Edge.Set.horizontal, 18.0).padding(Edge.Set.vertical, 10.0)
                                     .background(theme.accent)
                                     .clipShape(Capsule())
                                     .shadow(color: theme.accent.opacity(0.4), radius: 8, y: 3)
                             }
                         }
-                        .padding(18)
+                        .padding(18.0)
                         .frame(width: cardWidth)
                         // NOTE(skip): .ultraThinMaterial has no Android
                         // equivalent — was cascading into the .clipShape
                         // right below it.
                         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
-                        .clipShape(RoundedRectangle(cornerRadius: 18))
-                        .overlay(RoundedRectangle(cornerRadius: 18).stroke(theme.accent.opacity(0.4), lineWidth: 1))
+                        .clipShape(RoundedRectangle(cornerRadius: 18.0))
+                        .overlay(RoundedRectangle(cornerRadius: 18.0).stroke(theme.accent.opacity(0.4), lineWidth: 1.0))
                         .position(x: cardX, y: cardY)
 
                         // Arrow is positioned independently at the true

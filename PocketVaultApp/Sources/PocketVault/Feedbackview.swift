@@ -31,7 +31,7 @@ public struct FeedbackView: View {
 
     private var formState: some View {
         ScrollView {
-            VStack(spacing: 24) {
+            VStack(spacing: 24.0) {
                 HStack {
                     Spacer()
                     Button(action: { dismiss() }) {
@@ -41,9 +41,9 @@ public struct FeedbackView: View {
                     }
                 }
                 .padding(Edge.Set.horizontal, Layout.pageMargin)
-                .padding(Edge.Set.top, 20)
+                .padding(Edge.Set.top, 20.0)
 
-                VStack(spacing: 6) {
+                VStack(spacing: 6.0) {
                     SectionLabel("We're listening")
                     Text("Send Feedback")
                         .font(theme.font(22, weight: Font.Weight.light))
@@ -56,7 +56,7 @@ public struct FeedbackView: View {
                     .multilineTextAlignment(TextAlignment.center)
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
-                VStack(alignment: HorizontalAlignment.leading, spacing: 8) {
+                VStack(alignment: HorizontalAlignment.leading, spacing: 8.0) {
                     SectionLabel("Your message")
 
                     TextEditor(text: $message)
@@ -64,21 +64,21 @@ public struct FeedbackView: View {
                         .scrollContentBackground(Visibility.hidden)
                         .foregroundStyle(theme.textPrimary)
                         .font(theme.font(14, weight: Font.Weight.light))
-                        .frame(height: 160)
-                        .padding(12)
+                        .frame(height: 160.0)
+                        .padding(12.0)
                         // NOTE(skip): .ultraThinMaterial has no Android
                         // equivalent — was cascading into the .clipShape
                         // right below it.
                         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
+                        .clipShape(RoundedRectangle(cornerRadius: 14.0))
+                        .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
                         .overlay(alignment: Alignment.topLeading) {
                             if message.isEmpty {
                                 Text("What's on your mind?")
                                     .font(theme.font(14, weight: Font.Weight.light))
                                     .foregroundStyle(theme.textTertiary)
-                                    .padding(Edge.Set.horizontal, 18)
-                                    .padding(Edge.Set.vertical, 20)
+                                    .padding(Edge.Set.horizontal, 18.0)
+                                    .padding(Edge.Set.vertical, 20.0)
                                     .allowsHitTesting(false)
                             }
                         }
@@ -124,12 +124,12 @@ public struct FeedbackView: View {
     }
 
     private var confirmationState: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 20.0) {
             Image.platformSymbol("checkmark.seal.fill", android: "checkmark.circle.fill")
                 .font(theme.font(40, weight: Font.Weight.light))
                 .foregroundStyle(theme.accent)
 
-            VStack(spacing: 6) {
+            VStack(spacing: 6.0) {
                 SectionLabel("Thank you")
                 Text("Feedback sent")
                     .font(theme.font(20, weight: Font.Weight.light))
@@ -140,7 +140,7 @@ public struct FeedbackView: View {
                 .font(theme.font(13, weight: Font.Weight.light))
                 .foregroundStyle(theme.textSecondary)
                 .multilineTextAlignment(TextAlignment.center)
-                .padding(Edge.Set.horizontal, 40)
+                .padding(Edge.Set.horizontal, 40.0)
 
             // FIX: same leftover-ButtonStyle pattern as above, using the
             // secondary variant. SecondaryCTAButton has no onAccent
@@ -150,8 +150,8 @@ public struct FeedbackView: View {
             SecondaryCTAButton(accent: theme.accent, action: { dismiss() }) {
                 Text("Done")
             }
-            .padding(Edge.Set.horizontal, 40)
-            .padding(Edge.Set.top, 8)
+            .padding(Edge.Set.horizontal, 40.0)
+            .padding(Edge.Set.top, 8.0)
         }
     }
 }

@@ -55,8 +55,8 @@ public struct LoginView: View {
             .allowsHitTesting(false)
 
             ScrollView {
-                VStack(spacing: 30) {
-                    VStack(spacing: 8) {
+                VStack(spacing: 30.0) {
+                    VStack(spacing: 8.0) {
                         Text("POCKET VAULT")
                             .font(theme.font(11, weight: Font.Weight.bold))
                             .tracking(4)
@@ -90,12 +90,12 @@ public struct LoginView: View {
                     // "Welcome Back" title on Android than the equivalent gap
                     // on iOS.
                     #if !SKIP
-                    .padding(Edge.Set.top, 110)
+                    .padding(Edge.Set.top, 110.0)
                     #else
-                    .padding(Edge.Set.top, 40)
+                    .padding(Edge.Set.top, 40.0)
                     #endif
 
-                    VStack(spacing: 16) {
+                    VStack(spacing: 16.0) {
                         TextField("", text: $email, prompt: Text("Email").foregroundColor(theme.textTertiary))
                             .textInputAutocapitalization(TextInputAutocapitalization.never)
                             .autocorrectionDisabled()
@@ -109,19 +109,19 @@ public struct LoginView: View {
                             .foregroundStyle(theme.textPrimary)
                             #endif
                             .tint(theme.accent)
-                            .padding(16)
+                            .padding(16.0)
                             // NOTE(skip): `.ultraThinMaterial` and `.clipShape`
                             // aren't resolved by Skip's SwiftUI shim — iOS keeps
                             // the real material + shape clip, Android gets a
                             // plain tinted background + `.cornerRadius`.
                             #if !SKIP
                             .background(.ultraThinMaterial)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .clipShape(RoundedRectangle(cornerRadius: 14.0))
                             #else
                             .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                             .cornerRadius(14)
                             #endif
-                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
+                            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
 
                         ZStack(alignment: Alignment.trailing) {
                             Group {
@@ -142,23 +142,23 @@ public struct LoginView: View {
                             .foregroundStyle(theme.textPrimary)
                             #endif
                             .tint(theme.accent)
-                            .padding(16)
-                            .padding(Edge.Set.trailing, 40)
+                            .padding(16.0)
+                            .padding(Edge.Set.trailing, 40.0)
                             #if !SKIP
                             .background(.ultraThinMaterial)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .clipShape(RoundedRectangle(cornerRadius: 14.0))
                             #else
                             .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                             .cornerRadius(14)
                             #endif
-                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
+                            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
 
                             Button(action: { isPasswordVisible.toggle() }) {
                                 Image.platformSymbol(isPasswordVisible ? "eye.slash.fill" : "eye.fill", android: isPasswordVisible ? "lock.fill" : "checkmark.circle")
                                     .font(theme.font(14))
                                     .foregroundStyle(theme.textTertiary)
                             }
-                            .padding(Edge.Set.trailing, 16)
+                            .padding(Edge.Set.trailing, 16.0)
                         }
 
                         if !isSignUpMode {
@@ -177,10 +177,10 @@ public struct LoginView: View {
                         }
 
                         if isSignUpMode {
-                            VStack(alignment: HorizontalAlignment.leading, spacing: 8) {
+                            VStack(alignment: HorizontalAlignment.leading, spacing: 8.0) {
                                 ForEach(passwordRequirements) { requirement in
                                     let met = requirement.isMet(password)
-                                    HStack(spacing: 8) {
+                                    HStack(spacing: 8.0) {
                                         Image(systemName: met ? "checkmark.circle.fill" : "circle")
                                             .font(theme.font(13))
                                             .foregroundStyle(met ? theme.accent : theme.textTertiary)
@@ -190,8 +190,8 @@ public struct LoginView: View {
                                     }
                                 }
                             }
-                            .padding(Edge.Set.horizontal, 4)
-                            .padding(Edge.Set.top, 2)
+                            .padding(Edge.Set.horizontal, 4.0)
+                            .padding(Edge.Set.top, 2.0)
                             .transition(AnyTransition.opacity)
                         }
                     }
@@ -199,7 +199,7 @@ public struct LoginView: View {
                     .animation(Animation.easeInOut(duration: 0.2), value: isSignUpMode)
 
                     if awaitingEmailConfirmation {
-                        VStack(spacing: 10) {
+                        VStack(spacing: 10.0) {
                             Image.platformSymbol("envelope.badge.fill", android: "envelope.fill")
                                 .font(theme.font(20, weight: Font.Weight.semibold))
                                 .foregroundStyle(theme.accent)
@@ -225,15 +225,15 @@ public struct LoginView: View {
                                 #endif
                                 .multilineTextAlignment(TextAlignment.center)
                         }
-                        .padding(16)
+                        .padding(16.0)
                         #if !SKIP
                         .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .clipShape(RoundedRectangle(cornerRadius: 14.0))
                         #else
                         .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                         .cornerRadius(14)
                         #endif
-                        .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.accent.opacity(0.3), lineWidth: 1))
+                        .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.accent.opacity(0.3), lineWidth: 1.0))
                         .padding(Edge.Set.horizontal, Layout.pageMargin)
                     } else if let errorMessage = authManager.errorMessage {
                         Text(errorMessage)
@@ -246,12 +246,12 @@ public struct LoginView: View {
                     SocialSignInButtons()
                         .padding(Edge.Set.horizontal, Layout.pageMargin)
 
-                    HStack(spacing: 10) {
-                        Rectangle().fill(theme.cardStroke).frame(height: 1)
+                    HStack(spacing: 10.0) {
+                        Rectangle().fill(theme.cardStroke).frame(height: 1.0)
                         Text("or")
                             .font(theme.font(11, weight: Font.Weight.medium))
                             .foregroundStyle(theme.textTertiary)
-                        Rectangle().fill(theme.cardStroke).frame(height: 1)
+                        Rectangle().fill(theme.cardStroke).frame(height: 1.0)
                     }
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
@@ -302,7 +302,7 @@ public struct LoginView: View {
                             .foregroundStyle(theme.textSecondary)
                             #endif
                     }
-                    .padding(Edge.Set.top, 4)
+                    .padding(Edge.Set.top, 4.0)
 
                     if !hideGuestOption {
                         Button(action: {
@@ -315,7 +315,7 @@ public struct LoginView: View {
                                 .font(theme.font(12, weight: Font.Weight.semibold))
                                 .foregroundStyle(theme.accent)
                         }
-                        .padding(Edge.Set.top, 12)
+                        .padding(Edge.Set.top, 12.0)
                     }
 
                     Spacer(minLength: 24)
@@ -354,7 +354,7 @@ public struct ForgotPasswordSheet: View {
 
     public var body: some View {
         ZStack {
-            VStack(spacing: 24) {
+            VStack(spacing: 24.0) {
                 HStack {
                     Spacer()
                     Button(action: { dismiss() }) {
@@ -363,10 +363,10 @@ public struct ForgotPasswordSheet: View {
                             .foregroundStyle(theme.textTertiary)
                     }
                 }
-                .padding(Edge.Set.horizontal, 20)
-                .padding(Edge.Set.top, 20)
+                .padding(Edge.Set.horizontal, 20.0)
+                .padding(Edge.Set.top, 20.0)
 
-                VStack(spacing: 6) {
+                VStack(spacing: 6.0) {
                     Text("POCKET VAULT")
                         .font(theme.font(11, weight: Font.Weight.bold))
                         .tracking(4)
@@ -409,15 +409,15 @@ public struct ForgotPasswordSheet: View {
                     .foregroundStyle(theme.textPrimary)
                     #endif
                     .tint(theme.accent)
-                    .padding(16)
+                    .padding(16.0)
                     #if !SKIP
                     .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .clipShape(RoundedRectangle(cornerRadius: 14.0))
                     #else
                     .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                     .cornerRadius(14)
                     #endif
-                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(theme.cardStroke, lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                 if let sentMessage {

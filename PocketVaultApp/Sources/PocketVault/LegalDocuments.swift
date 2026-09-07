@@ -205,7 +205,7 @@ public struct LegalDocumentView: View {
                 Text(kind.markdown)
                     .font(theme.font(14, weight: Font.Weight.light))
                     .foregroundStyle(theme.textPrimary)
-                    .padding(20)
+                    .padding(20.0)
             }
             .navigationTitle(kind.title)
             .themedSurface(ignoresSafeArea: true)
@@ -225,7 +225,7 @@ public struct LegalFinePrint: View {
     @State private var presented: LegalDocumentView.Kind?
 
     public var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 4.0) {
             Text("By continuing, you agree to our")
             Button("Terms") { presented = .terms }
             Text("and")

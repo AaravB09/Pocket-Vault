@@ -155,7 +155,7 @@ public struct BuildStudioView: View {
                 .allowsHitTesting(false)
 
             VStack {
-                VStack(spacing: 4) {
+                VStack(spacing: 4.0) {
                     Text("BUILD STUDIO")
                         .font(theme.font(10, weight: Font.Weight.bold))
                         .tracking(3)
@@ -171,7 +171,7 @@ public struct BuildStudioView: View {
                         .font(theme.font(9, weight: Font.Weight.semibold))
                         .tracking(2)
                         .foregroundStyle(Color.secondary) // was .tertiary — unsupported by Skip
-                        .padding(Edge.Set.top, 2)
+                        .padding(Edge.Set.top, 2.0)
                 }
                 // Android-only: see the matching note in CalenderView.swift
                 // / ContentView.swift — this fixed 60pt sat on top of the
@@ -180,9 +180,9 @@ public struct BuildStudioView: View {
                 // further (24pt -> 10pt) since that first pass still read
                 // as too much header space here.
                 #if !SKIP
-                .padding(Edge.Set.top, 60)
+                .padding(Edge.Set.top, 60.0)
                 #else
-                .padding(Edge.Set.top, 10)
+                .padding(Edge.Set.top, 10.0)
                 #endif
 
                 Spacer()
@@ -191,8 +191,8 @@ public struct BuildStudioView: View {
                 // actually built, so the payoff of finishing isn't just
                 // an abstract voxel shape with no label.
                 if isComplete {
-                    VStack(spacing: 10) {
-                        HStack(spacing: 8) {
+                    VStack(spacing: 10.0) {
+                        HStack(spacing: 8.0) {
                             Image.platformSymbol("checkmark.seal.fill", android: "checkmark.circle.fill")
                             Text("SCULPTURE COMPLETE")
                         }
@@ -203,17 +203,17 @@ public struct BuildStudioView: View {
                         Text(completedModelName)
                             .font(theme.font(16, weight: Font.Weight.light))
                             .multilineTextAlignment(TextAlignment.center)
-                            .padding(Edge.Set.horizontal, 30)
+                            .padding(Edge.Set.horizontal, 30.0)
                     }
-                    .padding(Edge.Set.horizontal, 22)
-                    .padding(Edge.Set.vertical, 14)
+                    .padding(Edge.Set.horizontal, 22.0)
+                    .padding(Edge.Set.vertical, 14.0)
                     // NOTE(skip): .ultraThinMaterial has no Android/Compose
                     // equivalent and was unresolved, cascading into the
                     // .clipShape right below it.
                     .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
-                    .clipShape(RoundedRectangle(cornerRadius: 18))
-                    .overlay(RoundedRectangle(cornerRadius: 18).stroke(theme.accent.opacity(0.4), lineWidth: 1))
-                    .padding(Edge.Set.bottom, 110)
+                    .clipShape(RoundedRectangle(cornerRadius: 18.0))
+                    .overlay(RoundedRectangle(cornerRadius: 18.0).stroke(theme.accent.opacity(0.4), lineWidth: 1.0))
+                    .padding(Edge.Set.bottom, 110.0)
                 }
             }
         }
@@ -927,14 +927,14 @@ public struct BuildStudioView: View {
                     colors: [theme.accent.opacity(0.22), Color.clear],
                     center: UnitPoint.center, startRadius: 8, endRadius: 170
                 )
-                .frame(width: 340, height: 340)
+                .frame(width: 340.0, height: 340.0)
                 .position(x: center.x, y: center.y - 6)
 
                 RadialGradient(
                     colors: [Color.white.opacity(0.12), Color.clear],
                     center: UnitPoint.center, startRadius: 4, endRadius: 140
                 )
-                .frame(width: 290, height: 290)
+                .frame(width: 290.0, height: 290.0)
                 .position(x: center.x, y: center.y - 10)
 
                 // Soft ambient shadow beneath the platform — iOS gets this

@@ -53,7 +53,7 @@ public struct CalendarView: View {
     public var body: some View {
         ZStack {
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 24) {
+                VStack(spacing: 24.0) {
                     // Header Title
                     // NOTE(skip): ScreenHeader's trailing-accessory generic
                     // param can't be inferred from its default value on the
@@ -71,16 +71,16 @@ public struct CalendarView: View {
                     // Android instead of touching the shared 40 value keeps
                     // iOS's spacing exactly as it was.
                     #if !SKIP
-                    .padding(Edge.Set.top, 40)
+                    .padding(Edge.Set.top, 40.0)
                     #else
-                    .padding(Edge.Set.top, 12)
+                    .padding(Edge.Set.top, 12.0)
                     #endif
 
                     // MARK: - Streak Stats Grid
-                    HStack(spacing: 12) {
+                    HStack(spacing: 12.0) {
                         // Current Streak Card
-                        VStack(spacing: 8) {
-                            HStack(spacing: 6) {
+                        VStack(spacing: 8.0) {
+                            HStack(spacing: 6.0) {
                                 Image.platformSymbol("flame.fill", android: "heart.fill")
                                     .foregroundStyle(theme.accent)
                                 SectionLabel("Active streak")
@@ -90,17 +90,17 @@ public struct CalendarView: View {
                                 .font(theme.font(22, weight: Font.Weight.semibold))
                         }
                         .frame(maxWidth: CGFloat.infinity)
-                        .padding(Edge.Set.vertical, 18)
+                        .padding(Edge.Set.vertical, 18.0)
                         // NOTE(skip): .ultraThinMaterial has no Android
                         // equivalent — was cascading into the .clipShape
                         // right below it too.
                         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(theme.cardStroke, lineWidth: 1))
+                        .clipShape(RoundedRectangle(cornerRadius: 16.0))
+                        .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(theme.cardStroke, lineWidth: 1.0))
 
                         // Longest Streak Card
-                        VStack(spacing: 8) {
-                            HStack(spacing: 6) {
+                        VStack(spacing: 8.0) {
+                            HStack(spacing: 6.0) {
                                 Image.platformSymbol("trophy.fill", android: "star.fill")
                                     .foregroundStyle(theme.accent)
                                 SectionLabel("Best streak")
@@ -110,15 +110,15 @@ public struct CalendarView: View {
                                 .font(theme.font(22, weight: Font.Weight.semibold))
                         }
                         .frame(maxWidth: CGFloat.infinity)
-                        .padding(Edge.Set.vertical, 18)
+                        .padding(Edge.Set.vertical, 18.0)
                         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(theme.cardStroke, lineWidth: 1))
+                        .clipShape(RoundedRectangle(cornerRadius: 16.0))
+                        .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(theme.cardStroke, lineWidth: 1.0))
                     }
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     // MARK: - Monthly Deposit Activity Grid
-                    VStack(alignment: HorizontalAlignment.leading, spacing: 16) {
+                    VStack(alignment: HorizontalAlignment.leading, spacing: 16.0) {
                         HStack {
                             Text(currentMonthYearString)
                                 .font(theme.font(15, weight: Font.Weight.semibold))
@@ -126,10 +126,10 @@ public struct CalendarView: View {
 
                             Spacer()
 
-                            HStack(spacing: 4) {
+                            HStack(spacing: 4.0) {
                                 Circle()
                                     .fill(theme.accent)
-                                    .frame(width: 6, height: 6)
+                                    .frame(width: 6.0, height: 6.0)
                                 Text("Deposit day")
                                     .font(theme.font(11, weight: Font.Weight.medium))
                                     .foregroundStyle(Color.secondary) // was .tertiary
@@ -158,27 +158,27 @@ public struct CalendarView: View {
                         // crashes the moment this screen renders. Keying by
                         // the array's own index instead guarantees every
                         // cell has a unique id on both platforms.
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 10) {
+                        LazyVGrid(columns: Array(repeating: GridItem(GridItem.Size.flexible()), count: 7), spacing: 10.0) {
                             ForEach(Array(daysInCurrentMonth().enumerated()), id: \.offset) { _, date in
                                 if let date = date {
                                     DayCell(date: date, isDepositDay: isDepositMadeOn(date: date))
                                 } else {
                                     Color.clear
-                                        .frame(height: 36)
+                                        .frame(height: 36.0)
                                 }
                             }
                         }
                     }
-                    .padding(20)
+                    .padding(20.0)
                     .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
+                    .clipShape(RoundedRectangle(cornerRadius: 20.0))
+                    .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(theme.cardStroke, lineWidth: 1.0))
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     // MARK: - Goal Forecast Summary
-                    VStack(spacing: 12) {
+                    VStack(spacing: 12.0) {
                         HStack {
-                            VStack(alignment: HorizontalAlignment.leading, spacing: 4) {
+                            VStack(alignment: HorizontalAlignment.leading, spacing: 4.0) {
                                 SectionLabel("Target goal")
 
                                 Text(goalTitle.isEmpty ? "Current goal" : goalTitle)
@@ -186,7 +186,7 @@ public struct CalendarView: View {
                             }
                             Spacer()
 
-                            VStack(alignment: HorizontalAlignment.trailing, spacing: 4) {
+                            VStack(alignment: HorizontalAlignment.trailing, spacing: 4.0) {
                                 SectionLabel("Estimated completion")
 
                                 Text(estimatedCompletionDate)
@@ -197,7 +197,7 @@ public struct CalendarView: View {
                         // Hairline divider
                         Rectangle()
                             .fill(theme.hairline)
-                            .frame(height: 1)
+                            .frame(height: 1.0)
 
                         HStack {
                             SectionLabel("Remaining to save")
@@ -221,7 +221,7 @@ public struct CalendarView: View {
                                 )
                             }
                         }) {
-                            HStack(spacing: 8) {
+                            HStack(spacing: 8.0) {
                                 if calendarSync.isSyncing {
                                     ProgressView().tint(theme.accent)
                                 } else {
@@ -231,14 +231,14 @@ public struct CalendarView: View {
                                     .font(theme.font(14, weight: Font.Weight.semibold))
                             }
                             .frame(maxWidth: CGFloat.infinity)
-                            .padding(Edge.Set.vertical, 14)
+                            .padding(Edge.Set.vertical, 14.0)
                             .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06))
                             .foregroundStyle(theme.accent)
                             .clipShape(Capsule())
-                            .overlay(Capsule().stroke(theme.accent.opacity(0.4), lineWidth: 1))
+                            .overlay(Capsule().stroke(theme.accent.opacity(0.4), lineWidth: 1.0))
                         }
                         .disabled(calendarSync.isSyncing || estimatedCompletionDateValue == nil)
-                        .padding(Edge.Set.top, 6)
+                        .padding(Edge.Set.top, 6.0)
 
                         if let message = calendarSync.lastResultMessage {
                             Text(message)
@@ -247,12 +247,12 @@ public struct CalendarView: View {
                                 .multilineTextAlignment(TextAlignment.center)
                         }
                     }
-                    .padding(20)
+                    .padding(20.0)
                     .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .overlay(RoundedRectangle(cornerRadius: 20).stroke(theme.cardStroke, lineWidth: 1))
+                    .clipShape(RoundedRectangle(cornerRadius: 20.0))
+                    .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(theme.cardStroke, lineWidth: 1.0))
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
-                    .padding(Edge.Set.bottom, 120)
+                    .padding(Edge.Set.bottom, 120.0)
                 }
             }
         }
@@ -337,17 +337,17 @@ public struct DayCell: View {
             if isDepositDay {
                 Circle()
                     .fill(theme.accent)
-                    .frame(width: 30, height: 30)
+                    .frame(width: 30.0, height: 30.0)
             } else if isToday {
                 Circle()
-                    .stroke(Color.primary.opacity(0.4), lineWidth: 1)
-                    .frame(width: 30, height: 30)
+                    .stroke(Color.primary.opacity(0.4), lineWidth: 1.0)
+                    .frame(width: 30.0, height: 30.0)
             }
 
             Text(dayNumber)
                 .font(theme.font(11, weight: isToday || isDepositDay ? Font.Weight.bold : Font.Weight.regular))
                 .foregroundStyle(isDepositDay ? theme.onAccent : (isToday ? theme.textPrimary : theme.textSecondary))
         }
-        .frame(height: 36)
+        .frame(height: 36.0)
     }
 }
