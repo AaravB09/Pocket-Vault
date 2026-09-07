@@ -28,7 +28,7 @@ Pods/
 .DS_Store
 
 # Local AI Rules
-.clinerulespocketvault-release.keystore
+.clinerules
 *.keystore
 *.jks
 keystore.properties
