@@ -6,7 +6,7 @@ import SwiftUI
 public enum VaultButtonVariant {
     /// Solid accent fill with theme-aware text on top.
     case primary
-    /// Outlined with accent border and accent text.
+    /// Tinted accent fill with accent text — no border.
     case secondary
     /// Solid danger-red fill with high-contrast text.
     case destructive
@@ -15,6 +15,10 @@ public enum VaultButtonVariant {
     /// Fully transparent text-only button — no fill, no stroke.
     /// Disabled/loading states are expressed through opacity alone.
     case tertiary
+    /// Subtle tinted card fill, no border, with primary-colored
+    /// text — used for OAuth-redirect sign-in buttons (Google, Apple on
+    /// Android) where the provider's own brand fill/logo isn't rendered.
+    case social
 }
 
 // MARK: - VaultButton
@@ -32,10 +36,10 @@ public struct VaultButton: View {
     private let variant: VaultButtonVariant
     private let action: () -> Void
     private var isLoading: Bool = false
-    private var height: CGFloat = 50.0
+    private var height: CGFloat = Layout.height
     private var fontSize: CGFloat = 15.0
     private var fontWeight: Font.Weight = .semibold
-    private var horizontalPadding: CGFloat = 20.0
+    private var horizontalPadding: CGFloat = Layout.horizontalPadding
     private var fullWidth: Bool = true
     private let label: AnyView
 
@@ -55,10 +59,10 @@ public struct VaultButton: View {
         _ title: String,
         variant: VaultButtonVariant = .primary,
         isLoading: Bool = false,
-        height: CGFloat = 50.0,
+        height: CGFloat = Layout.height,
         fontSize: CGFloat = 15.0,
         fontWeight: Font.Weight = .semibold,
-        horizontalPadding: CGFloat = 20.0,
+        horizontalPadding: CGFloat = Layout.horizontalPadding,
         fullWidth: Bool = true,
         action: @escaping () -> Void
     ) {
@@ -78,10 +82,10 @@ public struct VaultButton: View {
     public init(
         variant: VaultButtonVariant = .primary,
         isLoading: Bool = false,
-        height: CGFloat = 50.0,
+        height: CGFloat = Layout.height,
         fontSize: CGFloat = 15.0,
         fontWeight: Font.Weight = .semibold,
-        horizontalPadding: CGFloat = 20.0,
+        horizontalPadding: CGFloat = Layout.horizontalPadding,
         fullWidth: Bool = true,
         action: @escaping () -> Void,
         label: AnyView
@@ -103,10 +107,10 @@ public struct VaultButton: View {
     public init<V: View>(
         variant: VaultButtonVariant = .primary,
         isLoading: Bool = false,
-        height: CGFloat = 50.0,
+        height: CGFloat = Layout.height,
         fontSize: CGFloat = 15.0,
         fontWeight: Font.Weight = .semibold,
-        horizontalPadding: CGFloat = 20.0,
+        horizontalPadding: CGFloat = Layout.horizontalPadding,
         fullWidth: Bool = true,
         action: @escaping () -> Void,
         @ViewBuilder label: () -> V
@@ -146,6 +150,8 @@ public struct VaultButton: View {
             return Color.clear
         case .tertiary:
             return Color.clear
+        case .social:
+            return theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08)
         }
     }
 
@@ -163,6 +169,8 @@ public struct VaultButton: View {
         case .ghost:
             return fillColor
         case .tertiary:
+            return fillColor
+        case .social:
             return fillColor
         }
     }
@@ -182,6 +190,8 @@ public struct VaultButton: View {
             return theme.textPrimary
         case .tertiary:
             return theme.textSecondary
+        case .social:
+            return theme.textPrimary
         }
     }
 
@@ -193,39 +203,23 @@ public struct VaultButton: View {
         Color(white: 0.5)
     }
 
-    private var strokeColor: Color {
-        guard isInteractive else {
-            return neutralContentColor.opacity(0.4)
-        }
-        switch variant {
-        case .primary:
-            return (isPressed ? theme.onAccent.opacity(0.06) : theme.onAccent.opacity(0.12))
-        case .secondary:
-            return theme.accent.opacity(isPressed ? 0.5 : 0.7)
-        case .destructive:
-            return theme.onAccent.opacity(isPressed ? 0.06 : 0.12)
-        case .ghost:
-            return Color.clear
-        case .tertiary:
-            return Color.clear
-        }
-    }
-
     private var shadowColor: Color {
-        // Tertiary has no shadow — it's a pure text button.
-        guard variant != .tertiary else { return Color.clear }
+        // Tertiary/social have no shadow — tertiary is a pure text button,
+        // social is a flat card-style fill that shouldn't float above the
+        // page the way the primary/destructive CTAs do.
+        guard variant != .tertiary, variant != .social else { return Color.clear }
         return Color.black.opacity(isInteractive ? (isPressed ? 0.08 : 0.18) : 0.0)
     }
 
     private var shadowRadius: CGFloat {
-        // Tertiary has no shadow.
-        guard variant != .tertiary else { return 0.0 }
+        // Tertiary/social have no shadow.
+        guard variant != .tertiary, variant != .social else { return 0.0 }
         return isPressed ? 4.0 : 14.0
     }
 
     private var shadowY: CGFloat {
-        // Tertiary has no shadow.
-        guard variant != .tertiary else { return 0.0 }
+        // Tertiary/social have no shadow.
+        guard variant != .tertiary, variant != .social else { return 0.0 }
         return isPressed ? 2.0 : 6.0
     }
 
@@ -252,7 +246,7 @@ public struct VaultButton: View {
             .frame(height: height)
             .frame(maxWidth: fullWidth ? CGFloat.infinity : nil)
             .padding(Edge.Set.horizontal, horizontalPadding)
-            .overlay(focusRing, alignment: Alignment.center)
+            
         }
         #if !SKIP
         .buttonStyle(PlainButtonStyle())
@@ -276,10 +270,6 @@ public struct VaultButton: View {
     private var backgroundLayer: some View {
         RoundedRectangle(cornerRadius: Layout.controlRadius, style: RoundedCornerStyle.continuous)
             .fill(backgroundFillColor)
-            .overlay(
-                RoundedRectangle(cornerRadius: Layout.controlRadius, style: RoundedCornerStyle.continuous)
-                    .stroke(strokeColor, lineWidth: 1.0)
-            )
             .shadow(
                 color: shadowColor,
                 radius: shadowRadius,
@@ -316,6 +306,8 @@ public struct VaultButton: View {
             return theme.textPrimary
         case .tertiary:
             return theme.accent
+        case .social:
+            return theme.textPrimary
         }
     }
 
@@ -326,6 +318,8 @@ public struct VaultButton: View {
         case .destructive:
             return theme.danger
         case .tertiary:
+            return theme.accent
+        case .social:
             return theme.accent
         }
     }
@@ -338,6 +332,8 @@ public struct VaultButton: View {
             return theme.accent
         case .tertiary:
             return theme.textSecondary
+        case .social:
+            return theme.textPrimary
         }
     }
 

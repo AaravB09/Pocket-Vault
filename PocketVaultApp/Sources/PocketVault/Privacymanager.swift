@@ -80,7 +80,7 @@ struct PrivacyRevealOverlay: View {
             .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
             .cornerRadius(14)
             #endif
-            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
+            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(Color.clear, lineWidth: 1.0))
         }
     }
 }
@@ -125,7 +125,7 @@ struct PrivacyQuickToggleButton: View {
                     .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                     .cornerRadius(18)
                     #endif
-                    .overlay(Circle().stroke(theme.cardStroke, lineWidth: 1.0))
+                    .overlay(Circle().stroke(Color.clear, lineWidth: 1.0))
             }
         }
     }

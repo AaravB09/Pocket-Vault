@@ -71,7 +71,7 @@ public struct FeedbackView: View {
                         // right below it.
                         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                         .clipShape(RoundedRectangle(cornerRadius: 14.0))
-                        .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
+                        .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(Color.clear, lineWidth: 1.0))
                         .overlay(alignment: Alignment.topLeading) {
                             if message.isEmpty {
                                 Text("What's on your mind?")
@@ -93,14 +93,16 @@ public struct FeedbackView: View {
                         .padding(Edge.Set.horizontal, Layout.pageMargin)
                 }
 
-                // FIX: `.buttonStyle(.primaryCTA(theme))` referenced a
-                // custom ButtonStyle static member that no longer exists —
-                // same leftover migration gap as every other screen (see
-                // PrimaryCTAButton's doc comment in ThemeManager.swift for
-                // why custom ButtonStyle conformance was dropped app-wide).
-                // Use the wrapper directly instead of a Button + buttonStyle
-                // pair.
-                PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: {
+                // MIGRATED: PrimaryCTAButton (Thememanager.swift) → VaultButton.
+                // VaultButton's isLoading already handles the spinner/label
+                // swap and folds into isInteractive, so the separate
+                // `|| feedbackManager.isSubmitting` disable clause is no
+                // longer needed — only the validation guard stays external.
+                VaultButton(
+                    "Send feedback",
+                    variant: .primary,
+                    isLoading: feedbackManager.isSubmitting
+                ) {
                     isFocused = false
                     Task {
                         await feedbackManager.submit(
@@ -109,13 +111,8 @@ public struct FeedbackView: View {
                             displayName: leaderboardManager.myDisplayName
                         )
                     }
-                }) {
-                    HStack {
-                        if feedbackManager.isSubmitting { ProgressView().tint(theme.onAccent) }
-                        Text(feedbackManager.isSubmitting ? "Sending…" : "Send feedback")
-                    }
                 }
-                .disabled(!isValid || feedbackManager.isSubmitting)
+                .disabled(!isValid)
                 .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                 Spacer(minLength: 40)
@@ -142,13 +139,9 @@ public struct FeedbackView: View {
                 .multilineTextAlignment(TextAlignment.center)
                 .padding(Edge.Set.horizontal, 40.0)
 
-            // FIX: same leftover-ButtonStyle pattern as above, using the
-            // secondary variant. SecondaryCTAButton has no onAccent
-            // parameter — its own text color is `accent` — so nothing
-            // else needs to change here since this label has no tint call
-            // to fix up.
-            SecondaryCTAButton(accent: theme.accent, action: { dismiss() }) {
-                Text("Done")
+            // MIGRATED: SecondaryCTAButton (Thememanager.swift) → VaultButton.
+            VaultButton("Done", variant: .secondary) {
+                dismiss()
             }
             .padding(Edge.Set.horizontal, 40.0)
             .padding(Edge.Set.top, 8.0)

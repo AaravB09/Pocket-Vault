@@ -164,6 +164,11 @@ public struct SetupGoalView: View {
 
     private var header: some View {
         HStack(spacing: 14.0) {
+            // Not a VaultButton: this is a circular icon-only nav control
+            // (same shape family as HeaderIconButton in ThemeManager.swift),
+            // not a Primary/Secondary/Tertiary/Social CTA — forcing it into
+            // VaultButton's 50pt-tall squircle frame would turn it into a
+            // rounded square instead of the small circle this header needs.
             Button(action: goBack) {
                 Image(systemName: "chevron.left")
                     .font(theme.font(14, weight: Font.Weight.semibold))
@@ -188,6 +193,11 @@ public struct SetupGoalView: View {
                 }
             }
 
+            // Not a VaultButton: an inline text link sitting flush against
+            // the step-progress capsules in this tight header row, with no
+            // fill/border of its own — VaultButton's fixed height (50pt) and
+            // built-in 20pt horizontal padding are sized for a full CTA and
+            // would blow out this row's compact layout for no visual gain.
             Button(action: goNext) {
                 Text("Skip")
                     .font(theme.font(14, weight: Font.Weight.medium))
@@ -217,26 +227,31 @@ public struct SetupGoalView: View {
                 .frame(height: 36.0)
                 .allowsHitTesting(false)
 
-            // FIX: `.buttonStyle(PrimaryCTAButtonStyle(...))` referenced a
-            // custom ButtonStyle type that no longer exists — see the long
-            // comment above PrimaryCTAButton in ThemeManager.swift for why
-            // custom ButtonStyle conformance was dropped app-wide in favor
-            // of plain wrapper views. Use PrimaryCTAButton directly instead
-            // of a Button + buttonStyle pair; the disabled/animation/padding
-            // modifiers that were chained after .buttonStyle(...) still work
-            // the same way chained after the wrapper.
-            PrimaryCTAButton(
-                accent: isStepValid ? theme.accent : theme.accent.opacity(0.3),
-                onAccent: theme.onAccent,
-                action: goNext
-            ) {
-                HStack(spacing: 8.0) {
-                    Text(ctaTitle)
-                    if step != .amount {
-                        Image(systemName: "arrow.forward")
+            // MIGRATED: PrimaryCTAButton (ThemeManager.swift) → VaultButton.
+            // Same visual family, but PrimaryCTAButton sized itself off
+            // vertical padding (17pt) instead of a fixed height, so it
+            // drifted a pixel or two from every other CTA depending on the
+            // label's font metrics — VaultButton fixes that with a shared
+            // `.frame(height: Layout.height)`. It also already renders its
+            // own flat neutral-grey fill whenever `isEnabled` is false, so
+            // the old by-hand `isStepValid ? theme.accent : theme.accent
+            // .opacity(0.3)` dimming is redundant now — `.disabled(...)`
+            // alone drives that, same simplification already made at the
+            // ForgotPasswordSheet call site in Loginview.swift. Label is
+            // passed as `AnyView` (not a trailing ViewBuilder closure) so
+            // this keeps working under Skip/Android — see VaultButton.swift.
+            VaultButton(
+                variant: .primary,
+                action: goNext,
+                label: AnyView(
+                    HStack(spacing: 8.0) {
+                        Text(ctaTitle)
+                        if step != .amount {
+                            Image(systemName: "arrow.forward")
+                        }
                     }
-                }
-            }
+                )
+            )
             .disabled(!isStepValid)
             .animation(Animation.easeInOut(duration: 0.2), value: isStepValid)
             .padding(Edge.Set.horizontal, Layout.pageMargin)
@@ -323,6 +338,12 @@ public struct SetupGoalView: View {
         }
     }
 
+    // Not a VaultButton: this is a selectable list row rendered as a full
+    // `Capsule()` (pill), the same "different shape family, deliberately
+    // left alone" call already made for ThemePickerSection's appearance-mode
+    // rows in ThemeManager.swift — it's a persistent multi-option selector,
+    // not a one-shot CTA, so it keeps its own pill shape and isSelected-
+    // driven fill instead of converging on the squircle CTA family.
     @ViewBuilder
     private func presetRow(for preset: GoalPreset) -> some View {
         let isSelected = selectedPresetName == preset.name
@@ -434,20 +455,22 @@ public struct SetupGoalView: View {
                 .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                 .cornerRadius(14)
                 #endif
-                .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
+                .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(Color.clear, lineWidth: 1.0))
 
-            // FIX: `.buttonStyle(.secondaryCTA(theme))` is the same leftover
-            // pattern as PrimaryCTAButtonStyle above — that ButtonStyle no
-            // longer exists. SecondaryCTAButton's own foreground color is
-            // `accent` (not onAccent, unlike the primary/filled button), so
-            // its built-in `isLoading` spinner is matched to that automatically.
-            SecondaryCTAButton(
-                accent: theme.accent,
+            // MIGRATED: SecondaryCTAButton (ThemeManager.swift) → VaultButton.
+            // `.secondary` already matches SecondaryCTAButton's look
+            // (accent-tinted fill + accent border + accent text) and its
+            // `isLoading` spinner is tinted to `theme.accent` the same way,
+            // but now shares VaultButton's fixed Layout.height instead of
+            // SecondaryCTAButton's own 15pt-vertical-padding sizing, so it
+            // lines up with every other CTA in the app, including the
+            // primary button just below it in this same screen.
+            VaultButton(
+                "Generate with AI",
+                variant: .secondary,
                 isLoading: isGeneratingSuggestion,
                 action: { Task { await generateSuggestion() } }
-            ) {
-                Text("Generate with AI")
-            }
+            )
             .disabled(customGoalDescription.trimmingCharacters(in: CharacterSet.whitespaces).isEmpty)
 
             if let aiErrorMessage {
@@ -492,6 +515,12 @@ public struct SetupGoalView: View {
                 .multilineTextAlignment(TextAlignment.leading)
                 .frame(maxWidth: CGFloat.infinity, alignment: Alignment.leading)
 
+            // Not a VaultButton: this has no VaultButtonVariant equivalent —
+            // it's a two-state applied/not-applied toggle chip whose fill
+            // and text color both flip based on `isApplied`, with no
+            // loading state and no full-width CTA sizing. It does reuse
+            // Layout.controlRadius + the .continuous clip for shape
+            // consistency with the rest of the app (see the NOTE below).
             Button(action: applySuggestion) {
                 HStack(spacing: 6.0) {
                     Image(systemName: isApplied ? "checkmark.circle.fill" : "arrow.turn.right.down")

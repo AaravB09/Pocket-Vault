@@ -121,7 +121,7 @@ public struct LoginView: View {
                             .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                             .cornerRadius(14)
                             #endif
-                            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
+                            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(Color.clear, lineWidth: 1.0))
 
                         ZStack(alignment: Alignment.trailing) {
                             Group {
@@ -151,7 +151,7 @@ public struct LoginView: View {
                             .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                             .cornerRadius(14)
                             #endif
-                            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
+                            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(Color.clear, lineWidth: 1.0))
 
                             Button(action: { isPasswordVisible.toggle() }) {
                                 Image.platformSymbol(isPasswordVisible ? "eye.slash.fill" : "eye.fill", android: isPasswordVisible ? "lock.fill" : "checkmark.circle")
@@ -417,7 +417,7 @@ public struct ForgotPasswordSheet: View {
                     .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                     .cornerRadius(14)
                     #endif
-                    .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
+                    .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(Color.clear, lineWidth: 1.0))
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                 if let sentMessage {

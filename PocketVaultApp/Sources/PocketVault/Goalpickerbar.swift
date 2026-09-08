@@ -46,7 +46,7 @@ struct GoalPickerBar: View {
                             Capsule().fill(isActive ? theme.accent : (theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06)))
                         )
                         .overlay(
-                            Capsule().stroke(isActive ? Color.clear : theme.cardStroke, lineWidth: 1.0)
+                            Capsule().stroke(Color.clear, lineWidth: 0)
                         )
                     }
                 }

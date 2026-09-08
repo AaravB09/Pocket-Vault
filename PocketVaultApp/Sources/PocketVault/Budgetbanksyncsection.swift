@@ -58,7 +58,7 @@ struct BudgetBankSyncSection: View {
         .background(theme.background.opacity(0.8))
         #endif
         .clipShape(RoundedRectangle(cornerRadius: 16.0))
-        .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(theme.cardStroke, lineWidth: 1.0))
+        .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(Color.clear, lineWidth: 1.0))
     }
 
     @ViewBuilder
@@ -109,7 +109,22 @@ struct BudgetBankSyncSection: View {
                 Spacer()
             }
 
-            Button(action: {
+            // FIX: was a hand-rolled Button — its own pressed/disabled
+            // state, a Capsule shape (not the app's squircle), and a
+            // color-matched accent "glow" shadow, all one-off to this
+            // screen. Replaced with VaultButton so this gets the shared
+            // squircle shape, the standard flat shadow, and the same
+            // isLoading/disabled treatment every other CTA in the app
+            // uses — isLoading now shows VaultButton's own spinner in
+            // place of the label instead of a spinner alongside it.
+            // Also dropped the all-caps tracked label for sentence case,
+            // matching this file's own "Sentence case, not all-caps
+            // tracked text" rule for CTA buttons (see ThemeManager.swift).
+            VaultButton(
+                plaid.isConnected ? "Sync now" : "Connect bank",
+                variant: .primary,
+                isLoading: plaid.isConnecting || plaid.isSyncing
+            ) {
                 Task {
                     if plaid.isConnected {
                         await plaid.syncTransactions(accessToken: authManager.accessToken, into: budgetManager)
@@ -119,22 +134,8 @@ struct BudgetBankSyncSection: View {
                         }
                     }
                 }
-            }) {
-                HStack {
-                    if plaid.isConnecting || plaid.isSyncing { ProgressView().tint(theme.onAccent) }
-                    Text(plaid.isConnected ? "SYNC NOW" : "CONNECT BANK")
-                        .font(theme.font(12.0, weight: Font.Weight.bold))
-                        .tracking(2.4)
-                }
-                .frame(maxWidth: CGFloat.infinity)
-                .padding(Edge.Set.vertical, 17.0)
-                .background(theme.accent)
-                .foregroundColor(theme.onAccent)
-                .clipShape(Capsule())
-                .shadow(color: theme.accent.opacity(0.4), radius: 14.0, y: 6.0)
             }
-            .disabled(plaid.isConnecting || plaid.isSyncing || !networkMonitor.isOnline)
-            .opacity(networkMonitor.isOnline ? 1.0 : 0.5)
+            .disabled(!networkMonitor.isOnline)
 
             if !networkMonitor.isOnline {
                 Text("Bank sync needs a connection — log payments by hand until you're back online.")
@@ -180,7 +181,7 @@ struct BudgetBankSyncSection: View {
             .background(theme.background.opacity(0.8))
             #endif
             .clipShape(RoundedRectangle(cornerRadius: 16.0))
-            .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(theme.cardStroke, lineWidth: 1.0))
+            .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(Color.clear, lineWidth: 1.0))
         }
         .sheet(isPresented: $showPaywall) {
             // 3. Make the Binding type explicit so Skip understands it

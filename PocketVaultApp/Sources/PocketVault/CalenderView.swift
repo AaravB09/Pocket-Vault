@@ -96,7 +96,7 @@ public struct CalendarView: View {
                         // right below it too.
                         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                         .clipShape(RoundedRectangle(cornerRadius: 16.0))
-                        .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(theme.cardStroke, lineWidth: 1.0))
+                        .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(Color.clear, lineWidth: 1.0))
 
                         // Longest Streak Card
                         VStack(spacing: 8.0) {
@@ -113,7 +113,7 @@ public struct CalendarView: View {
                         .padding(Edge.Set.vertical, 18.0)
                         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                         .clipShape(RoundedRectangle(cornerRadius: 16.0))
-                        .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(theme.cardStroke, lineWidth: 1.0))
+                        .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(Color.clear, lineWidth: 1.0))
                     }
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
@@ -172,7 +172,7 @@ public struct CalendarView: View {
                     .padding(20.0)
                     .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                     .clipShape(RoundedRectangle(cornerRadius: 20.0))
-                    .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(theme.cardStroke, lineWidth: 1.0))
+                    .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(Color.clear, lineWidth: 1.0))
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     // MARK: - Goal Forecast Summary
@@ -250,7 +250,7 @@ public struct CalendarView: View {
                     .padding(20.0)
                     .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                     .clipShape(RoundedRectangle(cornerRadius: 20.0))
-                    .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(theme.cardStroke, lineWidth: 1.0))
+                    .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(Color.clear, lineWidth: 1.0))
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
                     .padding(Edge.Set.bottom, 120.0)
                 }

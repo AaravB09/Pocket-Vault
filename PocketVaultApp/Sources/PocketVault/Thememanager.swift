@@ -328,7 +328,9 @@ public enum Layout {
 // same pressed-state haptic tick, so this needs module-internal (the
 // Swift default) rather than file-private visibility.
 public func ctaHapticTick() {
+    #if !SKIP
     UIImpactFeedbackGenerator(style: UIImpactFeedbackGenerator.FeedbackStyle.light).impactOccurred()
+    #endif
 }
 
 public struct PrimaryCTAButton<Label: View>: View {
@@ -396,19 +398,25 @@ public struct PrimaryCTAButton<Label: View>: View {
             .padding(Edge.Set.vertical, 17.0)
             .background(fillColor)
             .foregroundColor(contentColor)
-            .cornerRadius(Layout.controlRadius)
+            // FIX: plain `.cornerRadius()` always clips with the CIRCULAR
+            // corner style, never continuous — it was mismatched against
+            // the continuous overlays right below it (fill edge vs. stroke
+            // edge visibly different curves). `.clipShape(..., style:
+            // .continuous)` keeps this fill on the same squircle curve as
+            // every other VaultButton-family control.
+            .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius, style: RoundedCornerStyle.continuous))
             .overlay( // one-shot tap "flash" — fades out right after release
-                RoundedRectangle(cornerRadius: Layout.controlRadius)
+                RoundedRectangle(cornerRadius: Layout.controlRadius, style: RoundedCornerStyle.continuous)
                     .fill(onAccent)
                     .opacity(flash ? 0.18 : 0.0)
                     .allowsHitTesting(false)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: Layout.controlRadius)
+                RoundedRectangle(cornerRadius: Layout.controlRadius, style: RoundedCornerStyle.continuous)
                     .stroke(onAccent.opacity(isInteractive ? (isPressed ? 0.06 : 0.12) : 0.0), lineWidth: 1.0)
             )
             .overlay( // accessibility focus ring — keyboard / Full Keyboard Access / Switch Control
-                RoundedRectangle(cornerRadius: Layout.controlRadius + 3.0)
+                RoundedRectangle(cornerRadius: Layout.controlRadius + 3.0, style: RoundedCornerStyle.continuous)
                     .stroke(accent, lineWidth: isFocused ? 3.0 : 0.0)
                     .padding(-3.0)
             )
@@ -495,21 +503,23 @@ public struct SecondaryCTAButton<Label: View>: View {
             .font(Font.custom("Inter-SemiBold", size: 15.0))
             .frame(maxWidth: CGFloat.infinity)
             .padding(Edge.Set.vertical, 15.0)
-            .background(isInteractive ? accent.opacity(isPressed ? 0.2 : 0.12) : Color(white: 0.5).opacity(0.1))
+                        .background(isInteractive ? accent.opacity(isPressed ? 0.2 : 0.12) : Color(white: 0.5).opacity(0.1))
             .foregroundColor(contentColor)
-            .cornerRadius(Layout.controlRadius)
+            // FIX: see PrimaryCTAButton above — plain `.cornerRadius()` is
+            // always CIRCULAR, mismatched against the continuous overlays.
+            .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius, style: RoundedCornerStyle.continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: Layout.controlRadius)
+                RoundedRectangle(cornerRadius: Layout.controlRadius, style: RoundedCornerStyle.continuous)
                     .fill(accent)
                     .opacity(flash ? 0.16 : 0.0)
                     .allowsHitTesting(false)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: Layout.controlRadius)
+                RoundedRectangle(cornerRadius: Layout.controlRadius, style: RoundedCornerStyle.continuous)
                     .stroke(borderColor.opacity(isInteractive ? 0.5 : 1.0), lineWidth: 1.2)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: Layout.controlRadius + 3.0)
+                RoundedRectangle(cornerRadius: Layout.controlRadius + 3.0, style: RoundedCornerStyle.continuous)
                     .stroke(accent, lineWidth: isFocused ? 3.0 : 0.0)
                     .padding(-3.0)
             )
@@ -591,9 +601,13 @@ public struct TertiaryCTAButton<Label: View>: View {
             .foregroundColor(isInteractive ? color : color.opacity(0.35))
             .opacity(isPressed ? 0.6 : 1.0)
             .overlay(
-                RoundedRectangle(cornerRadius: 6.0)
+                // FIX: was a bespoke `6.0` radius with no `style:` at all
+                // (defaults to circular) — now matches the same
+                // Layout.controlRadius + 3.0 / continuous focus ring every
+                // other CTA button uses.
+                RoundedRectangle(cornerRadius: Layout.controlRadius + 3.0, style: RoundedCornerStyle.continuous)
                     .stroke(color, lineWidth: isFocused ? 2.0 : 0.0)
-                    .padding(-4.0)
+                    .padding(-3.0)
             )
         }
         #if !SKIP
@@ -683,7 +697,18 @@ public struct HeaderIconButton: View {
                 .foregroundStyle(theme.textPrimary)
                 .frame(width: 38.0, height: 38.0)
                 .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
-                .cornerRadius(19.0)
+                // NOTE: kept at 19.0 (half of the 38pt frame) rather than
+                // converging on Layout.controlRadius — this is a circular
+                // icon button, a different shape family from the
+                // VaultButton squircle CTAs, and forcing it to 16.0 would
+                // turn it into a rounded square. Still switched off plain
+                // `.cornerRadius()` (always circular-style) to an explicit
+                // `.clipShape(..., style: .continuous)` for consistency
+                // with every other button's clipping technique — at
+                // radius = half the frame, continuous and circular styles
+                // both resolve to a true circle, so this is a style-only
+                // fix with no visible change here.
+                .clipShape(RoundedRectangle(cornerRadius: 19.0, style: RoundedCornerStyle.continuous))
         }
     }
 }
@@ -807,8 +832,19 @@ public struct ThemePickerSection: View {
                             }
                             .padding(14.0)
                             .background(theme.isLight ? Color.black.opacity(0.03) : Color.white.opacity(0.05))
-                            .cornerRadius(12.0)
-                            .overlay(RoundedRectangle(cornerRadius: 12.0).stroke(theme.cardStroke, lineWidth: 1.0))
+                            // NOTE: kept at 12.0 rather than converging on
+                            // Layout.controlRadius (16.0) — this is a
+                            // full-width selectable list row, not a
+                            // VaultButton-style CTA, and widening its
+                            // radius would change its proportions relative
+                            // to the 14pt padding it was tuned with. Fixed
+                            // the STYLE only: plain `.cornerRadius()` /
+                            // a bare `RoundedRectangle(cornerRadius:)`
+                            // stroke both default to circular, mismatched
+                            // against each other and against every other
+                            // button's continuous curve.
+                            .clipShape(RoundedRectangle(cornerRadius: 12.0, style: RoundedCornerStyle.continuous))
+                            .overlay(RoundedRectangle(cornerRadius: 12.0, style: RoundedCornerStyle.continuous).stroke(Color.clear, lineWidth: 1.0))
                         }
                     }
                 }
@@ -817,7 +853,7 @@ public struct ThemePickerSection: View {
         .padding(20.0)
         .background(cardFill)
         .cornerRadius(20.0)
-        .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(theme.cardStroke, lineWidth: 1.0))
+        .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(Color.clear, lineWidth: 1.0))
         .padding(Edge.Set.horizontal, Layout.pageMargin)
         // This section is embedded inside ProfileView, which already calls
         // .themedSurface() at its own root — so this nested call isn't

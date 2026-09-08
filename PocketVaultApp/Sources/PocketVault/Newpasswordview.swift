@@ -87,7 +87,7 @@ public struct NewPasswordView: View {
                             .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                             #endif
                             .clipShape(RoundedRectangle(cornerRadius: 14.0))
-                            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
+                            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(Color.clear, lineWidth: 1.0))
 
                             Button(action: { isPasswordVisible.toggle() }) {
                                 Image.platformSymbol(isPasswordVisible ? "eye.slash.fill" : "eye.fill", android: isPasswordVisible ? "lock.fill" : "checkmark.circle")
@@ -109,7 +109,7 @@ public struct NewPasswordView: View {
                             .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                             #endif
                             .clipShape(RoundedRectangle(cornerRadius: 14.0))
-                            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
+                            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(Color.clear, lineWidth: 1.0))
 
                         VStack(alignment: HorizontalAlignment.leading, spacing: 8.0) {
                             ForEach(requirements) { requirement in

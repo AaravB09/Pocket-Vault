@@ -230,7 +230,7 @@ public struct BudgetTrackerView: View {
         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
         .clipShape(RoundedRectangle(cornerRadius: 20.0))
         // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
-        .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 20.0).stroke(theme.cardStroke, lineWidth: 1.0) }
+        .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 20.0).stroke(Color.clear, lineWidth: 1.0) }
         .padding(Edge.Set.horizontal, Layout.pageMargin)
     }
 
@@ -428,7 +428,7 @@ public struct TransactionRow: View {
         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
         .clipShape(RoundedRectangle(cornerRadius: 14.0))
         // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
-        .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0) }
+        .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 14.0).stroke(Color.clear, lineWidth: 1.0) }
     }
 
     private func timeLabel(_ date: Date) -> String {
@@ -521,7 +521,7 @@ public struct AddPaymentSheet: View {
                             .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                             .clipShape(RoundedRectangle(cornerRadius: 14.0))
                             // FIX: Pass the Shape directly to prevent ShapeStyle ambiguity errors
-                            .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0) }
+                            .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 14.0).stroke(Color.clear, lineWidth: 1.0) }
                     }
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 

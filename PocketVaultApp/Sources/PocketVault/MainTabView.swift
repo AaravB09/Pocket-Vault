@@ -13,6 +13,26 @@ public struct TourAnchorPreferenceKey: PreferenceKey {
     }
 }
 
+/// Attaches an invisible frame reporter to a view so its on-screen rect
+/// (in the "tourOverlay" coordinate space) gets merged into MainTabView's
+/// `tourFrames` under `key`, for `FeatureTourOverlay` to point its arrow
+/// at. Free function (not a MainTabView method) so any view anywhere in
+/// the tree under MainTabView's `.coordinateSpace(.named("tourOverlay"))`
+/// can register itself — e.g. ContentView's header Calendar/Pro buttons,
+/// which aren't inside MainTabView's own body.
+func tourAnchorReporter(key: Int) -> some View {
+    GeometryReader { g in
+        Color.clear
+            // Use one coordinate system for every platform. FeatureTourOverlay
+            // converts these global frames into its own local coordinates.
+            #if !SKIP
+            .preference(key: TourAnchorPreferenceKey.self, value: [key: g.frame(in: .global)])
+            #else
+            .preference(key: TourAnchorPreferenceKey.self, value: [key: g.frame(in: NamedCoordinateSpace.named("global"))])
+            #endif
+    }
+}
+
 public struct MainTabView: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding: Bool = false
     @AppStorage("hasSeenFeatureTour") private var hasSeenFeatureTour: Bool = false
@@ -109,9 +129,6 @@ public struct MainTabView: View {
     // actual button, even if paddings/sizes change later.
     @State private var tourFrames: [Int: CGRect] = [:]
 
-    /// Attaches an invisible frame reporter to a view so its on-screen
-    /// rect (in the "tourOverlay" coordinate space) gets merged into
-    /// `tourFrames` under `key`.
     /// Tab bar's frosted-glass background — real `UIVisualEffectView` on
     /// iOS (via `BlurView`, unavailable under Skip), SwiftUI's own
     /// Material (already used everywhere else in the app) on Android.
@@ -131,23 +148,6 @@ public struct MainTabView: View {
             themeManager.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35)
         }
         #endif
-    }
-
-    private func tourAnchorReporter(key: Int) -> some View {
-        GeometryReader { g in
-            Color.clear
-                #if !SKIP
-                .preference(key: TourAnchorPreferenceKey.self, value: [key: g.frame(in: .named("tourOverlay"))])
-                #else
-                .preference(key: TourAnchorPreferenceKey.self, value: [key: g.frame(in: {
-                                    #if !SKIP
-                                    return .named("global")
-                                    #else
-                                    return NamedCoordinateSpace.named("global")
-                                    #endif
-                                }())])
-                #endif
-        }
     }
 
     @State private var onboardingDraftTitle: String = ""
@@ -368,7 +368,7 @@ public struct MainTabView: View {
             .background(tabBarBlurBackground)
             .clipShape(Capsule())
             .overlay(
-                Capsule().stroke(themeManager.cardStroke, lineWidth: 1.0)
+                Capsule().stroke(Color.clear, lineWidth: 1.0)
             )
             // PERF (Android): this dock is mounted on every tab and never
             // unmounts, so its `.shadow` gets re-evaluated on every
@@ -615,7 +615,7 @@ public struct AskAIBubble: View {
             .background(
                 GeometryReader { g in
                     Color.clear
-                        .preference(key: TourAnchorPreferenceKey.self, value: [4: g.frame(in: .named("tourOverlay"))])
+                        .preference(key: TourAnchorPreferenceKey.self, value: [4: g.frame(in: .global)])
                 }
             )
             .padding(Edge.Set.trailing, Layout.pageMargin)
@@ -633,13 +633,7 @@ public struct AskAIBubble: View {
                     .background(
                         GeometryReader { g in
                             Color.clear
-                                .preference(key: TourAnchorPreferenceKey.self, value: [4: g.frame(in: {
-                                    #if !SKIP
-                                    return .named("global")
-                                    #else
-                                    return NamedCoordinateSpace.named("global")
-                                    #endif
-                                }())])
+                                .preference(key: TourAnchorPreferenceKey.self, value: [4: g.frame(in: NamedCoordinateSpace.named("global"))])
                         }
                     )
                     .padding(Edge.Set.trailing, Layout.pageMargin)

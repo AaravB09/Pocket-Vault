@@ -181,7 +181,7 @@ public struct CustomPaywallView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 18.0))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18.0)
-                        .stroke(theme.cardStroke, lineWidth: 1.0)
+                        .stroke(Color.clear, lineWidth: 1.0)
                 )
                 .padding(Edge.Set.horizontal, 28.0)
                 .padding(Edge.Set.vertical, 8.0)
@@ -407,7 +407,7 @@ public struct PlanCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: 18.0))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18.0)
-                        .stroke(isSelected ? theme.accent : theme.cardStroke, lineWidth: isSelected ? 2.5 : 1)
+                        .stroke(Color.clear, lineWidth: 0)
                 )
                 .shadow(color: Color.black.opacity(isSelected ? 0.14 : 0), radius: 12, y: 5)
             )
@@ -528,7 +528,7 @@ public struct CustomPaywallView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 18.0))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18.0)
-                        .stroke(theme.cardStroke, lineWidth: 1.0)
+                        .stroke(Color.clear, lineWidth: 1.0)
                 )
                 .padding(Edge.Set.horizontal, 28.0)
                 .padding(Edge.Set.vertical, 8.0)
@@ -766,7 +766,7 @@ public struct PlanCard: View {
                 .clipShape(RoundedRectangle(cornerRadius: 18.0))
                 .overlay(
                     RoundedRectangle(cornerRadius: 18.0)
-                        .stroke(isSelected ? theme.accent : theme.cardStroke, lineWidth: isSelected ? 2.5 : 1.0)
+                        .stroke(Color.clear, lineWidth: 0)
                 )
                 .shadow(color: Color.black.opacity(isSelected ? 0.14 : 0.0), radius: 12, y: 5)
             )

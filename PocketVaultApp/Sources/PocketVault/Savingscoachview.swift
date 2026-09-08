@@ -98,6 +98,9 @@ public struct SavingsCoachView: View {
                 VStack(spacing: 26.0) {
                     HStack {
                         Spacer()
+                        // Not a VaultButton: icon-only circular dismiss control,
+                        // same shape family as HeaderIconButton in
+                        // Thememanager.swift — not a CTA.
                         Button(action: { dismiss() }) {
                             Image.platformSymbol("xmark.circle.fill", android: "xmark")
                                 .font(theme.font(22, weight: Font.Weight.bold))
@@ -147,27 +150,29 @@ public struct SavingsCoachView: View {
                                 #endif
                                 .padding(Edge.Set.horizontal, 24.0)
 
-                            Button(action: { Task { await requestPlan() } }) {
-                                HStack {
-                                    if isLoading { ProgressView().tint(theme.onAccent) }
-                                    Text(isLoading ? "BUILDING YOUR PLAN…" : "GENERATE MY PLAN")
-                                        .font(theme.font(13, weight: Font.Weight.bold))
-                                        .tracking(2.8)
-                                }
-                                .frame(maxWidth: CGFloat.infinity)
-                                .padding(Edge.Set.vertical, 19.0)
-                                .background(theme.accent)
-                                .foregroundColor(theme.onAccent)
-                                // NOTE(skip): background here is already
-                                // theme-agnostic, but `.clipShape` itself is
-                                // still unresolved under Skip.
-                                #if !SKIP
-                                .clipShape(Capsule())
-                                #else
-                                .cornerRadius(100)
-                                #endif
-                                .shadow(color: theme.accent.opacity(0.5), radius: 18, y: 8)
-                            }
+                            // MIGRATED: ad hoc Capsule CTA → VaultButton.
+                            // This button pre-dates VaultButton and had drifted
+                            // from the app's own conventions in three ways at
+                            // once: a Capsule/pill shape instead of the shared
+                            // squircle, an all-caps tracked label (see
+                            // Thememanager.swift's "sentence case, not all-caps
+                            // tracked text" comment on the shared CTA states),
+                            // and a colored accent-glow shadow instead of the
+                            // shared neutral one. `.primary` already handles the
+                            // loading spinner (tinted to onAccent) and the
+                            // disabled state, so isLoading/disabled/action carry
+                            // straight over — the label stays static ("Generate
+                            // my plan") rather than swapping text while loading,
+                            // matching how every other VaultButton in the app
+                            // handles isLoading (fade to a spinner in place,
+                            // not a text change).
+                            VaultButton(
+                                "Generate my plan",
+                                variant: .primary,
+                                isLoading: isLoading,
+                                horizontalPadding: 0.0,
+                                action: { Task { await requestPlan() } }
+                            )
                             .disabled(isLoading)
                             .padding(Edge.Set.horizontal, 30.0)
 
@@ -206,24 +211,32 @@ public struct SavingsCoachView: View {
                 .foregroundStyle(theme.textPrimary.opacity(0.85))
                 .lineSpacing(6)
 
+            // Not converted to VaultButton: its inverted fill (theme.textPrimary
+            // background / theme.background text) doesn't correspond to any
+            // existing VaultButtonVariant — every variant is accent/danger/
+            // onAccent-based, none render as a plain textPrimary-on-background
+            // swap, and bending a variant's meaning to fit one screen felt
+            // worse than leaving this hand-rolled. It has no loading/disabled
+            // state to map anyway. Per the shape-consistency pass, though, its
+            // shape/sizing/casing still needed to match the rest of the app:
+            // Capsule → the shared squircle (Layout.controlRadius, .continuous),
+            // fixed Layout.height instead of vertical padding, and the all-caps
+            // tracked label → sentence case (see Thememanager.swift's "sentence
+            // case, not all-caps tracked text" comment on the shared CTAs).
             Button(action: {
                 dismiss()
                 selectedTab = 4 // jump to Ask AI, where the plan now lives
             }) {
-                Text("START SAVING")
-                    .font(theme.font(11, weight: Font.Weight.bold))
-                    .tracking(2)
+                Text("Start saving")
+                    .font(theme.font(15, weight: Font.Weight.semibold))
                     .frame(maxWidth: CGFloat.infinity)
-                    .padding(Edge.Set.vertical, 16.0)
+                    .frame(height: Layout.height)
                     .background(theme.textPrimary)
                     .foregroundColor(theme.background)
-                    // NOTE(skip): same clipShape-only fix as the
-                    // GENERATE MY PLAN button above — background is
-                    // already theme-agnostic.
                     #if !SKIP
-                    .clipShape(Capsule())
+                    .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius, style: RoundedCornerStyle.continuous))
                     #else
-                    .cornerRadius(100)
+                    .cornerRadius(Layout.controlRadius)
                     #endif
             }
             .padding(Edge.Set.top, 8.0)
@@ -236,7 +249,7 @@ public struct SavingsCoachView: View {
         .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
         .cornerRadius(20)
         #endif
-        .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(theme.cardStroke, lineWidth: 1.0))
+        .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(Color.clear, lineWidth: 1.0))
         .padding(Edge.Set.horizontal, 24.0)
     }
 

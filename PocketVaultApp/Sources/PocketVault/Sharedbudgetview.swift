@@ -122,7 +122,15 @@ public struct SharedBudgetView: View {
                 .foregroundStyle(theme.textTertiary)
                 .multilineTextAlignment(TextAlignment.center)
 
-            PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: {
+            // MIGRATED: PrimaryCTAButton (Thememanager.swift) → VaultButton.
+            // VaultButton's own isLoading param already swaps in a
+            // ProgressView and fades the label — no need for the manual
+            // HStack + ternary label text PrimaryCTAButton needed.
+            VaultButton(
+                "Share this goal",
+                variant: .primary,
+                isLoading: sharedBudgetManager.isLoading
+            ) {
                 Task {
                     if let record = await sharedBudgetManager.createShare(
                         goalTitle: goal.title,
@@ -135,18 +143,12 @@ public struct SharedBudgetView: View {
                         await sharedBudgetManager.loadShare(id: record.id, accessToken: authManager.accessToken)
                     }
                 }
-            }) {
-                HStack {
-                    if sharedBudgetManager.isLoading { ProgressView().tint(theme.onAccent) }
-                    Text(sharedBudgetManager.isLoading ? "Please wait…" : "Share this goal")
-                }
             }
-            .disabled(sharedBudgetManager.isLoading)
         }
         .padding(Layout.cardPadding)
         .background(cardFill)
         .cornerRadius(Layout.cardRadius)
-        .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1.0))
+        .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(Color.clear, lineWidth: 1.0))
         .padding(Edge.Set.horizontal, Layout.pageMargin)
     }
 
@@ -242,17 +244,32 @@ public struct SharedBudgetView: View {
 
             Rectangle().fill(theme.hairline).frame(height: 1.0)
 
-            Button(role: ButtonRole.destructive, action: { showLeaveConfirm = true }) {
-                Text("Leave this shared budget")
-                    .font(theme.font(13, weight: Font.Weight.semibold))
-                    .foregroundStyle(theme.danger.opacity(0.9))
-            }
+            // MIGRATED: raw Button(role: .destructive) → VaultButton.
+            // This was always a plain text link (no fill), not a filled
+            // CTA — .destructive is VaultButton's solid red-fill variant,
+            // which would visibly redesign this into a bold button rather
+            // than just fixing its shape. .tertiary keeps the "no fill,
+            // no stroke" text-link look; the label itself still sets
+            // theme.danger explicitly, and that wins over VaultButton's
+            // default tertiary text color since it's the closer/child
+            // modifier. fullWidth: false preserves the original's
+            // intrinsic (non-stretched) width.
+            VaultButton(
+                variant: .tertiary,
+                fullWidth: false,
+                action: { showLeaveConfirm = true },
+                label: AnyView(
+                    Text("Leave this shared budget")
+                        .font(theme.font(13, weight: Font.Weight.semibold))
+                        .foregroundStyle(theme.danger.opacity(0.9))
+                )
+            )
             .disabled(sharedBudgetManager.isLoading)
         }
         .padding(Layout.cardPadding)
         .background(cardFill)
         .cornerRadius(Layout.cardRadius)
-        .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1.0))
+        .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(Color.clear, lineWidth: 1.0))
         .padding(Edge.Set.horizontal, Layout.pageMargin)
         .confirmationDialog(
             isOwnerOfActiveShare ? "Leave and end this shared budget?" : "Leave this shared budget?",
@@ -324,7 +341,22 @@ public struct SharedBudgetView: View {
                     .cornerRadius(14)
                     .foregroundStyle(theme.textPrimary)
 
-                Button(action: {
+                // MIGRATED: raw Button with its own one-off
+                // padding/background/cornerRadius(Layout.controlRadius) →
+                // VaultButton. This was exactly the kind of bespoke
+                // button-shape duplication the shared-constants pass is
+                // meant to eliminate — it already reached for the right
+                // radius token but hand-rolled its own fill/shape/plain
+                // `.cornerRadius()` instead of getting them from one
+                // place. fullWidth: false since it sits beside the text
+                // field rather than spanning the row.
+                VaultButton(
+                    "Join",
+                    variant: .primary,
+                    isLoading: sharedBudgetManager.isLoading,
+                    fontSize: 14.0,
+                    fullWidth: false
+                ) {
                     Task {
                         if let record = await sharedBudgetManager.joinShare(code: joinCodeInput, partnerName: myName, accessToken: authManager.accessToken) {
                             goalStore.addGoal(
@@ -338,16 +370,8 @@ public struct SharedBudgetView: View {
                             joinCodeInput = ""
                         }
                     }
-                }) {
-                    Text("Join")
-                        .font(theme.font(14, weight: Font.Weight.semibold))
-                        .padding(Edge.Set.horizontal, 20.0)
-                        .padding(Edge.Set.vertical, 16.0)
-                        .background(theme.accent)
-                        .foregroundColor(theme.onAccent)
-                        .cornerRadius(Layout.controlRadius)
                 }
-                .disabled(joinCodeInput.trimmingCharacters(in: CharacterSet.whitespaces).isEmpty || sharedBudgetManager.isLoading)
+                .disabled(joinCodeInput.trimmingCharacters(in: CharacterSet.whitespaces).isEmpty)
             }
         }
         .padding(Edge.Set.horizontal, Layout.pageMargin)

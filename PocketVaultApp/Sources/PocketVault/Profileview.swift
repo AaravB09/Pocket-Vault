@@ -68,6 +68,11 @@ public struct ProfileView: View {
             ScrollView {
                 VStack(spacing: 26.0) {
                     HStack {
+                        // Not a VaultButton: bespoke branded share chip with a
+                        // gradient border and its own shadow — a deliberately
+                        // one-off treatment, not a member of the generic CTA
+                        // family. Also a ShareLink, not a Button, so it
+                        // couldn't wrap in VaultButton without restructuring.
                         ShareLink(item: "Join me on Pocket Vault and let's save together! Add me with friend code \(leaderboardManager.myFriendCode).") {
                             HStack(spacing: 6.0) {
                                 Image.platformSymbol("person.badge.plus", android: "plus.circle.fill")
@@ -94,6 +99,9 @@ public struct ProfileView: View {
                             .shadow(color: Color.black.opacity(0.25), radius: 10, y: 4)
                         }
 
+                        // Not VaultButtons: circular icon-only nav controls
+                        // (same shape family as HeaderIconButton in
+                        // Thememanager.swift), not CTAs.
                         Button(action: { showLeaderboard = true }) {
                             Image.platformSymbol("trophy.fill", android: "star.fill")
                                 .font(theme.font(13, weight: Font.Weight.semibold))
@@ -101,7 +109,7 @@ public struct ProfileView: View {
                                 .frame(width: 38.0, height: 38.0)
                                 .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                                 .cornerRadius(19)
-                                .overlay(Circle().stroke(theme.cardStroke, lineWidth: 1.0))
+                                .overlay(Circle().stroke(Color.clear, lineWidth: 1.0))
                         }
 
                         Spacer()
@@ -147,24 +155,42 @@ public struct ProfileView: View {
                         SectionLabel("Display name")
 
                         HStack {
+                            // BUG FIX: this TextField and the Save button next to
+                            // it used to size themselves independently — the
+                            // TextField from `.padding(14.0)` around its own
+                            // (default system) font's line height, Save from
+                            // `.padding(vertical: 14.0)` around its own (Inter
+                            // 14pt semibold) font's line height. Two different
+                            // fonts sized off padding never line up exactly.
+                            // Both now share a fixed `Layout.height` instead —
+                            // same fix as VaultButton itself uses everywhere
+                            // else — so they're guaranteed equal regardless of
+                            // font metrics. Also switched the TextField's plain
+                            // `.cornerRadius()` (always circular-style) to the
+                            // shared continuous squircle clip to match Save's.
                             TextField("Saver", text: $displayName)
                                 .textInputAutocapitalization(TextInputAutocapitalization.words)
                                 .autocorrectionDisabled()
                                 .foregroundStyle(theme.textPrimary)
-                                .padding(14.0)
+                                .padding(Edge.Set.horizontal, 14.0)
+                                .frame(height: Layout.height)
                                 .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
-                                .cornerRadius(Layout.controlRadius)
-                                .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius).stroke(theme.cardStroke, lineWidth: 1.0))
+                                .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius, style: RoundedCornerStyle.continuous))
+                                .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius, style: RoundedCornerStyle.continuous).stroke(Color.clear, lineWidth: 1.0))
 
-                            Button(action: saveDisplayName) {
-                                Text("Save")
-                                    .font(theme.font(14, weight: Font.Weight.semibold))
-                                    .padding(Edge.Set.horizontal, 18.0)
-                                    .padding(Edge.Set.vertical, 14.0)
-                                    .background(theme.accent)
-                                    .foregroundColor(theme.onAccent)
-                                    .cornerRadius(Layout.controlRadius)
-                            }
+                            // MIGRATED: ad hoc Button → VaultButton. `.primary`
+                            // matches this button's look exactly (solid accent
+                            // fill, onAccent text) and now shares Layout.height
+                            // with the TextField above instead of its own
+                            // vertical-padding sizing.
+                            VaultButton(
+                                "Save",
+                                variant: .primary,
+                                fontSize: 14.0,
+                                horizontalPadding: 18.0,
+                                fullWidth: false,
+                                action: saveDisplayName
+                            )
                             .disabled(displayName.trimmingCharacters(in: CharacterSet.whitespaces).isEmpty)
                         }
                     }
@@ -182,7 +208,7 @@ public struct ProfileView: View {
                     .padding(18.0)
                     .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                     .cornerRadius(16)
-                    .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(theme.cardStroke, lineWidth: 1.0))
+                    .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(Color.clear, lineWidth: 1.0))
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     privacyAndDataSection
@@ -376,6 +402,11 @@ public struct ProfileView: View {
                     .tint(theme.danger)
             }
 
+            // Not converted: dev-only tooling (gated behind shouldShowDevSection
+            // / EntitlementManager, never shipped), plain danger-colored text
+            // with no fill — closest to `.tertiary`, but that variant's color
+            // is fixed to theme.textSecondary, not danger, so it doesn't map
+            // cleanly either. Not worth a variant just for a debug-only row.
             Button(action: {
                 Task { await EntitlementManager.resetTestAccountStatic() }
             }) {
@@ -434,7 +465,7 @@ public struct ProfileView: View {
             .padding(14.0)
             .background(privacyRowBackground)
             .cornerRadius(14)
-            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
+            .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(Color.clear, lineWidth: 1.0))
 
             VStack(alignment: HorizontalAlignment.leading, spacing: 10.0) {
                 Picker("Format", selection: $exportFormat) {
@@ -485,7 +516,7 @@ public struct ProfileView: View {
         .padding(20.0)
         .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
         .cornerRadius(20)
-        .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(theme.cardStroke, lineWidth: 1.0))
+        .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(Color.clear, lineWidth: 1.0))
         .padding(Edge.Set.horizontal, Layout.pageMargin)
     }
 
@@ -524,12 +555,28 @@ public struct SecondaryCTAStyleModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content
             .font(Font.system(size: 15, weight: Font.Weight.semibold))
-            .padding(Edge.Set.vertical, 14.0)
+            // FIX (shape-consistency pass): this modifier pre-dates VaultButton
+            // and had its own bespoke radius (12, plain circular style) and
+            // padding-driven height (14pt vertical) instead of the app-wide
+            // squircle standard — visibly mismatched against every VaultButton
+            // next to it (e.g. "Send feedback"/"Sign out"/"Delete account" on
+            // this same screen used to render with a noticeably tighter,
+            // more-circular corner and a slightly different height than the
+            // Save button above). Not converted to VaultButton itself: three
+            // of its four call sites tint with `theme.danger`/red rather than
+            // `theme.accent`, and there's no VaultButtonVariant for an
+            // accent-tinted-no-border look in an arbitrary color — `.secondary`
+            // uses a neutral fill with an accent-colored BORDER, a visibly
+            // different look, so swapping in VaultButton there would be a
+            // real design change, not just a shape fix. Converging the shape
+            // here instead fixes all four call sites (Send feedback, Sign
+            // out, Delete account, Export my data) in one place.
             .padding(Edge.Set.horizontal, 16.0)
             .frame(maxWidth: CGFloat.infinity)
+            .frame(height: Layout.height)
             .background(accent.opacity(0.12))
             .foregroundColor(accent)
-            .cornerRadius(12)
+            .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius, style: RoundedCornerStyle.continuous))
     }
 }
 

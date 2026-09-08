@@ -73,7 +73,7 @@ struct OfflineBanner: View {
         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
         #endif
         .clipShape(Capsule())
-        .overlay(Capsule().stroke(theme.cardStroke, lineWidth: 1.0))
+        .overlay(Capsule().stroke(Color.clear, lineWidth: 1.0))
         .transition(AnyTransition.move(edge: Edge.top).combined(with: AnyTransition.opacity))
     }
 }

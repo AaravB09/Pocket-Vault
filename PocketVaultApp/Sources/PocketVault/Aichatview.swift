@@ -200,7 +200,7 @@ public struct AIChatView: View {
             .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
             .cornerRadius(20)
             #endif
-            .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(theme.cardStroke, lineWidth: 1.0))
+            .overlay(RoundedRectangle(cornerRadius: 20.0).stroke(Color.clear, lineWidth: 1.0))
             .padding(Edge.Set.horizontal, 24.0)
 
             // FIX: this locked state is shown directly as tab content (case 4

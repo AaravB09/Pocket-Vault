@@ -85,7 +85,7 @@ public struct LeaderboardView: View {
                     .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                     .cornerRadius(Layout.cardRadius)
                     #endif
-                    .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(theme.cardStroke, lineWidth: 1.0))
+                    .overlay(RoundedRectangle(cornerRadius: Layout.cardRadius).stroke(Color.clear, lineWidth: 1.0))
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     // Shared Budget entry — reuses the same friend-code
@@ -119,7 +119,7 @@ public struct LeaderboardView: View {
                         .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                         .cornerRadius(Layout.controlRadius)
                         #endif
-                        .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius).stroke(theme.cardStroke, lineWidth: 1.0))
+                        .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius).stroke(Color.clear, lineWidth: 1.0))
                     }
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
@@ -249,6 +249,6 @@ public struct LeaderboardView: View {
         #else
         .cornerRadius(14)
         #endif
-        .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(theme.cardStroke, lineWidth: 1.0))
+        .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(Color.clear, lineWidth: 1.0))
     }
 }

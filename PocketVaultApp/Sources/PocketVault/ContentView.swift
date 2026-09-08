@@ -113,7 +113,7 @@ public struct ContentView: View {
                                                 .foregroundStyle(theme.accent)
                                         }
                                         Circle()
-                                            .stroke(theme.cardStroke, lineWidth: 1.0)
+                                            .stroke(Color.clear, lineWidth: 1.0)
                                             .frame(width: 40.0, height: 40.0)
                                     }
                                 }
@@ -133,12 +133,22 @@ public struct ContentView: View {
                                         action: { showPaywall = true }
                                     )
                                     .fixedSize()
+                                    // Real, measured frame for the tour's
+                                    // "Go Pro" step (tabIndex 5) — this
+                                    // button, not a dock slot, is where
+                                    // that step's arrow needs to land now.
+                                    .background(tourAnchorReporter(key: 5))
                                 }
 
                                 Spacer()
 
                                 HStack(spacing: 10.0) {
                                     HeaderIconButton(systemName: "calendar") { selectedTab = 2 }
+                                        // Real, measured frame for the
+                                        // tour's "Calendar" step
+                                        // (tabIndex 2) — see the
+                                        // "Go Pro" comment above.
+                                        .background(tourAnchorReporter(key: 2))
                                     PrivacyQuickToggleButton()
                                 }
                             }
@@ -285,9 +295,17 @@ public struct ContentView: View {
 
                         Spacer()
 
-                        PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: { showDepositSheet = true }) {
-                            Text("Deposit funds")
-                        }
+                        VaultButton(
+                                "Deposit funds",
+                                variant: VaultButtonVariant.primary,
+                                isLoading: false,
+                                height: 36.0,
+                                fontSize: 12.0,
+                                fontWeight: Font.Weight.semibold,
+                                horizontalPadding: 0.0,
+                                fullWidth: false,
+                                action: { showDepositSheet = true }
+                            )
                         .padding(Edge.Set.horizontal, Layout.pageMargin)
                         .padding(Edge.Set.bottom, 24.0)
                     }
@@ -434,14 +452,22 @@ public struct AestheticDepositModalView: View {
 
                 Spacer()
 
-                PrimaryCTAButton(accent: theme.accent, onAccent: theme.onAccent, action: {
-                    if let amt = Double(customAmount), amt > 0 {
-                        onDeposit(amt)
-                        dismiss()
+                VaultButton(
+                    "Confirm deposit",
+                    variant: VaultButtonVariant.primary,
+                    isLoading: false,
+                    height: 50.0,
+                    fontSize: 15.0,
+                    fontWeight: Font.Weight.semibold,
+                    horizontalPadding: 20.0,
+                    fullWidth: true,
+                    action: {
+                        if let amt = Double(customAmount), amt > 0 {
+                            onDeposit(amt)
+                            dismiss()
+                        }
                     }
-                }) {
-                    Text("Confirm deposit")
-                }
+                )
                 .padding(Edge.Set.horizontal, Layout.pageMargin)
                 .padding(Edge.Set.bottom, 44.0)
             }
