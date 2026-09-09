@@ -25,6 +25,10 @@ public enum VaultButtonVariant {
 
 public struct VaultButton: View {
 
+    // MARK: Public default values
+    public static let defaultHeight: CGFloat = Layout.height
+    public static let defaultHorizontalPadding: CGFloat = Layout.horizontalPadding
+
     // MARK: Injected dependencies
 
     @EnvironmentObject private var theme: ThemeManager
@@ -59,10 +63,10 @@ public struct VaultButton: View {
         _ title: String,
         variant: VaultButtonVariant = .primary,
         isLoading: Bool = false,
-        height: CGFloat = Layout.height,
+        height: CGFloat = VaultButton.defaultHeight,
         fontSize: CGFloat = 15.0,
         fontWeight: Font.Weight = .semibold,
-        horizontalPadding: CGFloat = Layout.horizontalPadding,
+        horizontalPadding: CGFloat = VaultButton.defaultHorizontalPadding,
         fullWidth: Bool = true,
         action: @escaping () -> Void
     ) {
@@ -82,10 +86,10 @@ public struct VaultButton: View {
     public init(
         variant: VaultButtonVariant = .primary,
         isLoading: Bool = false,
-        height: CGFloat = Layout.height,
+        height: CGFloat = VaultButton.defaultHeight,
         fontSize: CGFloat = 15.0,
         fontWeight: Font.Weight = .semibold,
-        horizontalPadding: CGFloat = Layout.horizontalPadding,
+        horizontalPadding: CGFloat = VaultButton.defaultHorizontalPadding,
         fullWidth: Bool = true,
         action: @escaping () -> Void,
         label: AnyView
@@ -107,10 +111,10 @@ public struct VaultButton: View {
     public init<V: View>(
         variant: VaultButtonVariant = .primary,
         isLoading: Bool = false,
-        height: CGFloat = Layout.height,
+        height: CGFloat = VaultButton.defaultHeight,
         fontSize: CGFloat = 15.0,
         fontWeight: Font.Weight = .semibold,
-        horizontalPadding: CGFloat = Layout.horizontalPadding,
+        horizontalPadding: CGFloat = VaultButton.defaultHorizontalPadding,
         fullWidth: Bool = true,
         action: @escaping () -> Void,
         @ViewBuilder label: () -> V
@@ -204,21 +208,16 @@ public struct VaultButton: View {
     }
 
     private var shadowColor: Color {
-        // Tertiary/social have no shadow — tertiary is a pure text button,
-        // social is a flat card-style fill that shouldn't float above the
-        // page the way the primary/destructive CTAs do.
         guard variant != .tertiary, variant != .social else { return Color.clear }
         return Color.black.opacity(isInteractive ? (isPressed ? 0.08 : 0.18) : 0.0)
     }
 
     private var shadowRadius: CGFloat {
-        // Tertiary/social have no shadow.
         guard variant != .tertiary, variant != .social else { return 0.0 }
         return isPressed ? 4.0 : 14.0
     }
 
     private var shadowY: CGFloat {
-        // Tertiary/social have no shadow.
         guard variant != .tertiary, variant != .social else { return 0.0 }
         return isPressed ? 2.0 : 6.0
     }
@@ -228,29 +227,28 @@ public struct VaultButton: View {
     public var body: some View {
         Button(action: performAction) {
             ZStack {
-                backgroundLayer
-                flashOverlay
-                ZStack {
-                    label
-                        .font(theme.font(fontSize, weight: fontWeight))
-                        .foregroundStyle(contentColor)
-                        .opacity(isLoading ? 0.0 : 1.0)
-                        .animation(Animation.easeOut(duration: 0.18), value: isLoading)
+                label
+                    .font(theme.font(fontSize, weight: fontWeight))
+                    .foregroundStyle(contentColor)
+                    .opacity(isLoading ? 0.0 : 1.0)
+                    .animation(Animation.easeOut(duration: 0.18), value: isLoading)
 
-                    if isLoading {
-                        ProgressView()
-                            .tint(spinnerColor)
-                    }
+                if isLoading {
+                    ProgressView()
+                        .tint(spinnerColor)
                 }
             }
             .frame(height: height)
             .frame(maxWidth: fullWidth ? CGFloat.infinity : nil)
             .padding(Edge.Set.horizontal, horizontalPadding)
-            
+            .background {
+                ZStack {
+                    backgroundLayer
+                    flashOverlay
+                }
+            }
         }
-        #if !SKIP
-        .buttonStyle(PlainButtonStyle())
-        #endif
+        .buttonStyle(.plain)
         .disabled(!isInteractive)
         .focused($isFocused)
         .simultaneousGesture(pressGesture)

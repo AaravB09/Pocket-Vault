@@ -72,6 +72,7 @@ public struct NewPasswordView: View {
                                     SecureField("", text: $newPassword, prompt: Text("New password").foregroundColor(theme.textTertiary))
                                 }
                             }
+                            .textFieldStyle(.plain)
                             .textInputAutocapitalization(TextInputAutocapitalization.never)
                             .autocorrectionDisabled()
                             .foregroundStyle(theme.textPrimary)
@@ -94,10 +95,14 @@ public struct NewPasswordView: View {
                                     .font(theme.font(14))
                                     .foregroundStyle(theme.textTertiary)
                             }
+                            #if !SKIP
+                            .buttonStyle(PlainButtonStyle())
+                            #endif
                             .padding(Edge.Set.trailing, 16.0)
                         }
 
                         SecureField("", text: $confirmPassword, prompt: Text("Confirm new password").foregroundColor(theme.textTertiary))
+                            .textFieldStyle(.plain)
                             .textInputAutocapitalization(TextInputAutocapitalization.never)
                             .autocorrectionDisabled()
                             .foregroundStyle(theme.textPrimary)

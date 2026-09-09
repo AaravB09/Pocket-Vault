@@ -97,6 +97,7 @@ public struct LoginView: View {
 
                     VStack(spacing: 16.0) {
                         TextField("", text: $email, prompt: Text("Email").foregroundColor(theme.textTertiary))
+                            .textFieldStyle(.plain)
                             .textInputAutocapitalization(TextInputAutocapitalization.never)
                             .autocorrectionDisabled()
                             .keyboardType(UIKeyboardType.emailAddress)
@@ -133,6 +134,7 @@ public struct LoginView: View {
                                     SecureField("", text: $password, prompt: Text("Password (6+ characters)").foregroundColor(theme.textTertiary))
                                 }
                             }
+                            .textFieldStyle(.plain)
                             #if !SKIP
                             .foregroundStyle(Color.primary)
                             #else
@@ -158,6 +160,9 @@ public struct LoginView: View {
                                     .font(theme.font(14))
                                     .foregroundStyle(theme.textTertiary)
                             }
+                            #if !SKIP
+                            .buttonStyle(PlainButtonStyle())
+                            #endif
                             .padding(Edge.Set.trailing, 16.0)
                         }
 
@@ -173,6 +178,9 @@ public struct LoginView: View {
                                         .font(theme.font(12, weight: Font.Weight.light))
                                         .foregroundStyle(theme.accent)
                                 }
+                                #if !SKIP
+                                .buttonStyle(PlainButtonStyle())
+                                #endif
                             }
                         }
 
@@ -302,6 +310,9 @@ public struct LoginView: View {
                             .foregroundStyle(theme.textSecondary)
                             #endif
                     }
+                    #if !SKIP
+                    .buttonStyle(PlainButtonStyle())
+                    #endif
                     .padding(Edge.Set.top, 4.0)
 
                     if !hideGuestOption {
@@ -315,6 +326,9 @@ public struct LoginView: View {
                                 .font(theme.font(12, weight: Font.Weight.semibold))
                                 .foregroundStyle(theme.accent)
                         }
+                        #if !SKIP
+                        .buttonStyle(PlainButtonStyle())
+                        #endif
                         .padding(Edge.Set.top, 12.0)
                     }
 
@@ -362,6 +376,9 @@ public struct ForgotPasswordSheet: View {
                             .font(theme.font(22, weight: Font.Weight.bold))
                             .foregroundStyle(theme.textTertiary)
                     }
+                    #if !SKIP
+                    .buttonStyle(PlainButtonStyle())
+                    #endif
                 }
                 .padding(Edge.Set.horizontal, 20.0)
                 .padding(Edge.Set.top, 20.0)
@@ -397,6 +414,7 @@ public struct ForgotPasswordSheet: View {
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                 TextField("", text: $email, prompt: Text("Email").foregroundColor(theme.textTertiary))
+                    .textFieldStyle(.plain)
                     .textInputAutocapitalization(TextInputAutocapitalization.never)
                     .autocorrectionDisabled()
                     .keyboardType(UIKeyboardType.emailAddress)

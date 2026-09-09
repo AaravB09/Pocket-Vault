@@ -30,6 +30,9 @@ public struct ContentView: View {
     @State private var showDepositSheet: Bool = false
     @State private var showBurst: Bool = false
     @State private var showProfile: Bool = false
+    // FIX ("turns white" on press): bare Button with no `.buttonStyle`
+    // picked up the system default dimming — see PressableButton.swift.
+    @State private var isProfileAvatarPressed = false
     @State private var targetDate: Date = Date()
 
     @State private var showAddGoalSheet: Bool = false
@@ -113,10 +116,18 @@ public struct ContentView: View {
                                                 .foregroundStyle(theme.accent)
                                         }
                                         Circle()
+                                            .fill(theme.isLight ? Color.black.opacity(isProfileAvatarPressed ? 0.08 : 0.0) : Color.white.opacity(isProfileAvatarPressed ? 0.1 : 0.0))
+                                            .frame(width: 40.0, height: 40.0)
+                                        Circle()
                                             .stroke(Color.clear, lineWidth: 1.0)
                                             .frame(width: 40.0, height: 40.0)
                                     }
                                 }
+                                .simultaneousGesture(
+                                    DragGesture(minimumDistance: 0)
+                                        .onChanged { _ in isProfileAvatarPressed = true }
+                                        .onEnded { _ in isProfileAvatarPressed = false }
+                                )
 
                                 Spacer()
 
@@ -298,12 +309,6 @@ public struct ContentView: View {
                         VaultButton(
                                 "Deposit funds",
                                 variant: VaultButtonVariant.primary,
-                                isLoading: false,
-                                height: 36.0,
-                                fontSize: 12.0,
-                                fontWeight: Font.Weight.semibold,
-                                horizontalPadding: 0.0,
-                                fullWidth: false,
                                 action: { showDepositSheet = true }
                             )
                         .padding(Edge.Set.horizontal, Layout.pageMargin)
@@ -444,6 +449,7 @@ public struct AestheticDepositModalView: View {
                     SectionLabel("Amount ($)")
 
                     TextField("Amount", text: $customAmount)
+                        .textFieldStyle(.plain)
                         .keyboardType(UIKeyboardType.numberPad)
                         .multilineTextAlignment(TextAlignment.center)
                         .font(theme.font(52, weight: Font.Weight.ultraLight))

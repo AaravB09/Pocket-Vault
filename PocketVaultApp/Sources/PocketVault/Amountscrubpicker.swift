@@ -122,6 +122,7 @@ struct AmountScrubPicker: View {
                                 .font(theme.font(30.0, weight: Font.Weight.light))
                                 .foregroundStyle(Color.gray.opacity(0.5))
                             TextField("", text: $typedText)
+                                .textFieldStyle(.plain)
                                 .keyboardType(UIKeyboardType.numberPad)
                                 .multilineTextAlignment(TextAlignment.center)
                                 .font(theme.font(48.0, weight: Font.Weight.light))

@@ -659,6 +659,9 @@ public struct AskAIButton: View {
 
     @AppStorage("pv_askAIBubbleTapCount") private var tapCount: Int = 0
     private var showsLabel: Bool { tapCount < 3 }
+    // FIX ("turns white" on press): bare Button with no `.buttonStyle`
+    // picked up the system default dimming — see PressableButton.swift.
+    @State private var isPressed = false
 
     public var body: some View {
         Button(action: {
@@ -679,7 +682,7 @@ public struct AskAIButton: View {
             .foregroundStyle(themeManager.onAccent)
             .padding(Edge.Set.vertical, 13.0)
             .padding(Edge.Set.horizontal, showsLabel ? 16.0 : 13.0)
-            .background(themeManager.accent)
+            .background(themeManager.accent.opacity(isPressed ? 0.85 : 1.0))
             .clipShape(Capsule())
             .overlay(
                 Capsule().stroke(themeManager.onAccent.opacity(0.14), lineWidth: 1.0)
@@ -706,6 +709,11 @@ public struct AskAIButton: View {
             .shadow(color: Color.black.opacity(0.22), radius: 4, y: 2)
             #endif
         }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
         .animation(Animation.spring(response: 0.3, dampingFraction: 0.75), value: showsLabel)
     }
 }
@@ -762,6 +770,7 @@ public struct LiquidTabButton: View {
             .clipShape(Capsule())
             .animation(Animation.spring(response: 0.35, dampingFraction: 0.75), value: isSelected)
         }
+        .buttonStyle(.plain)
         .frame(maxWidth: CGFloat.infinity)
     }
 }

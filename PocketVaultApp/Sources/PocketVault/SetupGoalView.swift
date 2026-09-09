@@ -440,6 +440,7 @@ public struct SetupGoalView: View {
                 .multilineTextAlignment(TextAlignment.center)
 
             TextField("", text: $customGoalDescription, prompt: Text("e.g. \"a weekend trip to Tahoe\"").foregroundColor(theme.textTertiary), axis: Axis.vertical)
+                .textFieldStyle(.plain)
                 .foregroundStyle(Color.primary)
                 .font(theme.font(14, weight: Font.Weight.light))
                 .padding(14.0)

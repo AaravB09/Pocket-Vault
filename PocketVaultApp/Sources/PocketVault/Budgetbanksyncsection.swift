@@ -17,6 +17,9 @@ struct BudgetBankSyncSection: View {
     @StateObject private var plaid = PlaidConnectionManager()
 
     @State private var showPaywall = false
+    // FIX ("turns white" on press): bare Button with no `.buttonStyle`
+    // picked up the system default dimming — see PressableButton.swift.
+    @State private var isLockedRowPressed = false
     
     // 1. Hide the Apple-only presenter variable from Android
     #if !SKIP
@@ -181,8 +184,17 @@ struct BudgetBankSyncSection: View {
             .background(theme.background.opacity(0.8))
             #endif
             .clipShape(RoundedRectangle(cornerRadius: 16.0))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16.0)
+                    .fill(theme.isLight ? Color.black.opacity(isLockedRowPressed ? 0.05 : 0.0) : Color.white.opacity(isLockedRowPressed ? 0.06 : 0.0))
+            )
             .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(Color.clear, lineWidth: 1.0))
         }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isLockedRowPressed = true }
+                .onEnded { _ in isLockedRowPressed = false }
+        )
         .sheet(isPresented: $showPaywall) {
             // 3. Make the Binding type explicit so Skip understands it
             CustomPaywallView(

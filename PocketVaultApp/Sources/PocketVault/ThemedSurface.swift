@@ -70,5 +70,21 @@ private struct ThemedSurfaceModifier: ViewModifier {
                     theme.background
                 }
             }
+            #if !SKIP
+            // FIX (white flash throughout the app when any sheet opens):
+            // none of the app's `.sheet { ... }` calls set a presentation
+            // background, so UIKit's sheet container falls back to
+            // `.systemBackground` (white in light mode) and paints that
+            // for the first frame(s) of the presentation animation,
+            // before this view's own `.background` above ever gets a
+            // chance to draw over it. Since practically every screen —
+            // including every sheet's root view — calls `themedSurface()`,
+            // setting `.presentationBackground` here fixes every sheet in
+            // the app at once instead of repeating it at each `.sheet {}`
+            // call site. This modifier is a no-op on a view that isn't
+            // currently the root of a sheet/popover, so it's harmless
+            // everywhere else. iOS-only API, hence the SKIP guard.
+            .presentationBackground(theme.background)
+            #endif
     }
 }

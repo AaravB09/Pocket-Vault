@@ -10,19 +10,14 @@ public struct CalendarView: View {
     @Binding var goalTitle: String
 
     @State private var selectedDate: Date = Date()
+    @State private var isCalendarSyncPressed = false
     private let calendar = Calendar.current
 
-    // FIX: `max(targetGoal - currentSavings, 0.0)` is the same generic
-    // min/max-over-Double overload Skip's Kotlin codegen can't resolve
-    // (broke AmountScrubPicker, BudgetTrackerView, BuildStudioView) —
-    // clamp with a plain comparison instead.
     var remainingAmount: Double {
         let diff = targetGoal - currentSavings
         return diff > 0.0 ? diff : 0.0
     }
 
-    // FIX: same nested min(max(...)) pattern as BuildStudioView's
-    // progressRatio — clamp manually.
     var completionPercentage: Double {
         let safeTarget = targetGoal > 1.0 ? targetGoal : 1.0
         let raw = currentSavings / safeTarget
@@ -31,11 +26,7 @@ public struct CalendarView: View {
         return raw
     }
 
-    // Estimated target date based on streak momentum. Split into a raw
-    // Date (used for the Apple Calendar export) and a formatted string
-    // (used for display) so both stay in sync from one calculation.
     var estimatedCompletionDateValue: Date? {
-        // FIX: another Double max() call — same pattern as above.
         let streakDays = Double(streakManager.currentStreak)
         let safeStreakDays = streakDays > 1.0 ? streakDays : 1.0
         let dailyPace = currentSavings / safeStreakDays
@@ -50,26 +41,23 @@ public struct CalendarView: View {
         return formatter.string(from: date)
     }
 
+    private var calendarSyncButtonFill: Color {
+        let opacity = isCalendarSyncPressed ? 0.08 : 0.04
+        let darkOpacity = isCalendarSyncPressed ? 0.12 : 0.08
+        return theme.isLight ? Color.black.opacity(opacity) : Color.white.opacity(darkOpacity)
+    }
+
+    private var calendarSyncStrokeOpacity: Double {
+        isCalendarSyncPressed ? 0.6 : 0.4
+    }
+
     public var body: some View {
         ZStack {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 24.0) {
-                    // Header Title
-                    // NOTE(skip): ScreenHeader's trailing-accessory generic
-                    // param can't be inferred from its default value on the
-                    // Skip/Kotlin side ("Cannot infer type for type
-                    // parameter 'Trailing'") — spelling out an empty
-                    // trailing closure fixes it, and also clears the
-                    // Edge.Set/SafeArea + Modifier.padding + 'Compose'
-                    // errors that were cascading from this same call.
                     ScreenHeader("Calendar", subtitle: "Deposit streaks & forecast") {
                         EmptyView()
                     }
-                    // Android-only: 40pt on top of the safe-area inset (plus
-                    // ScreenHeader's own 8pt) left a noticeably bigger gap
-                    // above the title than on iOS. Tightening this just for
-                    // Android instead of touching the shared 40 value keeps
-                    // iOS's spacing exactly as it was.
                     #if !SKIP
                     .padding(Edge.Set.top, 40.0)
                     #else
@@ -78,7 +66,6 @@ public struct CalendarView: View {
 
                     // MARK: - Streak Stats Grid
                     HStack(spacing: 12.0) {
-                        // Current Streak Card
                         VStack(spacing: 8.0) {
                             HStack(spacing: 6.0) {
                                 Image.platformSymbol("flame.fill", android: "heart.fill")
@@ -91,14 +78,10 @@ public struct CalendarView: View {
                         }
                         .frame(maxWidth: CGFloat.infinity)
                         .padding(Edge.Set.vertical, 18.0)
-                        // NOTE(skip): .ultraThinMaterial has no Android
-                        // equivalent — was cascading into the .clipShape
-                        // right below it too.
                         .background(theme.isLight ? Color.white.opacity(0.7) : Color.black.opacity(0.35))
                         .clipShape(RoundedRectangle(cornerRadius: 16.0))
                         .overlay(RoundedRectangle(cornerRadius: 16.0).stroke(Color.clear, lineWidth: 1.0))
 
-                        // Longest Streak Card
                         VStack(spacing: 8.0) {
                             HStack(spacing: 6.0) {
                                 Image.platformSymbol("trophy.fill", android: "star.fill")
@@ -132,32 +115,19 @@ public struct CalendarView: View {
                                     .frame(width: 6.0, height: 6.0)
                                 Text("Deposit day")
                                     .font(theme.font(11, weight: Font.Weight.medium))
-                                    .foregroundStyle(Color.secondary) // was .tertiary
+                                    .foregroundStyle(Color.secondary)
                             }
                         }
 
-                        // Days of week header
                         HStack {
                             ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
                                 Text(day)
                                     .font(theme.font(10, weight: Font.Weight.bold))
-                                    .foregroundStyle(Color.secondary) // was .tertiary
+                                    .foregroundStyle(Color.secondary)
                                     .frame(maxWidth: CGFloat.infinity)
                             }
                         }
 
-                        // Month Grid Days
-                        //
-                        // FIX(Android crash): keying `ForEach` by the Date?
-                        // value itself (`id: \.self`) meant every leading
-                        // blank cell — there can be several, since most
-                        // months don't start on a Sunday — shared the same
-                        // `nil` key. SwiftUI/iOS tolerates duplicate
-                        // identifiers, but Compose does not: LazyVerticalGrid
-                        // throws "Key ... was already used" and the app
-                        // crashes the moment this screen renders. Keying by
-                        // the array's own index instead guarantees every
-                        // cell has a unique id on both platforms.
                         LazyVGrid(columns: Array(repeating: GridItem(GridItem.Size.flexible()), count: 7), spacing: 10.0) {
                             ForEach(Array(daysInCurrentMonth().enumerated()), id: \.offset) { _, date in
                                 if let date = date {
@@ -194,7 +164,6 @@ public struct CalendarView: View {
                             }
                         }
 
-                        // Hairline divider
                         Rectangle()
                             .fill(theme.hairline)
                             .frame(height: 1.0)
@@ -232,11 +201,16 @@ public struct CalendarView: View {
                             }
                             .frame(maxWidth: CGFloat.infinity)
                             .padding(Edge.Set.vertical, 14.0)
-                            .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06))
+                            .background(calendarSyncButtonFill)
                             .foregroundStyle(theme.accent)
                             .clipShape(Capsule())
-                            .overlay(Capsule().stroke(theme.accent.opacity(0.4), lineWidth: 1.0))
+                            .overlay(Capsule().stroke(theme.accent.opacity(calendarSyncStrokeOpacity), lineWidth: 1.0))
                         }
+                        .simultaneousGesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { _ in isCalendarSyncPressed = true }
+                                .onEnded { _ in isCalendarSyncPressed = false }
+                        )
                         .disabled(calendarSync.isSyncing || estimatedCompletionDateValue == nil)
                         .padding(Edge.Set.top, 6.0)
 
@@ -256,16 +230,6 @@ public struct CalendarView: View {
                 }
             }
         }
-        // Sets the background and maps .primary/.secondary/.tertiary to
-        // theme.textPrimary/Secondary/Tertiary for this whole screen.
-        //
-        // FIX: themedSurface() no longer takes `theme` as a parameter —
-        // it reads ThemeManager via @EnvironmentObject internally now
-        // (see ThemedSurface.swift). The old `.themedSurface(theme)` call
-        // was passing `theme` positionally into the `ignoresSafeArea: Bool`
-        // slot, which is what produced "Cannot convert value of type
-        // 'ThemeManager' to expected argument type 'Bool'" and "Missing
-        // argument label 'ignoresSafeArea:' in call" together.
         .themedSurface()
     }
 
@@ -285,13 +249,6 @@ public struct CalendarView: View {
 
         let firstWeekday = calendar.component(Calendar.Component.weekday, from: firstDay) - 1
 
-        // FIX: `calendar.range(of: .day, in: .month, for: Date())` hits
-        // "None of the following candidates is applicable" — Skip's
-        // Calendar shim doesn't fully implement this overload of
-        // `range(of:in:for:)`. Compute the day count the same way
-        // `estimatedCompletionDateValue` above already does successfully
-        // — with `date(byAdding:)` and `dateComponents(_:from:to:)` —
-        // instead of relying on `range(of:in:for:)`.
         let numberOfDays: Int = {
             guard let nextMonthStart = calendar.date(byAdding: Calendar.Component.month, value: 1, to: firstDay) else { return 30 }
             let diff = calendar.dateComponents([Calendar.Component.day], from: firstDay, to: nextMonthStart)

@@ -39,6 +39,9 @@ public struct FeedbackView: View {
                             .font(theme.font(22, weight: Font.Weight.bold))
                             .foregroundStyle(theme.textTertiary)
                     }
+                    #if !SKIP
+                    .buttonStyle(PlainButtonStyle())
+                    #endif
                 }
                 .padding(Edge.Set.horizontal, Layout.pageMargin)
                 .padding(Edge.Set.top, 20.0)

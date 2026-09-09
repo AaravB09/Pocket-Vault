@@ -53,6 +53,9 @@ final class PrivacyManager: ObservableObject {
 struct PrivacyRevealOverlay: View {
     @EnvironmentObject var theme: ThemeManager
     @EnvironmentObject var privacy: PrivacyManager
+    // FIX ("turns white" on press): bare Button with no `.buttonStyle`
+    // picked up the system default dimming — see PressableButton.swift.
+    @State private var isPressed = false
 
     public var body: some View {
         Button(action: { privacy.reveal() }) {
@@ -80,8 +83,17 @@ struct PrivacyRevealOverlay: View {
             .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
             .cornerRadius(14)
             #endif
+            .overlay(
+                RoundedRectangle(cornerRadius: 14.0)
+                    .fill(theme.isLight ? Color.black.opacity(isPressed ? 0.06 : 0.0) : Color.white.opacity(isPressed ? 0.08 : 0.0))
+            )
             .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(Color.clear, lineWidth: 1.0))
         }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
     }
 }
 
@@ -91,6 +103,9 @@ struct PrivacyRevealOverlay: View {
 struct PrivacyQuickToggleButton: View {
     @EnvironmentObject var theme: ThemeManager
     @EnvironmentObject var privacy: PrivacyManager
+    // FIX ("turns white" on press): bare Button with no `.buttonStyle`
+    // picked up the system default dimming — see PressableButton.swift.
+    @State private var isPressed = false
 
     public var body: some View {
         if privacy.isPrivacyModeOn {
@@ -125,8 +140,14 @@ struct PrivacyQuickToggleButton: View {
                     .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                     .cornerRadius(18)
                     #endif
+                    .overlay(Circle().fill(theme.isLight ? Color.black.opacity(isPressed ? 0.06 : 0.0) : Color.white.opacity(isPressed ? 0.08 : 0.0)))
                     .overlay(Circle().stroke(Color.clear, lineWidth: 1.0))
             }
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in isPressed = true }
+                    .onEnded { _ in isPressed = false }
+            )
         }
     }
 }

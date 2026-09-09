@@ -125,6 +125,27 @@ public enum AppAppearanceMode: String, CaseIterable, Identifiable, Codable {
         }
     }
 
+    // FIX: same class of bug as GoalKind.androidDisplayIcon (see
+    // Goalbuildmodels.swift) — `icon` above was being handed straight to
+    // `Image(systemName:)` at its call site instead of going through
+    // `Image.platformSymbol(_:android:)`. "circle.lefthalf.filled",
+    // "sun.max.fill", and "moon.fill" are all outside Skip's Android
+    // fallback table (see Platformsymbol.swift), so all three Appearance
+    // mode rows were rendering the "symbol not found" warning triangle
+    // instead of their icon. gearshape.fill reads naturally as "follow
+    // the system setting"; info.circle / info.circle.fill (outline vs.
+    // filled version of the same glyph) stand in for Light / Dark the
+    // same way this file's own accent-color swatches use a thin vs.
+    // filled ring to mean "same option, different weight" — there's no
+    // sun/moon equivalent in Skip's supported set to reach for instead.
+    var androidIcon: String {
+        switch self {
+        case .system: return "gearshape.fill"
+        case .light: return "info.circle"
+        case .dark: return "info.circle.fill"
+        }
+    }
+
     /// nil tells SwiftUI's `.preferredColorScheme` to defer to the
     /// system setting instead of forcing one.
     var colorScheme: ColorScheme? {
@@ -690,13 +711,19 @@ public struct HeaderIconButton: View {
     let systemName: String
     let action: () -> Void
 
+    // FIX ("turns white" on press): bare Button with no `.buttonStyle`
+    // picked up the system default dimming instead of a controlled press
+    // color — see PressableButton.swift. This one component backs every
+    // circular header icon in the app, so the fix here covers all of them.
+    @State private var isPressed = false
+
     public var body: some View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(theme.font(15.0, weight: Font.Weight.semibold))
                 .foregroundStyle(theme.textPrimary)
                 .frame(width: 38.0, height: 38.0)
-                .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                .background(theme.isLight ? Color.black.opacity(isPressed ? 0.08 : 0.04) : Color.white.opacity(isPressed ? 0.12 : 0.08))
                 // NOTE: kept at 19.0 (half of the 38pt frame) rather than
                 // converging on Layout.controlRadius — this is a circular
                 // icon button, a different shape family from the
@@ -710,6 +737,11 @@ public struct HeaderIconButton: View {
                 // fix with no visible change here.
                 .clipShape(RoundedRectangle(cornerRadius: 19.0, style: RoundedCornerStyle.continuous))
         }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
     }
 }
 
@@ -782,29 +814,18 @@ public struct ThemePickerSection: View {
 
                 HStack(spacing: 14.0) {
                     ForEach(AppColorTheme.allCases) { option in
-                        Button(action: {
-                            #if !SKIP
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            #endif
-                            withAnimation(Animation.spring(response: 0.3, dampingFraction: 0.7)) {
-                                theme.colorTheme = option
-                            }
-                        }) {
-                            ZStack {
-                                Circle().fill(option.accent).frame(width: 38.0, height: 38.0)
-                                // Selection ring still needs the exact resolved
-                                // color (it's animating an opacity, not just
-                                // "the primary text color"), so this one stays
-                                // as theme.textPrimary rather than .primary.
-                                Circle()
-                                    .stroke(theme.textPrimary.opacity(option == theme.colorTheme ? 0.9 : 0.0), lineWidth: 2.0)
-                                    .frame(width: 46.0, height: 46.0)
-                                if option == theme.colorTheme {
-                                    Image(systemName: "checkmark").font(theme.font(12.0, weight: Font.Weight.black)).foregroundStyle(option.onSwatch)
+                        AccentColorSwatch(
+                            option: option,
+                            isSelected: option == theme.colorTheme,
+                            onSelect: {
+                                #if !SKIP
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                #endif
+                                withAnimation(Animation.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    theme.colorTheme = option
                                 }
                             }
-                        }
-                        .accessibilityLabel(option.displayName)
+                        )
                     }
                 }
             }
@@ -814,38 +835,16 @@ public struct ThemePickerSection: View {
 
                 VStack(spacing: 8.0) {
                     ForEach(AppAppearanceMode.allCases) { mode in
-                        Button(action: {
-                            #if !SKIP
-                            UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            #endif
-                            theme.appearanceMode = mode
-                        }) {
-                            HStack {
-                                Image(systemName: mode.icon).foregroundStyle(theme.accent).frame(width: 18.0)
-                                // No explicit foregroundStyle — falls back to
-                                // .primary automatically, which resolves to
-                                // theme.textPrimary via themedSurface(_:).
-                                Text(mode.displayName).font(theme.font(13.0, weight: Font.Weight.medium))
-                                Spacer()
-                                Image(systemName: mode == theme.appearanceMode ? "checkmark.circle.fill" : "circle")
-                                    .foregroundStyle(mode == theme.appearanceMode ? theme.accent : theme.textTertiary)
+                        AppearanceModeRow(
+                            mode: mode,
+                            isSelected: mode == theme.appearanceMode,
+                            onSelect: {
+                                #if !SKIP
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                #endif
+                                theme.appearanceMode = mode
                             }
-                            .padding(14.0)
-                            .background(theme.isLight ? Color.black.opacity(0.03) : Color.white.opacity(0.05))
-                            // NOTE: kept at 12.0 rather than converging on
-                            // Layout.controlRadius (16.0) — this is a
-                            // full-width selectable list row, not a
-                            // VaultButton-style CTA, and widening its
-                            // radius would change its proportions relative
-                            // to the 14pt padding it was tuned with. Fixed
-                            // the STYLE only: plain `.cornerRadius()` /
-                            // a bare `RoundedRectangle(cornerRadius:)`
-                            // stroke both default to circular, mismatched
-                            // against each other and against every other
-                            // button's continuous curve.
-                            .clipShape(RoundedRectangle(cornerRadius: 12.0, style: RoundedCornerStyle.continuous))
-                            .overlay(RoundedRectangle(cornerRadius: 12.0, style: RoundedCornerStyle.continuous).stroke(Color.clear, lineWidth: 1.0))
-                        }
+                        )
                     }
                 }
             }
@@ -865,5 +864,108 @@ public struct ThemePickerSection: View {
         // via @EnvironmentObject internally instead of taking it as a
         // parameter (see ThemedSurface.swift).
         .themedSurface(ignoresSafeArea: false)
+    }
+}
+
+// MARK: - Accent Color Swatch / Appearance Mode Row
+//
+// FIX ("turns white" on press): both used to be inline `Button(action:)`
+// calls right inside their `ForEach`, with no `.buttonStyle` — tapping
+// picked up the system default dimming instead of a controlled press
+// color (see PressableButton.swift). Pulled out into their own views so
+// each swatch/row can own its own `isPressed` state independently of its
+// siblings (a single `@State` back in the loop would have been shared by
+// every one of them).
+
+private struct AccentColorSwatch: View {
+    @EnvironmentObject var theme: ThemeManager
+    let option: AppColorTheme
+    let isSelected: Bool
+    let onSelect: () -> Void
+
+    @State private var isPressed = false
+
+    var body: some View {
+        Button(action: onSelect) {
+            ZStack {
+                Circle().fill(option.accent.opacity(isPressed ? 0.8 : 1.0)).frame(width: 38.0, height: 38.0)
+                // Selection ring still needs the exact resolved
+                // color (it's animating an opacity, not just
+                // "the primary text color"), so this one stays
+                // as theme.textPrimary rather than .primary.
+                Circle()
+                    .stroke(theme.textPrimary.opacity(isSelected ? 0.9 : 0.0), lineWidth: 2.0)
+                    .frame(width: 46.0, height: 46.0)
+                if isSelected {
+                    Image(systemName: "checkmark").font(theme.font(12.0, weight: Font.Weight.black)).foregroundStyle(option.onSwatch)
+                }
+            }
+        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
+        .accessibilityLabel(option.displayName)
+    }
+}
+
+private struct AppearanceModeRow: View {
+    @EnvironmentObject var theme: ThemeManager
+    let mode: AppAppearanceMode
+    let isSelected: Bool
+    let onSelect: () -> Void
+
+    @State private var isPressed = false
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack {
+                Image.platformSymbol(mode.icon, android: mode.androidIcon)
+                    .foregroundStyle(theme.accent)
+                    .frame(width: 18.0)
+                // No explicit foregroundStyle — falls back to
+                // .primary automatically, which resolves to
+                // theme.textPrimary via themedSurface(_:).
+                Text(mode.displayName).font(theme.font(13.0, weight: Font.Weight.medium))
+                Spacer()
+                // FIX: bare "circle" (the unselected state)
+                // isn't in Skip's Android fallback table
+                // either — same warning-triangle bug as
+                // mode.icon above. "checkmark.circle" is
+                // the outline counterpart of the
+                // "checkmark.circle.fill" already used for
+                // the selected state, so swapping to it
+                // keeps the exact same
+                // outline-means-unselected /
+                // filled-means-selected relationship, just
+                // with a glyph Android actually has.
+                Image.platformSymbol(
+                    isSelected ? "checkmark.circle.fill" : "circle",
+                    android: isSelected ? "checkmark.circle.fill" : "checkmark.circle"
+                )
+                .foregroundStyle(isSelected ? theme.accent : theme.textTertiary)
+            }
+            .padding(14.0)
+            (theme.isLight ? Color.black.opacity(isPressed ? 0.08 : 0.04) : Color.white.opacity(isPressed ? 0.12 : 0.08))
+            // NOTE: kept at 12.0 rather than converging on
+            // Layout.controlRadius (16.0) — this is a
+            // full-width selectable list row, not a
+            // VaultButton-style CTA, and widening its
+            // radius would change its proportions relative
+            // to the 14pt padding it was tuned with. Fixed
+            // the STYLE only: plain `.cornerRadius()` /
+            // a bare `RoundedRectangle(cornerRadius:)`
+            // stroke both default to circular, mismatched
+            // against each other and against every other
+            // button's continuous curve.
+            .clipShape(RoundedRectangle(cornerRadius: 12.0, style: RoundedCornerStyle.continuous))
+            .overlay(RoundedRectangle(cornerRadius: 12.0, style: RoundedCornerStyle.continuous).stroke(Color.clear, lineWidth: 1.0))
+        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
     }
 }

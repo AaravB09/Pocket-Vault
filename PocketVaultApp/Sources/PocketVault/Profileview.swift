@@ -37,6 +37,9 @@ public struct ProfileView: View {
     @State private var showLeaderboard: Bool = false
     @State private var exportURLs: [URL]? = nil
     @State private var exportFormat: ExportFormat = .csv
+    // FIX ("turns white" on press): bare Button with no `.buttonStyle`
+    // picked up the system default dimming — see PressableButton.swift.
+    @State private var isLeaderboardButtonPressed = false
 
     private enum ExportFormat: String, CaseIterable, Identifiable {
         case csv = "CSV"
@@ -107,10 +110,15 @@ public struct ProfileView: View {
                                 .font(theme.font(13, weight: Font.Weight.semibold))
                                 .foregroundStyle(theme.accent)
                                 .frame(width: 38.0, height: 38.0)
-                                .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
+                                .background(theme.isLight ? Color.black.opacity(isLeaderboardButtonPressed ? 0.08 : 0.04) : Color.white.opacity(isLeaderboardButtonPressed ? 0.12 : 0.08))
                                 .cornerRadius(19)
                                 .overlay(Circle().stroke(Color.clear, lineWidth: 1.0))
                         }
+                        .simultaneousGesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { _ in isLeaderboardButtonPressed = true }
+                                .onEnded { _ in isLeaderboardButtonPressed = false }
+                        )
 
                         Spacer()
 
@@ -119,6 +127,9 @@ public struct ProfileView: View {
                                 .font(theme.font(22, weight: Font.Weight.bold))
                                 .foregroundStyle(theme.textTertiary)
                         }
+                        #if !SKIP
+                        .buttonStyle(PlainButtonStyle())
+                        #endif
                     }
                     .padding(Edge.Set.horizontal, 20.0)
                     .padding(Edge.Set.top, 20.0)
@@ -169,6 +180,7 @@ public struct ProfileView: View {
                             // `.cornerRadius()` (always circular-style) to the
                             // shared continuous squircle clip to match Save's.
                             TextField("Saver", text: $displayName)
+                                .textFieldStyle(.plain)
                                 .textInputAutocapitalization(TextInputAutocapitalization.words)
                                 .autocorrectionDisabled()
                                 .foregroundStyle(theme.textPrimary)
@@ -417,6 +429,9 @@ public struct ProfileView: View {
                 .font(theme.font(12, weight: Font.Weight.medium))
                 .foregroundStyle(theme.danger)
             }
+            #if !SKIP
+            .buttonStyle(PlainButtonStyle())
+            #endif
         }
         .padding(20.0)
         .background(theme.danger.opacity(0.08))
@@ -551,7 +566,14 @@ public struct ProfileView: View {
 
 public struct SecondaryCTAStyleModifier: ViewModifier {
     var accent: Color
-    
+    // FIX ("turns white" on press): every call site of this modifier
+    // wraps a bare `Button(action:)` with no `.buttonStyle`, so tapping
+    // "Send feedback"/"Sign out"/"Delete account"/"Export my data"
+    // picked up the system default dimming instead of a controlled press
+    // color — see PressableButton.swift. Fixing it once here covers
+    // every call site.
+    @State private var isPressed = false
+
     public func body(content: Content) -> some View {
         content
             .font(Font.system(size: 15, weight: Font.Weight.semibold))
@@ -574,9 +596,14 @@ public struct SecondaryCTAStyleModifier: ViewModifier {
             .padding(Edge.Set.horizontal, 16.0)
             .frame(maxWidth: CGFloat.infinity)
             .frame(height: Layout.height)
-            .background(accent.opacity(0.12))
+            .background(accent.opacity(isPressed ? 0.20 : 0.12))
             .foregroundColor(accent)
             .clipShape(RoundedRectangle(cornerRadius: Layout.controlRadius, style: RoundedCornerStyle.continuous))
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in isPressed = true }
+                    .onEnded { _ in isPressed = false }
+            )
     }
 }
 

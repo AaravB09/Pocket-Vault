@@ -122,6 +122,9 @@ public struct BudgetTrackerView: View {
                     .font(theme.font(11, weight: Font.Weight.bold))
                     .foregroundStyle(Color.gray.opacity(0.5))
             }
+            #if !SKIP
+            .buttonStyle(PlainButtonStyle())
+            #endif
         }
         .padding(16.0)
         .background(color.opacity(0.14))
@@ -165,6 +168,9 @@ public struct BudgetTrackerView: View {
                         }
                     }
                 }
+                #if !SKIP
+                .buttonStyle(PlainButtonStyle())
+                #endif
             }
             // PERF (Android): same dead-weight-blur situation as
             // ContentView's hero balance — `.blur` isn't implemented
@@ -339,6 +345,9 @@ public struct TransactionRow: View {
 
     @State private var offset: CGFloat = 0.0
     @State private var dragStartOffset: CGFloat? = nil
+    // FIX ("turns white" on press): bare Button with no `.buttonStyle`
+    // picked up the system default dimming — see PressableButton.swift.
+    @State private var isDeletePressed = false
 
     private let revealWidth: CGFloat = 74.0
     private let deleteThreshold: CGFloat = 150.0
@@ -355,9 +364,14 @@ public struct TransactionRow: View {
                         .font(theme.font(15, weight: Font.Weight.semibold))
                         .foregroundStyle(Color.white)
                         .frame(width: revealWidth, height: 44.0)
-                        .background(theme.danger)
+                        .background(theme.danger.opacity(isDeletePressed ? 0.85 : 1.0))
                         .clipShape(RoundedRectangle(cornerRadius: 14.0))
                 }
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { _ in isDeletePressed = true }
+                        .onEnded { _ in isDeletePressed = false }
+                )
             }
 
             rowContent
@@ -465,6 +479,9 @@ public struct AddPaymentSheet: View {
                                 .font(theme.font(22, weight: Font.Weight.bold))
                                 .foregroundStyle(Color.secondary) // was .tertiary
                         }
+                        #if !SKIP
+                        .buttonStyle(PlainButtonStyle())
+                        #endif
                     }
                     .padding(Edge.Set.horizontal, 20.0)
                     .padding(Edge.Set.top, 20.0)
@@ -479,6 +496,7 @@ public struct AddPaymentSheet: View {
                     VStack(spacing: 6.0) {
                         SectionLabel("Amount ($)")
                         TextField("0", text: $amountText)
+                            .textFieldStyle(.plain)
                             .keyboardType(UIKeyboardType.decimalPad)
                             .multilineTextAlignment(TextAlignment.center)
                             .font(theme.font(44, weight: Font.Weight.light))
@@ -491,21 +509,11 @@ public struct AddPaymentSheet: View {
 
                         LazyVGrid(columns: [GridItem(GridItem.Size.adaptive(minimum: 96))], spacing: 10.0) {
                             ForEach(SpendCategory.allCases) { category in
-                                Button(action: { selectedCategory = category }) {
-                                    VStack(spacing: 6.0) {
-                                        Image(systemName: category.icon)
-                                            .font(theme.font(16))
-                                        Text(category.displayName)
-                                            .font(theme.font(12, weight: Font.Weight.medium))
-                                    }
-                                    .foregroundStyle(selectedCategory == category ? theme.onAccent : theme.textPrimary)
-                                    .frame(maxWidth: CGFloat.infinity)
-                                    .padding(Edge.Set.vertical, 14.0)
-                                    .background(selectedCategory == category ? theme.accent : (theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06)))
-                                    .clipShape(RoundedRectangle(cornerRadius: 14.0))
-                                    // FIX: Pass Double(0) explicitly so Skip's Kotlin codegen doesn't mix up Int and Double
-                                    .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 14.0).stroke(theme.accent.opacity(selectedCategory == category ? Double(0) : 0.25), lineWidth: 1.0) }
-                                }
+                                CategoryChip(
+                                    category: category,
+                                    isSelected: selectedCategory == category,
+                                    onSelect: { selectedCategory = category }
+                                )
                             }
                         }
                         .padding(Edge.Set.horizontal, Layout.pageMargin)
@@ -515,6 +523,7 @@ public struct AddPaymentSheet: View {
                         SectionLabel("Note (optional)")
 
                         TextField("e.g. Grocery run", text: $note)
+                            .textFieldStyle(.plain)
                             .foregroundStyle(Color.primary)
                             .padding(14.0)
                             // NOTE(skip): same Material swap.
@@ -553,6 +562,49 @@ public struct AddPaymentSheet: View {
     }
 }
 
+// MARK: - Category Chip
+//
+// FIX ("turns white" on press): pulled out of the `ForEach` above, which
+// had a bare `Button(action:)` with no `.buttonStyle` — tapping any
+// category picked up the system default dimming instead of a controlled
+// press color (see PressableButton.swift). Needs its own view so each
+// chip can own its own `isPressed` state independently of its siblings.
+private struct CategoryChip: View {
+    @EnvironmentObject var theme: ThemeManager
+    let category: SpendCategory
+    let isSelected: Bool
+    let onSelect: () -> Void
+
+    @State private var isPressed = false
+
+    private var fillColor: Color {
+        isSelected ? theme.accent.opacity(isPressed ? 0.85 : 1.0) : (theme.isLight ? Color.black.opacity(isPressed ? 0.08 : 0.04) : Color.white.opacity(isPressed ? 0.12 : 0.08))
+    }
+
+    var body: some View {
+        Button(action: onSelect) {
+            VStack(spacing: 6.0) {
+                Image(systemName: category.icon)
+                    .font(theme.font(16))
+                Text(category.displayName)
+                    .font(theme.font(12, weight: Font.Weight.medium))
+            }
+            .foregroundStyle(isSelected ? theme.onAccent : theme.textPrimary)
+            .frame(maxWidth: CGFloat.infinity)
+            .padding(Edge.Set.vertical, 14.0)
+            .background(fillColor)
+            .clipShape(RoundedRectangle(cornerRadius: 14.0))
+            // FIX: Pass Double(0) explicitly so Skip's Kotlin codegen doesn't mix up Int and Double
+            .overlay(alignment: Alignment.center) { RoundedRectangle(cornerRadius: 14.0).stroke(theme.accent.opacity(isSelected ? Double(0) : 0.25), lineWidth: 1.0) }
+        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
+    }
+}
+
 // MARK: - Limit Editor Sheet
 
 public struct LimitEditorSheet: View {
@@ -576,6 +628,9 @@ public struct LimitEditorSheet: View {
                             .font(theme.font(22, weight: Font.Weight.bold))
                             .foregroundStyle(Color.secondary) // was .tertiary
                     }
+                    #if !SKIP
+                    .buttonStyle(PlainButtonStyle())
+                    #endif
                 }
                 .padding(Edge.Set.horizontal, Layout.pageMargin)
                 .padding(Edge.Set.top, 20.0)
@@ -588,6 +643,7 @@ public struct LimitEditorSheet: View {
                 }
 
                 TextField("500", text: $limitInput)
+                    .textFieldStyle(.plain)
                     .keyboardType(UIKeyboardType.numberPad)
                     .multilineTextAlignment(TextAlignment.center)
                     .font(theme.font(52, weight: Font.Weight.light))

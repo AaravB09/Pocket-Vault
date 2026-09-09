@@ -11,6 +11,10 @@ public struct LeaderboardView: View {
     @State private var friendCodeInput: String = ""
     @State private var showCopiedToast: Bool = false
     @State private var showSharedBudget: Bool = false
+    // FIX ("turns white" on press): bare Buttons with no `.buttonStyle`
+    // picked up the system default dimming — see PressableButton.swift.
+    @State private var isSharedBudgetRowPressed = false
+    @State private var isAddFriendPressed = false
 
     /// The id these server calls use — the real Supabase Auth user id.
     /// Falls back to the local `myUserID` defensively, though guests
@@ -36,6 +40,9 @@ public struct LeaderboardView: View {
                                 .font(theme.font(22, weight: Font.Weight.bold))
                                 .foregroundStyle(theme.textTertiary)
                         }
+                        #if !SKIP
+                        .buttonStyle(PlainButtonStyle())
+                        #endif
                     }
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
                     .padding(Edge.Set.top, 20.0)
@@ -66,6 +73,9 @@ public struct LeaderboardView: View {
                                 Image.platformSymbol("doc.on.doc", android: "square.and.arrow.up")
                                     .foregroundStyle(theme.accent)
                             }
+                            #if !SKIP
+                            .buttonStyle(PlainButtonStyle())
+                            #endif
                         }
 
                         Text(showCopiedToast ? "Copied" : "Share this so friends can add you")
@@ -119,13 +129,23 @@ public struct LeaderboardView: View {
                         .background(theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.08))
                         .cornerRadius(Layout.controlRadius)
                         #endif
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Layout.controlRadius)
+                                .fill(theme.isLight ? Color.black.opacity(isSharedBudgetRowPressed ? 0.05 : 0.0) : Color.white.opacity(isSharedBudgetRowPressed ? 0.06 : 0.0))
+                        )
                         .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius).stroke(Color.clear, lineWidth: 1.0))
                     }
+                    .simultaneousGesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { _ in isSharedBudgetRowPressed = true }
+                            .onEnded { _ in isSharedBudgetRowPressed = false }
+                    )
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
 
                     // Add a friend
                     HStack(spacing: 10.0) {
                         TextField("Enter a friend's code", text: $friendCodeInput)
+                            .textFieldStyle(.plain)
                             .textInputAutocapitalization(TextInputAutocapitalization.characters)
                             .autocorrectionDisabled()
                             .padding(14.0)
@@ -148,7 +168,7 @@ public struct LeaderboardView: View {
                                 .font(theme.font(14, weight: Font.Weight.semibold))
                                 .padding(Edge.Set.horizontal, 20.0)
                                 .padding(Edge.Set.vertical, 16.0)
-                                .background(theme.accent)
+                                .background(theme.accent.opacity(isAddFriendPressed ? 0.85 : 1.0))
                                 .foregroundColor(theme.onAccent)
                                 // NOTE(skip): `.clipShape` isn't resolved by Skip's
                                 // SwiftUI shim — `.cornerRadius` gives the same
@@ -159,6 +179,11 @@ public struct LeaderboardView: View {
                                 .cornerRadius(Layout.controlRadius)
                                 #endif
                         }
+                        .simultaneousGesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { _ in isAddFriendPressed = true }
+                                .onEnded { _ in isAddFriendPressed = false }
+                        )
                         .disabled(friendCodeInput.trimmingCharacters(in: CharacterSet.whitespaces).isEmpty || leaderboardManager.isLoading)
                     }
                     .padding(Edge.Set.horizontal, Layout.pageMargin)

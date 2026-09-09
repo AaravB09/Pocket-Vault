@@ -334,6 +334,7 @@ public struct SharedBudgetView: View {
 
             HStack(spacing: 10.0) {
                 TextField("Enter their code", text: $joinCodeInput)
+                    .textFieldStyle(.plain)
                     .textInputAutocapitalization(TextInputAutocapitalization.characters)
                     .autocorrectionDisabled()
                     .padding(14.0)

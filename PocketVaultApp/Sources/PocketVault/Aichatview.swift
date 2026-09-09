@@ -95,6 +95,12 @@ public struct AIChatView: View {
     // Close correctly dismisses — matching that convention here fixes it.
     @State private var showPaywall: Bool = false
 
+    // FIX ("turns white" on press): these two custom-content buttons had
+    // no `.buttonStyle`, so tapping picked up the system default dimming
+    // instead of a controlled press color — see PressableButton.swift.
+    @State private var isViewPlansPressed = false
+    @State private var isSendPressed = false
+
     public var body: some View {
         ZStack {
             if !entitlementManager.isPro {
@@ -171,11 +177,16 @@ public struct AIChatView: View {
                         .tracking(2.4)
                         .padding(Edge.Set.horizontal, 26.0)
                         .padding(Edge.Set.vertical, 15.0)
-                        .background(theme.accent)
+                        .background(theme.accent.opacity(isViewPlansPressed ? 0.85 : 1.0))
                         .foregroundColor(theme.onAccent)
                         .clipShape(Capsule())
                         .shadow(color: theme.accent.opacity(0.4), radius: 14, y: 6)
                 }
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { _ in isViewPlansPressed = true }
+                        .onEnded { _ in isViewPlansPressed = false }
+                )
                 .padding(Edge.Set.top, 8.0)
             }
             .padding(20.0)
@@ -223,6 +234,9 @@ public struct AIChatView: View {
                     .font(theme.font(22, weight: Font.Weight.semibold))
                     .foregroundStyle(theme.textTertiary)
             }
+            #if !SKIP
+            .buttonStyle(PlainButtonStyle())
+            #endif
             .padding(Edge.Set.top, 16.0)
             .padding(Edge.Set.trailing, 40.0)
         }
@@ -284,6 +298,7 @@ public struct AIChatView: View {
 
             HStack(spacing: 10.0) {
                 TextField("Ask a question…", text: $draft, axis: Axis.vertical)
+                    .textFieldStyle(.plain)
                     .padding(12.0)
                     #if !SKIP
                     .background(.ultraThinMaterial)
@@ -304,7 +319,13 @@ public struct AIChatView: View {
                         // rather than .tertiary, since a conditional value
                         // like this reads clearer as the concrete token.
                         .foregroundStyle(draft.trimmingCharacters(in: CharacterSet.whitespaces).isEmpty ? theme.textTertiary : theme.accent)
+                        .opacity(isSendPressed ? 0.7 : 1.0)
                 }
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { _ in isSendPressed = true }
+                        .onEnded { _ in isSendPressed = false }
+                )
                 .disabled(draft.trimmingCharacters(in: CharacterSet.whitespaces).isEmpty || isSending || !networkMonitor.isOnline)
             }
             .padding(Edge.Set.horizontal, 16.0)
