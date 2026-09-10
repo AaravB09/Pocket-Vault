@@ -709,6 +709,7 @@ public struct AskAIButton: View {
             .shadow(color: Color.black.opacity(0.22), radius: 4, y: 2)
             #endif
         }
+        .buttonStyle(.plain)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in isPressed = true }

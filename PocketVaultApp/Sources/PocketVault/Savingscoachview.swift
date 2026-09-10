@@ -106,6 +106,7 @@ public struct SavingsCoachView: View {
                                 .font(theme.font(22, weight: Font.Weight.bold))
                                 .foregroundStyle(theme.textTertiary)
                         }
+                        .buttonStyle(.plain)
                     }
                     .padding(Edge.Set.horizontal, 20.0)
                     .padding(Edge.Set.top, 20.0)
@@ -239,6 +240,7 @@ public struct SavingsCoachView: View {
                     .cornerRadius(Layout.controlRadius)
                     #endif
             }
+            .buttonStyle(.plain)
             .padding(Edge.Set.top, 8.0)
         }
         .padding(20.0)

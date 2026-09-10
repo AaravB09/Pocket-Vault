@@ -168,7 +168,16 @@ public struct SavingsTrendChart: View {
 
             if visiblePoints.count >= 2 {
                 HStack(spacing: 4.0) {
-                    Image(systemName: isPositive ? "arrow.up.right" : "arrow.down.right")
+                    // NOTE(skip): "arrow.up.circle.fill"/"arrow.down.circle.fill"
+                    // aren't in Skip's supported fallback-symbol table, so
+                    // they were rendering as the "symbol not found"
+                    // warning-triangle glyph on Android (same root cause as
+                    // the lock icon fix in Aichatview.swift). "chevron.up"/
+                    // "chevron.down" are confirmed-supported fallback names.
+                    Image.platformSymbol(
+                        isPositive ? "arrow.up.right" : "arrow.down.right",
+                        android: isPositive ? "chevron.up" : "chevron.down"
+                    )
                         .font(theme.font(10, weight: Font.Weight.bold))
                     Text("\(isPositive ? "+" : "-")$\(Int(abs(windowDelta)))")
                         .font(theme.font(12, weight: Font.Weight.semibold))
@@ -472,6 +481,7 @@ public struct SavingsTrendChart: View {
                         .cornerRadius(100)
                         #endif
                 }
+                .buttonStyle(.plain)
             }
         }
     }

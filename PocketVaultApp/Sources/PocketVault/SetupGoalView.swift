@@ -184,7 +184,19 @@ public struct SetupGoalView: View {
                     .cornerRadius(17)
                     #endif
             }
+            .buttonStyle(.plain)
 
+            // FIX (Android "S k i p" vertical letter-stack): this row's
+            // middle HStack had no explicit width, and on Compose an
+            // un-constrained `Capsule()` with only a `.frame(height:)`
+            // doesn't hug its content the way it does in SwiftUI — the
+            // three HStack children ended up fighting over the same
+            // intrinsic space, squeezing the trailing "Skip" text down
+            // to a near-zero-width column that wrapped one letter per
+            // line. Giving the progress bar `maxWidth: .infinity` (it's
+            // meant to fill the remaining space anyway) and pinning
+            // "Skip" to its natural single-line size with `.fixedSize()`
+            // resolves the fight on both platforms.
             HStack(spacing: 5.0) {
                 ForEach(0..<totalSteps, id: \.self) { i in
                     Capsule()
@@ -192,6 +204,7 @@ public struct SetupGoalView: View {
                         .frame(height: 3.0)
                 }
             }
+            .frame(maxWidth: CGFloat.infinity)
 
             // Not a VaultButton: an inline text link sitting flush against
             // the step-progress capsules in this tight header row, with no
@@ -202,7 +215,9 @@ public struct SetupGoalView: View {
                 Text("Skip")
                     .font(theme.font(14, weight: Font.Weight.medium))
                     .foregroundStyle(theme.textSecondary)
+                    .fixedSize()
             }
+            .buttonStyle(.plain)
         }
         .padding(Edge.Set.horizontal, 20.0)
         .padding(Edge.Set.top, 16.0)
@@ -347,6 +362,9 @@ public struct SetupGoalView: View {
     @ViewBuilder
     private func presetRow(for preset: GoalPreset) -> some View {
         let isSelected = selectedPresetName == preset.name
+        let presetFillColor: Color = isSelected
+            ? theme.accent
+            : (theme.isLight ? Color.black.opacity(0.03) : Color.white.opacity(0.03))
 
         Button(action: {
             selectedPresetName = preset.name
@@ -380,10 +398,16 @@ public struct SetupGoalView: View {
             }
             .padding(Edge.Set.horizontal, 20.0)
             .padding(Edge.Set.vertical, 16.0)
-            .background(
-                Capsule()
-                    .fill(isSelected ? theme.accent : (theme.isLight ? Color.black.opacity(0.03) : Color.white.opacity(0.03)))
-            )
+            // FIX (real root cause): `Capsule().fill(presetFillColor)`
+            // passed directly as the `.background(...)` argument doesn't
+            // render on Skip/Android — it comes through near-white
+            // regardless of presetFillColor's value. Switched to a plain
+            // Color background plus a separate `.clipShape(Capsule())`,
+            // matching the pattern that already renders correctly
+            // elsewhere in this app (MainTabView's LiquidTabButton tab
+            // highlight, SavingsTrendChart's range pill).
+            .background(presetFillColor)
+            .clipShape(Capsule())
             .overlay(
                 Capsule()
                     .stroke(isSelected ? Color.clear : theme.hairline, lineWidth: 1.0)
@@ -402,9 +426,7 @@ public struct SetupGoalView: View {
         // is why tapping any goal option here turned solid
         // black on Android instead of showing the theme's
         // accent color.
-        #if !SKIP
-        .buttonStyle(PlainButtonStyle())
-        #endif
+        .buttonStyle(.plain)
     }
 
     // MARK: - Step 2: Amount
@@ -541,6 +563,7 @@ public struct SetupGoalView: View {
                 #endif
                 .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius).stroke(theme.accent.opacity(isApplied ? 0.5 : 0.2), lineWidth: 1.0))
             }
+            .buttonStyle(.plain)
         }
         .padding(14.0)
         .background(theme.isLight ? Color.black.opacity(0.05) : Color.black.opacity(0.2))

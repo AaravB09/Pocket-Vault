@@ -166,6 +166,7 @@ struct FeatureTourOverlay: View {
 
                             HStack(spacing: 12.0) {
                                 Button("Skip") { finish() }
+                                    .buttonStyle(.plain)
                                     .font(theme.font(11))
                                     #if !SKIP
                                     .foregroundStyle(HierarchicalShapeStyle.secondary)
@@ -186,6 +187,7 @@ struct FeatureTourOverlay: View {
                                 Spacer()
 
                                 Button(stepIndex == visibleSteps.count - 1 ? "Done" : "Next") { advance() }
+                                    .buttonStyle(.plain)
                                     .font(theme.font(12, weight: Font.Weight.bold))
                                     .foregroundStyle(theme.onAccent)
                                     .padding(Edge.Set.horizontal, 18.0)

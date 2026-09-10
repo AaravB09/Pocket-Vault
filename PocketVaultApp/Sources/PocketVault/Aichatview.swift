@@ -335,13 +335,22 @@ public struct AIChatView: View {
     }
 
     private func bubble(for message: ChatMessage) -> some View {
-        HStack {
+        // FIX: same root cause as GoalPickerBar's chip fill — a nested
+        // Color ternary passed directly into `.background(...)` doesn't
+        // reliably transpile through Skip on Android and silently
+        // rendered user bubbles as blank/white instead of the accent
+        // fill. Extracting to a `let` first fixes it.
+        let bubbleFillColor: Color = message.role == .user
+            ? theme.accent
+            : (theme.isLight ? Color.black.opacity(0.05) : Color.white.opacity(0.08))
+
+        return HStack {
             if message.role == .user { Spacer(minLength: 40) }
             Text(message.text)
                 .font(theme.font(14, weight: Font.Weight.light))
                 .foregroundStyle(message.role == .user ? theme.onAccent : theme.textPrimary.opacity(0.9))
                 .padding(12.0)
-                .background(message.role == .user ? theme.accent : (theme.isLight ? Color.black.opacity(0.05) : Color.white.opacity(0.08)))
+                .background(bubbleFillColor)
                 .clipShape(RoundedRectangle(cornerRadius: 16.0))
             if message.role == .model { Spacer(minLength: 40) }
         }

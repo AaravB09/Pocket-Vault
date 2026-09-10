@@ -123,6 +123,7 @@ public struct ContentView: View {
                                             .frame(width: 40.0, height: 40.0)
                                     }
                                 }
+                                .buttonStyle(.plain)
                                 .simultaneousGesture(
                                     DragGesture(minimumDistance: 0)
                                         .onChanged { _ in isProfileAvatarPressed = true }

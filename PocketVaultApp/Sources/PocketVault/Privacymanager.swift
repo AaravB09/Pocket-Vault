@@ -89,6 +89,7 @@ struct PrivacyRevealOverlay: View {
             )
             .overlay(RoundedRectangle(cornerRadius: 14.0).stroke(Color.clear, lineWidth: 1.0))
         }
+        .buttonStyle(.plain)
         .simultaneousGesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in isPressed = true }
@@ -143,6 +144,7 @@ struct PrivacyQuickToggleButton: View {
                     .overlay(Circle().fill(theme.isLight ? Color.black.opacity(isPressed ? 0.06 : 0.0) : Color.white.opacity(isPressed ? 0.08 : 0.0)))
                     .overlay(Circle().stroke(Color.clear, lineWidth: 1.0))
             }
+            .buttonStyle(.plain)
             .simultaneousGesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { _ in isPressed = true }

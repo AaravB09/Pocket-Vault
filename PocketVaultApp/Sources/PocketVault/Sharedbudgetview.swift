@@ -51,6 +51,7 @@ public struct SharedBudgetView: View {
                                     .font(theme.font(22, weight: Font.Weight.bold))
                                     .foregroundStyle(theme.textTertiary)
                             }
+                            .buttonStyle(.plain)
                         }
                         .padding(Edge.Set.horizontal, Layout.pageMargin)
                         .padding(Edge.Set.top, 20.0)
@@ -214,6 +215,7 @@ public struct SharedBudgetView: View {
                         }) {
                             Image.platformSymbol("doc.on.doc", android: "square.and.arrow.up").foregroundStyle(theme.accent)
                         }
+                        .buttonStyle(.plain)
                     }
                     Text(showCopiedToast ? "Copied" : "Send this to your partner")
                         .font(theme.font(11))

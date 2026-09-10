@@ -206,6 +206,7 @@ public struct CalendarView: View {
                             .clipShape(Capsule())
                             .overlay(Capsule().stroke(theme.accent.opacity(calendarSyncStrokeOpacity), lineWidth: 1.0))
                         }
+                        .buttonStyle(.plain)
                         .simultaneousGesture(
                             DragGesture(minimumDistance: 0)
                                 .onChanged { _ in isCalendarSyncPressed = true }
@@ -289,6 +290,15 @@ public struct DayCell: View {
         return formatter.string(from: date)
     }
 
+    // FIX: same root cause as GoalPickerBar's chip fill — a nested Color
+    // ternary passed directly into `.foregroundStyle(...)` doesn't
+    // reliably transpile through Skip on Android. Extracting to a
+    // computed property first fixes it.
+    private var dayNumberColor: Color {
+        if isDepositDay { return theme.onAccent }
+        return isToday ? theme.textPrimary : theme.textSecondary
+    }
+
     public var body: some View {
         ZStack {
             if isDepositDay {
@@ -303,7 +313,7 @@ public struct DayCell: View {
 
             Text(dayNumber)
                 .font(theme.font(11, weight: isToday || isDepositDay ? Font.Weight.bold : Font.Weight.regular))
-                .foregroundStyle(isDepositDay ? theme.onAccent : (isToday ? theme.textPrimary : theme.textSecondary))
+                .foregroundStyle(dayNumberColor)
         }
         .frame(height: 36.0)
     }

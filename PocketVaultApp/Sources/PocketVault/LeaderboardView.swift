@@ -40,9 +40,7 @@ public struct LeaderboardView: View {
                                 .font(theme.font(22, weight: Font.Weight.bold))
                                 .foregroundStyle(theme.textTertiary)
                         }
-                        #if !SKIP
-                        .buttonStyle(PlainButtonStyle())
-                        #endif
+                        .buttonStyle(.plain)
                     }
                     .padding(Edge.Set.horizontal, Layout.pageMargin)
                     .padding(Edge.Set.top, 20.0)
@@ -73,9 +71,7 @@ public struct LeaderboardView: View {
                                 Image.platformSymbol("doc.on.doc", android: "square.and.arrow.up")
                                     .foregroundStyle(theme.accent)
                             }
-                            #if !SKIP
-                            .buttonStyle(PlainButtonStyle())
-                            #endif
+                            .buttonStyle(.plain)
                         }
 
                         Text(showCopiedToast ? "Copied" : "Share this so friends can add you")
@@ -135,6 +131,7 @@ public struct LeaderboardView: View {
                         )
                         .overlay(RoundedRectangle(cornerRadius: Layout.controlRadius).stroke(Color.clear, lineWidth: 1.0))
                     }
+                    .buttonStyle(.plain)
                     .simultaneousGesture(
                         DragGesture(minimumDistance: 0)
                             .onChanged { _ in isSharedBudgetRowPressed = true }
@@ -179,6 +176,7 @@ public struct LeaderboardView: View {
                                 .cornerRadius(Layout.controlRadius)
                                 #endif
                         }
+                        .buttonStyle(.plain)
                         .simultaneousGesture(
                             DragGesture(minimumDistance: 0)
                                 .onChanged { _ in isAddFriendPressed = true }
@@ -247,7 +245,15 @@ public struct LeaderboardView: View {
     }
 
     private func leaderboardRow(rank: Int, entry: LeaderboardEntry, isMe: Bool) -> some View {
-        HStack(spacing: 14.0) {
+        // FIX: same root cause as GoalPickerBar's chip fill — a nested
+        // Color ternary passed directly into `.background(...)` doesn't
+        // reliably transpile through Skip on Android. Extracting to a
+        // `let` first fixes it.
+        let rowFillColor: Color = isMe
+            ? (theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06))
+            : Color.clear
+
+        return HStack(spacing: 14.0) {
             Text("#\(rank)")
                 .font(theme.font(12, weight: Font.Weight.bold))
                 .foregroundStyle(rank == 1 ? theme.accent : theme.textTertiary)
@@ -268,7 +274,7 @@ public struct LeaderboardView: View {
         }
         .padding(Edge.Set.horizontal, 16.0)
         .padding(Edge.Set.vertical, 14.0)
-        .background(isMe ? (theme.isLight ? Color.black.opacity(0.04) : Color.white.opacity(0.06)) : Color.clear)
+        .background(rowFillColor)
         #if !SKIP
         .clipShape(RoundedRectangle(cornerRadius: 14.0))
         #else
